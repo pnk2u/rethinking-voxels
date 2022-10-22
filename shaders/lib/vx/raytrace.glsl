@@ -44,38 +44,58 @@ float aabbIntersect(vxData data, vec3 pos, vec3 dir, inout int n) {
     return w;
 }
 // returns color data of the block at pos, when hit by ray in direction dir
-vec4 handledata(vxData data, sampler2D atlas, inout vec3 pos, vec3 dir, int n) {
+vec4 handledata(inout vxData data, sampler2D atlas, inout vec3 pos, vec3 dir, int n) {
+    vec4 color = vec4(0);
+    vec3 offset = 0.001 * eye[n] * sign(dir[n]);
     if (!data.crossmodel) {
+        bool hit = true;
         if (data.cuboid) {
             float w = aabbIntersect(data, pos, dir, n);
-            if (w > 9999) return vec4(0);
-            pos += w * dir;
+            if (w > 9999) hit = false;
+            else pos += w * dir;
         }
-        vec2 spritecoord = vec2(n != 0 ? fract(pos.x) : fract(pos.z), n != 1 ? fract(-pos.y) : fract(pos.z)) * 2 - 1;
-        ivec2 texcoord = ivec2(data.texcoord * atlasSize + (data.spritesize - 0.5) * spritecoord);
-        vec4 color = texelFetch(atlas, texcoord, 0);
-        if (!data.alphatest) color.a = 1;
-        // multiply by vertex color for foliage, water etc
-        color.rgb *= data.emissive ? vec3(1) : data.lightcol;
-        return color;
+        if (hit) {
+            vec2 spritecoord = vec2(n != 0 ? fract(pos.x) : fract(pos.z), n != 1 ? fract(-pos.y) : fract(pos.z)) * 2 - 1;
+            ivec2 texcoord = ivec2(data.texcoord * atlasSize + (data.spritesize - 0.5) * spritecoord);
+            color = texelFetch(atlas, texcoord, 0);
+            if (!data.alphatest) color.a = 1;
+            // multiply by vertex color for foliage, water etc
+            color.rgb *= data.emissive ? vec3(1) : data.lightcol;
+        }
+    } else {
+        // get around floating point errors using an offset
+        vec3 blockInnerPos = fract(pos + offset) - offset;
+        // ray-plane intersections
+        float w0 = (1 - blockInnerPos.x - blockInnerPos.z) / (dir.x + dir.z);
+        float w1 = (blockInnerPos.x - blockInnerPos.z) / (dir.z - dir.x);
+        vec3 p0 = blockInnerPos + w0 * dir;
+        vec3 p1 = blockInnerPos + w1 * dir;
+        bool valid0 = (max(max(abs(p0.x - 0.5), 0.8 * abs(p0.y - 0.5)), abs(p0.z - 0.5)) < 0.4);
+        bool valid1 = (max(max(abs(p1.x - 0.5), 0.8 * abs(p1.y - 0.5)), abs(p1.z - 0.5)) < 0.4);
+        vec4 color0 = valid0 ? texelFetch(atlas, ivec2(data.texcoord * atlasSize + (data.spritesize - 0.5) * (1 - p0.xy * 2)), 0) : vec4(0);
+        vec4 color1 = valid1 ? texelFetch(atlas, ivec2(data.texcoord * atlasSize + (data.spritesize - 0.5) * (1 - p1.xy * 2)), 0) : vec4(0);
+        color0.xyz *= data.emissive ? vec3(1) : data.lightcol;
+        color1.xyz *= data.emissive ? vec3(1) : data.lightcol;
+        pos += (valid0 ? w0 : (valid1 ? w1 : 0)) * dir;
+        // the more distant intersection position only contributes by the amount of light coming through the closer one
+        color = (w0 < w1) ? (vec4(color0.xyz * color0.a, color0.a) + (1 - color0.a) * vec4(color1.xyz * color1.a, color1.a)) : (vec4(color1.xyz * color1.a, color1.a) + (1 - color1.a) * vec4(color0.xyz * color0.a, color0.a));
     }
-    // get around floating point errors using an offset
-    vec3 offset = 0.001 * eye[n] * sign(dir[n]);
-    vec3 blockInnerPos = fract(pos + offset) - offset;
-    // ray-plane intersections
-    float w0 = (1 - blockInnerPos.x - blockInnerPos.z) / (dir.x + dir.z);
-    float w1 = (blockInnerPos.x - blockInnerPos.z) / (dir.z - dir.x);
-    vec3 p0 = blockInnerPos + w0 * dir;
-    vec3 p1 = blockInnerPos + w1 * dir;
-    bool valid0 = (max(max(abs(p0.x - 0.5), 0.8 * abs(p0.y - 0.5)), abs(p0.z - 0.5)) < 0.4);
-    bool valid1 = (max(max(abs(p1.x - 0.5), 0.8 * abs(p1.y - 0.5)), abs(p1.z - 0.5)) < 0.4);
-    vec4 color0 = valid0 ? texelFetch(atlas, ivec2(data.texcoord * atlasSize + (data.spritesize - 0.5) * (1 - p0.xy * 2)), 0) : vec4(0);
-    vec4 color1 = valid1 ? texelFetch(atlas, ivec2(data.texcoord * atlasSize + (data.spritesize - 0.5) * (1 - p1.xy * 2)), 0) : vec4(0);
-    color0.xyz *= data.emissive ? vec3(1) : data.lightcol;
-    color1.xyz *= data.emissive ? vec3(1) : data.lightcol;
-    pos += (valid0 ? w0 : (valid1 ? w1 : 0)) * dir;
-    // the more distant intersection position only contributes by the amount of light coming through the closer one
-    return (w0 < w1) ? (vec4(color0.xyz * color0.a, color0.a) + (1 - color0.a) * vec4(color1.xyz * color1.a, color1.a)) : (vec4(color1.xyz * color1.a, color1.a) + (1 - color1.a) * vec4(color0.xyz * color0.a, color0.a));
+    if ((data.cuboid || data.crossmodel) && data.mat != 31000 && color.a < 0.1) {
+        float w = (0.875 - fract(pos.y + offset.y)) / dir.y;
+        if (w > 0) pos += w * dir;
+        float aroundWater = 0;
+        for (int k = 0; k < 4; k++) {
+            vec3 pos1 = pos + offset + (2 * ((k >> 1) % 2) == 0 ? vec3(2 * (k % 2) - 1, 0, 0) : vec3(0, 0, 2 * (k % 2) - 1));
+            vxData aroundVxData = readVxMap(getVxPixelCoords(pos1));
+            if (isInRange(pos1) && aroundVxData.mat == 31000) aroundWater += aroundVxData.upper.y;
+        }
+        if (aroundWater < 1.5) return color;
+        int colData = int(texelFetch(colortex10, ivec2(pos.xz + vxRange / 2.0), 0).w * 65535 + 0.5);
+        vec3 waterCol = vec3(((colData >> 8) % 8) / 7.0, ((colData >> 11) % 8) / 7.0, ((colData >> 14) % 4) / 3.5);
+        data.mat = 31000;
+        return vec4(waterCol, 0.5);
+    }
+    return color;
 }
 // voxel ray tracer
 vec4 raytrace(bool lowDetail, inout vec3 pos0, bool doScattering, vec3 dir, inout vec3 translucentHit, sampler2D atlas, bool translucentData) {

@@ -34,7 +34,7 @@ ivec2 atlasSize = textureSize(colortex15, 0);
 
 vec2 tex8size = vec2(textureSize(colortex8, 0));
 
-ivec3[7] offsets = ivec3[7](ivec3(0), ivec3(-1, 0, 0), ivec3(0, -1, 0), ivec3(0, 0, -1), ivec3(1, 0, 0), ivec3(0, 1, 0), ivec3(0, 0, 1));
+ivec3[7] offsets = ivec3[7](ivec3(0), ivec3(-1, 0, 0), ivec3(1, 0, 0), ivec3(0, -1, 0), ivec3(0, 1, 0), ivec3(0, 0, -1), ivec3(0, 0, 1));
 vec3[6] randomOffsets = vec3[6](vec3(0.64, -0.05, 0.46), vec3(0.39, -0.93, 0.92), vec3(-0.52, -0.42, -0.06), vec3(0.28, 0.11, 0.51), vec3(0.87, 0.6, 0.3), vec3(-0.15, 0.04, -0.97));
 
 #include "/lib/vx/voxelMapping.glsl"
@@ -49,27 +49,43 @@ void main() {
     if (max(pixelCoord.x, pixelCoord.y) < shadowMapResolution) {
         dataToWrite0 = ivec4(texelFetch(colortex8, pixelCoord, 0) * 65535 + 0.5);
         dataToWrite1 = ivec4(texelFetch(colortex10, pixelCoord, 0) * 65535 + 0.5);
-        if (max(pixelCoord.x, pixelCoord.y) < vxRange) {
-            int height = VXHEIGHT * VXHEIGHT / 2 - 1;
-            for (; height > -VXHEIGHT * VXHEIGHT / 2; height--) {
-                vxData thisBlock = readVxMap(getVxPixelCoords(vec3(pixelCoord.x, height, pixelCoord.y) + vec3(-vxRange / 2.0 + 0.5, 0.5, -vxRange / 2.0 + 0.5)));
-                bool isGround = true;
-                switch (thisBlock.mat) {
-                    case 0:
-                        break;
-                    case 10160:
-                    case 10168:
-                    case 10176:
-                    case 10184:
-                    case 10192:
-                    case 10200:
-                    case 10208:
-                        isGround = false;
-                        break;
+        //create a height map
+        if (pixelCoord.x < vxRange) {
+            if (pixelCoord.y < vxRange) {
+                int height = VXHEIGHT * VXHEIGHT / 2 - 1;
+                vec3 waterCol = vec3(0);
+                for (; height > -VXHEIGHT * VXHEIGHT / 2; height--) {
+                    vxData thisBlock = readVxMap(getVxPixelCoords(vec3(pixelCoord.x, height, pixelCoord.y) + vec3(-vxRange / 2.0 + 0.5, 0.5, -vxRange / 2.0 + 0.5)));
+                    bool isGround = true;
+                    switch (thisBlock.mat) {
+                        case 0:
+                            break;
+                        case 10160:
+                        case 10168:
+                        case 10176:
+                        case 10184:
+                        case 10192:
+                        case 10200:
+                        case 10208:
+                            isGround = false;
+                            break;
+                        case 31000:
+                            waterCol = thisBlock.lightcol;
+                    }
+                    if ((thisBlock.full && !thisBlock.alphatest && isGround)) break;
                 }
-                if ((thisBlock.full && !thisBlock.alphatest && isGround)) break;
+                float aroundWater = 0.1;
+                if (length(waterCol) < 0.001) {
+                    for (int i = 1; i < 5; i++) {
+                        int aroundWaterCol0 = int(texelFetch(colortex10, pixelCoord + offsets[i].xy, 0).w * 65535 + 0.5);
+                        vec3 aroundWaterCol = vec3((aroundWaterCol0 >> 8) % 8, (aroundWaterCol0 >> 11) % 8, (aroundWaterCol0 >> 14) % 4) / vec3(7.0, 7.0, 3.0);
+                        waterCol += aroundWaterCol;
+                        if (length(aroundWaterCol) > 0.01) aroundWater += 1.0;
+                    }
+                    waterCol /= aroundWater;
+                }
+                dataToWrite1.w = ((int(waterCol.r * 7.9) + (int(waterCol.g * 7.9) << 3) + (int(waterCol.b * 3.9) << 6)) << 8) + height + (VXHEIGHT * VXHEIGHT / 2);
             }
-            dataToWrite1.w = (dataToWrite1.w >> 8 << 8) + height + (VXHEIGHT * VXHEIGHT / 2);
         }
         vec3 pos0 = getVxPos(pixelCoord);
         vec3 pos = pos0;

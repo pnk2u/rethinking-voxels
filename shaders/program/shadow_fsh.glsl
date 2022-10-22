@@ -22,7 +22,7 @@ vec2[9] offsets = vec2[9](
 #include "/lib/vx/voxelMapping.glsl"
 
 void main() {
-    bool emissive, alphatest, crossmodel, cuboid, full, entity, notrace;
+    bool emissive, alphatest, crossmodel, cuboid, full, entity, notrace, waterlogged;
     vec3 lightcol = vec3(0); // lightcol contains either light color or gl_Color.rgb
     int lightlevel = 0;
     ivec3[2] bounds = ivec3[2](ivec3(0), ivec3(16));
@@ -63,7 +63,7 @@ void main() {
         int(texCoord.x * 4095) % 16 + int(texCoord.y * 4095) * 16,
         mat); // material index
     bounds[1] -= 1;
-    int blocktype = (alphatest ? 1 : 0) + (crossmodel ? 2 : 0) + (full ? 4 : 0) + (emissive ? 8 : 0) + (cuboid ? 16 : 0) + (notrace ? 32 : 0);
+    int blocktype = (alphatest ? 1 : 0) + (crossmodel ? 2 : 0) + (full ? 4 : 0) + (emissive ? 8 : 0) + (cuboid ? 16 : 0) + (notrace ? 32 : 0) + (waterlogged ? 64 : 0);
     int spritelog = 0;
     while (spriteSize >> spritelog + 1 != 0 && spritelog < 15) spritelog++;
 

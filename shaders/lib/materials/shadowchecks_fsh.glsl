@@ -833,7 +833,7 @@ full = (
     mat == 60016
 );
 crossmodel = (
-    mat == 10000 ||
+    (mat >= 10000 && mat < 10004)||
     mat == 10004 ||
     mat == 10016 ||
     mat == 10020 ||
@@ -1009,8 +1009,8 @@ if (cuboid) {
             bounds[1] = ivec3(13, 6, 13);
             break;
         case 10488:
-            bounds[0] = ivec3(3, 0, 3);
-            bounds[1] = ivec3(13, 1, 13);
+            bounds[0] = ivec3(3, 15, 3);
+            bounds[1] = ivec3(13, 16, 13);
             break;
         case 10500:
         case 12292:

@@ -14,6 +14,7 @@ switch (matV[0]) {
         if (max(tempPos.x, max(tempPos.y, tempPos.z)) > 0.49) tracemat = false;
         break;*/
     case 10350:
+    case 10488:
         if (cnormal.y < 0.5) tracemat = false;
         avgPos.y -= 0.1;
         break;
