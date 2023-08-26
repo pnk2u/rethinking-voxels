@@ -1,6 +1,8 @@
 #ifdef DECLARE_CAMPOS
 	uniform vec3 cameraPosition;
-	uniform vec3 previousCameraPosition;
+	#ifdef PREV_FRAME_MAPPING
+		uniform vec3 previousCameraPosition;
+	#endif
 #endif
 
 vec3 playerToVx(vec3 player) {
