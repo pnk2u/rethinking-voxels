@@ -124,17 +124,60 @@ void main() {
 
 #endif
 
+/////////Geometry Shader////////Geometry Shader////////Geometry Shader/////////
+#ifdef GEOMETRY_SHADER
+
+layout(triangles) in;
+layout(triangle_strip, max_vertices=3) out;
+
+flat in int matV[3];
+in vec2 texCoordV[3];
+flat in vec3 sunVecV[3], upVecV[3];
+in vec4 positionV[3];
+flat in vec4 glColorV[3];
+
+flat out int mat;
+out vec2 texCoord;
+flat out vec3 sunVec, upVec;
+out vec4 position;
+flat out vec4 glColor;
+
+//Uniforms//
+uniform vec3 cameraPosition;
+uniform sampler2D tex;
+
+//Includes//
+#define WRITE_TO_SSBOS
+#include "/lib/vx/SSBOs.glsl"
+#include "/lib/materials/shadowChecks.glsl"
+
+void main() {
+	//#include "/lib/vx/voxelization.glsl"
+	for (int i = 0; i < 3; i++) {
+		gl_Position = gl_in[i].gl_Position;
+		mat = matV[i];
+		texCoord = texCoordV[i];
+		sunVec = sunVecV[i];
+		upVec = upVecV[i];
+		position = positionV[i];
+		glColor = glColorV[i];
+		EmitVertex();
+	}
+	EndPrimitive();
+}
+#endif
+
 //////////Vertex Shader//////////Vertex Shader//////////Vertex Shader//////////
 #ifdef VERTEX_SHADER
 
-flat out int mat;
+flat out int matV;
 
-out vec2 texCoord;
+out vec2 texCoordV;
 
-flat out vec3 sunVec, upVec;
+flat out vec3 sunVecV, upVecV;
 
-out vec4 position;
-flat out vec4 glColor;
+out vec4 positionV;
+flat out vec4 glColorV;
 
 //Uniforms//
 uniform mat4 shadowProjection, shadowProjectionInverse;
@@ -171,36 +214,36 @@ attribute vec4 mc_Entity;
 
 //Program//
 void main() {
-	texCoord = gl_MultiTexCoord0.xy;
-	glColor = gl_Color;
+	texCoordV = gl_MultiTexCoord0.xy;
+	glColorV = gl_Color;
 
-	sunVec = GetSunVector();
-	upVec = normalize(gbufferModelView[1].xyz);
+	sunVecV = GetSunVector();
+	upVecV = normalize(gbufferModelView[1].xyz);
 
-	mat = int(mc_Entity.x + 0.5);
+	matV = int(mc_Entity.x + 0.5);
 
-	position = shadowModelViewInverse * shadowProjectionInverse * ftransform();
+	positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
 
 	#if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
 		#ifdef NO_WAVING_INDOORS
 			lmCoord = GetLightMapCoordinates();
 		#endif
 
-		DoWave(position.xyz, mat);
+		DoWave(positionV.xyz, matV);
 	#endif
 
 	#ifdef PERPENDICULAR_TWEAKS
-		if (mat == 10004 || mat == 10016) { // Foliage
+		if (matV == 10004 || matV == 10016) { // Foliage
 			vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
-			vec2 texMinMidCoord = texCoord - midCoord;
+			vec2 texMinMidCoord = texCoordV - midCoord;
 			if (texMinMidCoord.y < 0.0) {
 				vec3 normal = gl_NormalMatrix * gl_Normal;
-				position.xyz += normal * 0.35;
+				positionV.xyz += normal * 0.35;
 			}
 		}
 	#endif
 
-	gl_Position = shadowProjection * shadowModelView * position;
+	gl_Position = shadowProjection * shadowModelView * positionV;
 
 	float lVertexPos = sqrt(gl_Position.x * gl_Position.x + gl_Position.y * gl_Position.y);
 	float distortFactor = lVertexPos * shadowMapBias + (1.0 - shadowMapBias);

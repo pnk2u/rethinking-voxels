@@ -1,6 +1,6 @@
 #version 430 compatibility
 
-#define VERTEX_SHADER
+#define GEOMETRY_SHADER
 #define OVERWORLD
 #define SHADOW
 

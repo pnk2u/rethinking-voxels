@@ -43,8 +43,13 @@ void handleVoxel(inout raytrace_state_t state,
 	for (int k = 0; lod > 0 && k < 3 * (1 << voxelDetailAmount);
 	     k++) {
 		coords[lod] = vxPosToVxCoords(pos, lod);
+		if (lod < voxelDetailAmount - 1) {
+			coords[lod+1] = vxPosToVxCoords(pos, lod);
+		}
+
 		thisVoxel = readVoxelVolume(coords[lod], lod);
-		if (thisVoxel.full || lod >= voxelDetailAmount - 1) {
+		if (thisVoxel.full || lod >= voxelDetailAmount - 1 ||
+		    coords[lod + 1] == ivec3(-1)) {
 			returnVal.rayColor += (1 - returnVal.rayColor.a) *
 			                      thisVoxel.color.a *
 			                      vec4(thisVoxel.color.rgb, 1);
@@ -61,7 +66,7 @@ void handleVoxel(inout raytrace_state_t state,
 			pos = state.start + state.w * state.dir +
 			      state.eyeOffsets[state.normal];
 			for (ivec3 parentCoords = vxPosToVxCoords(pos, lod - 1);
-			     lod > 0 && parentCoords != coords[lod - 1]; lod--)
+			     lod > 0 && (parentCoords != coords[lod - 1]); lod--)
 				;
 		} else {
 			lod++;

@@ -7,7 +7,7 @@
 
 	// constants
 	const ivec3 voxelVolumeSize = ivec3(256, 128, 256);
-	const int voxelDetailAmount = 6;
+	const int voxelDetailAmount = 4;
 
 	// voxelisation-related mapping functions
 	#include "/lib/vx/mapping.glsl"
