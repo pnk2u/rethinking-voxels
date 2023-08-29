@@ -19,7 +19,7 @@ voxel_t readVoxelVolume(ivec3 coords, int lod) {
 		(rawData >>  7) % 128,
 		(rawData >> 14) % 128,
 		(rawData >> 21) % 128
-	);
+	) / 128;
 	return voxelData;
 }
 

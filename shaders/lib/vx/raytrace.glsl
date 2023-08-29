@@ -23,6 +23,7 @@ struct raytrace_state_t {
 	vec3 progress;
 	int normal;
 	float w;
+	bool insideVolume;
 };
 
 void handleVoxel(inout raytrace_state_t state,
@@ -31,6 +32,10 @@ void handleVoxel(inout raytrace_state_t state,
 	           state.eyeOffsets[state.normal];
 	ivec3 coords[voxelDetailAmount];
 	coords[0] = vxPosToVxCoords(pos, 0);
+	if (coords[0] == ivec3(-1)) {
+		state.insideVolume = false;
+		return;
+	}
 	voxel_t thisVoxel = readVoxelVolume(coords[0], 0);
 	if (thisVoxel.full) {
 		returnVal.rayColor += (1 - returnVal.rayColor.a) *
@@ -91,10 +96,11 @@ ray_hit_t raytrace(vec3 start, vec3 dir) {
 	state.rayLength = length(state.dir);
 	state.stepSize = 1.0 / state.dir;
 	state.dirSgn = sign(state.dir);
+	state.insideVolume = true;
 	// offsets that will be used to avoid floating point
 	// errors on block edges
 	state.rayOffset = 1e-3 / state.rayLength;
-	state.eyeOffsets = mat3(state.dirSgn);
+	state.eyeOffsets = mat3(state.dirSgn.x, 0, 0, 0, state.dirSgn.y, 0, 0, 0, state.dirSgn.z);
 	// next intersection along each axis
 	state.progress =
 	    (fract(state.start) - 0.5 * state.dirSgn - 0.5) / state.dir;
@@ -124,7 +130,7 @@ ray_hit_t raytrace(vec3 start, vec3 dir) {
 		}
 	}
 	returnVal.pos = state.start + state.w * state.dir;
-	returnVal.normal = -dirSgn[state.normal] * mat3(1)[state.normal];
+	returnVal.normal = -state.dirSgn[state.normal] * mat3(1)[state.normal];
 	return returnVal;
 }
 #endif

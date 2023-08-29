@@ -29,3 +29,13 @@ ivec3 vxPosToVxCoords(vec3 vxPos, int lod) {
 	}
 	return ivec3(-1);
 }
+
+int maxAvailableLod(vec3 vxPos) {
+	vxPos = abs(vxPos / voxelVolumeSize);
+	for (int k = voxelDetailAmount - 1; k >= 0; k--) {
+		if (all(lessThan(vxPos * (1<<k), vec3(0.5)))) {
+			return k;
+		}
+	}
+	return -1;
+}
