@@ -115,8 +115,13 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 	#include "/lib/materials/materialHandling/customMaterials.glsl"
 #endif
 
+layout(std430, binding=0) readonly buffer blockidmap {
+	int blockIdMap[];
+};
+
 //Program//
 void main() {
+	int mat = blockIdMap[blockEntityId];
 	vec4 color = texture2D(tex, texCoord);
 	#ifdef GENERATED_NORMALS
 		vec3 colorP = color.rgb;
@@ -145,9 +150,9 @@ void main() {
 			GetCustomMaterials(color, normalM, lmCoordM, NdotU, shadowMult, smoothnessG, smoothnessD, highlightMult, emission, materialMask, viewPos, lViewPos);
 		#endif
 
-		if (blockEntityId == 60000) { // End Portal, End Gateway
+		if (mat == 60000) { // End Portal, End Gateway
 			#include "/lib/materials/specificMaterials/others/endPortalEffect.glsl"
-		} else if (blockEntityId == 60004) { // Signs
+		} else if (mat == 60004) { // Signs
 			noSmoothLighting = true;
 			if (glColor.r + glColor.g + glColor.b <= 2.99 || lmCoord.x > 0.999) { // Sign Text
 				#include "/lib/materials/specificMaterials/others/signText.glsl"
@@ -208,6 +213,7 @@ out vec4 glColor;
 #endif
 
 //Uniforms//
+
 #ifdef TAA
 	uniform float viewWidth, viewHeight;
 #endif
@@ -218,6 +224,11 @@ out vec4 glColor;
 	uniform vec3 cameraPosition;
 
 	uniform mat4 gbufferModelViewInverse;
+
+	layout(std430, binding=0) readonly buffer blockidmap {
+		int blockIdMap[];
+	};
+
 #endif
 
 //Attributes//
@@ -240,6 +251,9 @@ out vec4 glColor;
 
 //Program//
 void main() {
+	#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
+		int mat = blockIdMap[blockEntityId];
+	#endif
 	gl_Position = ftransform();
 	#ifdef TAA
 		gl_Position.xy = TAAJitter(gl_Position.xy, gl_Position.w);
@@ -248,7 +262,7 @@ void main() {
 	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 
 	lmCoord  = GetLightMapCoordinates();
-
+ 
 	glColor = gl_Color;
 
 	normal = normalize(gl_NormalMatrix * gl_Normal);
@@ -261,7 +275,7 @@ void main() {
 	if (normal != normal) normal = -upVec; // Mod Fix: Fixes Better Nether Fireflies
 
 	#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-		if (blockEntityId == 60008) { // Chest
+		if (mat == 60008) { // Chest
 			float fractWorldPosY = fract((gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex).y + cameraPosition.y);
 			if (fractWorldPosY > 0.56 && 0.57 > fractWorldPosY) gl_Position.z -= 0.0001;
 		}

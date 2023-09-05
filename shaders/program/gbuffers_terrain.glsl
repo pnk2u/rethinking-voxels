@@ -402,6 +402,10 @@ attribute vec4 mc_midTexCoord;
 	#include "/lib/materials/materialMethods/wavingBlocks.glsl"
 #endif
 
+layout(std430, binding=0) readonly buffer blockidmap {
+    int blockIdMap[];
+};
+
 //Program//
 void main() {
 	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
@@ -421,10 +425,16 @@ void main() {
 	signMidCoordPos = sign(texMinMidCoord);
 	absMidCoordPos  = abs(texMinMidCoord);
 
-	mat = int(mc_Entity.x + 0.5);
+	mat = blockIdMap[int(mc_Entity.x + 0.5)];
 
+	vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
+
+	if (mat == 10132) {
+		if (any(lessThan(abs(fract(position.xyz + cameraPosition) - 0.5), vec3(0.45)))) {
+			mat = 10004;
+		}
+	}
 	#ifdef WAVING_ANYTHING_TERRAIN
-		vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
 
 		DoWave(position.xyz, mat);
 

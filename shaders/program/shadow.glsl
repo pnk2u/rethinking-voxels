@@ -152,7 +152,7 @@ uniform sampler2D tex;
 #include "/lib/materials/shadowChecks.glsl"
 
 void main() {
-	#include "/lib/vx/voxelization.glsl"
+	//#include "/lib/vx/voxelization.glsl"
 	for (int i = 0; i < 3; i++) {
 		gl_Position = gl_in[i].gl_Position;
 		mat = matV[i];

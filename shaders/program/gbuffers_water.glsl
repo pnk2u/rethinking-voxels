@@ -390,15 +390,18 @@ attribute vec4 at_tangent;
 	#include "/lib/materials/materialMethods/wavingBlocks.glsl"
 #endif
 
+layout(std430, binding=0) readonly buffer blockidmap {
+    int blockIdMap[];
+};
 //Program//
 void main() {
 	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 	lmCoord  = GetLightMapCoordinates();
 
 	glColor = gl_Color;
+	int mat0 = int(mc_Entity.x + 0.5);
 
-	mat = int(mc_Entity.x + 0.5);
-
+	mat = blockIdMap[mat0];
 	#ifdef WAVING_WATER_VERTEX
 		vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
 
