@@ -132,6 +132,7 @@ layout(triangle_strip, max_vertices=3) out;
 
 flat in int matV[3];
 in vec2 texCoordV[3];
+in vec3 midBlock[3];
 flat in vec3 sunVecV[3], upVecV[3];
 in vec4 positionV[3];
 flat in vec4 glColorV[3];
@@ -152,10 +153,10 @@ uniform sampler2D tex;
 #include "/lib/materials/shadowChecks.glsl"
 
 void main() {
-	//#include "/lib/vx/voxelization.glsl"
+	#include "/lib/vx/voxelization.glsl"
 	for (int i = 0; i < 3; i++) {
 		gl_Position = gl_in[i].gl_Position;
-		mat = matV[i];
+		mat = materialMap[matV[i]];
 		texCoord = texCoordV[i];
 		sunVec = sunVecV[i];
 		upVec = upVecV[i];
@@ -173,6 +174,7 @@ void main() {
 flat out int matV;
 
 out vec2 texCoordV;
+out vec3 midBlock;
 
 flat out vec3 sunVecV, upVecV;
 
@@ -192,10 +194,11 @@ uniform mat4 gbufferModelViewInverse;
 #endif
 
 //Attributes//
-attribute vec4 mc_Entity;
+in vec4 mc_Entity;
+in vec3 at_midBlock;
 
 #if defined PERPENDICULAR_TWEAKS || defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
-	attribute vec4 mc_midTexCoord;
+	in vec4 mc_midTexCoord;
 #endif
 
 //Common Variables//
@@ -223,7 +226,7 @@ void main() {
 	matV = int(mc_Entity.x + 0.5);
 
 	positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
-
+	midBlock = at_midBlock / 64.0;
 	#if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
 		#ifdef NO_WAVING_INDOORS
 			lmCoord = GetLightMapCoordinates();

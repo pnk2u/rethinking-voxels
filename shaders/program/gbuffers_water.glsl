@@ -390,9 +390,9 @@ attribute vec4 at_tangent;
 	#include "/lib/materials/materialMethods/wavingBlocks.glsl"
 #endif
 
-layout(std430, binding=0) readonly buffer blockidmap {
-    int blockIdMap[];
-};
+#define MATERIALMAP_ONLY
+#include "/lib/vx/SSBOs.glsl"
+
 //Program//
 void main() {
 	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;

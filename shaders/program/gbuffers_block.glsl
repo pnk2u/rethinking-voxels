@@ -115,9 +115,8 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 	#include "/lib/materials/materialHandling/customMaterials.glsl"
 #endif
 
-layout(std430, binding=0) readonly buffer blockidmap {
-	int blockIdMap[];
-};
+#define MATERIALMAP_ONLY
+#include "/lib/vx/SSBOs.glsl"
 
 //Program//
 void main() {
@@ -225,9 +224,8 @@ out vec4 glColor;
 
 	uniform mat4 gbufferModelViewInverse;
 
-	layout(std430, binding=0) readonly buffer blockidmap {
-		int blockIdMap[];
-	};
+	#define MATERIALMAP_ONLY
+	#include "/lib/vx/SSBOs.glsl"
 
 #endif
 

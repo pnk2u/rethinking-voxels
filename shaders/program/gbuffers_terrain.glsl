@@ -402,9 +402,8 @@ attribute vec4 mc_midTexCoord;
 	#include "/lib/materials/materialMethods/wavingBlocks.glsl"
 #endif
 
-layout(std430, binding=0) readonly buffer blockidmap {
-    int blockIdMap[];
-};
+#define MATERIALMAP_ONLY
+#include "/lib/vx/SSBOs.glsl"
 
 //Program//
 void main() {

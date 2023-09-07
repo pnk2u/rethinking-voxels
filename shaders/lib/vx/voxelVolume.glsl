@@ -6,11 +6,21 @@ struct voxel_t {
 	bool full;
 };
 
-voxel_t readVoxelVolume(ivec3 coords, int lod) {
-	uint rawData = imageLoad(
-		voxelVolumeI,
-		coords + ivec3(0, voxelVolumeSize.y * lod, 0)
-	).r;
+uint readBlockVolume(ivec3 coords) {
+	return imageLoad(voxelVolumeI, coords).r;
+}
+
+voxel_t readGeometry(int mat, vec3 pos, int lod) {
+	int lodSubdivisions = 1<<lod;
+	ivec3 coord = ivec3(pos * lodSubdivisions);
+	int index = modelMemorySize * mat
+	          + coord.x * lodSubdivisions * lodSubdivisions
+	          + coord.y * lodSubdivisions
+	          + coord.z;
+	for (int i = 0; i < lod; i++) {
+		index += (1<<i) * (1<<i) * (1<<i);
+	}
+	uint rawData = geometryData[index];
 	voxel_t voxelData;
 	voxelData.full     = ((rawData >> 31) % 2 == 0);
 	voxelData.emissive = ((rawData >> 30) % 2 != 0);
@@ -23,19 +33,32 @@ voxel_t readVoxelVolume(ivec3 coords, int lod) {
 	return voxelData;
 }
 
+bool getMaterialAvailability(int mat) {
+	return (materialMap[16384 + 7 * mat] != 0);
+}
+
 #ifndef READONLY
-	void writeVoxelVolume(ivec3 coords, int lod, voxel_t voxelData) {
+	bool claimMaterial(int mat, int side, ivec3 coords) {
+		int coordsHash = 1 + coords.x + voxelVolumeSize.x * coords.y + voxelVolumeSize.x * voxelVolumeSize.y * coords.z;
+		int prevHash = atomicCompSwap(materialMap[16384 + 7 * mat + side], 0, coordsHash);
+		if (prevHash == 0 || prevHash == coordsHash) return true;
+		return false;
+	}
+
+	void writeGeometry(int mat, vec3 pos, int lod, voxel_t data) {
+		int lodSubdivisions = 1<<lod;
+		ivec3 coord = ivec3(pos * lodSubdivisions);
+		int index = modelMemorySize * mat + coord.x * lodSubdivisions * lodSubdivisions + coord.y * lodSubdivisions + coord.z;
+		for (int i = 0; i < lod; i++) {
+			index += (1<<i) * (1<<i) * (1<<i);
+		}
 		uint rawData
-			=              int(voxelData.color.r * 127.9)
-			+        128 * int(voxelData.color.g * 127.9)
-			+      16384 * int(voxelData.color.b * 127.9)
-			+    2097152 * int(voxelData.color.a * 127.9)
-			+ 1073741824 * int(voxelData.emissive)
-			+ 2147483648 * int(!voxelData.full);
-		imageStore(
-			voxelVolumeI,
-			coords + ivec3(0, voxelVolumeSize.y * lod, 0),
-			uvec4(rawData)
-		);
+			=              int(data.color.r * 127.9)
+			+        128 * int(data.color.g * 127.9)
+			+      16384 * int(data.color.b * 127.9)
+			+    2097152 * int(data.color.a * 127.9)
+			+ 1073741824 * int(data.emissive)
+			+ 2147483648 * int(!data.full);
+		geometryData[index] = rawData;
 	}
 #endif

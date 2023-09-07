@@ -30,7 +30,7 @@ void handleVoxel(inout raytrace_state_t state,
                  inout ray_hit_t returnVal) {
 	vec3 pos = state.start + state.w * state.dir +
 	           state.eyeOffsets[state.normal];
-	ivec3 coords[voxelDetailAmount];
+	ivec3 coords[VOXEL_DETAIL_AMOUNT];
 	coords[0] = vxPosToVxCoords(pos, 0);
 	if (coords[0] == ivec3(-1)) {
 		state.insideVolume = false;
@@ -45,15 +45,15 @@ void handleVoxel(inout raytrace_state_t state,
 	}
 	vec3 subVoxelProgress = state.progress;
 	int lod = 1;
-	for (int k = 0; lod > 0 && k < 3 * (1 << voxelDetailAmount);
+	for (int k = 0; lod > 0 && k < 3 * (1 << VOXEL_DETAIL_AMOUNT);
 	     k++) {
 		coords[lod] = vxPosToVxCoords(pos, lod);
-		if (lod < voxelDetailAmount - 1) {
+		if (lod < VOXEL_DETAIL_AMOUNT - 1) {
 			coords[lod+1] = vxPosToVxCoords(pos, lod);
 		}
 
 		thisVoxel = readVoxelVolume(coords[lod], lod);
-		if (thisVoxel.full || lod >= voxelDetailAmount - 1 ||
+		if (thisVoxel.full || lod >= VOXEL_DETAIL_AMOUNT - 1 ||
 		    coords[lod + 1] == ivec3(-1)) {
 			returnVal.rayColor += (1 - returnVal.rayColor.a) *
 			                      thisVoxel.color.a *

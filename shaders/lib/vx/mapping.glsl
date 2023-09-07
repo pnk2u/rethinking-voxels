@@ -21,21 +21,14 @@ vec3 worldToVx(vec3 world) {
 	}
 #endif
 
-ivec3 vxPosToVxCoords(vec3 vxPos, int lod) {
-	vxPos *= 1<<lod;
-	vxPos += 0.5 * voxelVolumeSize;
-	if (all(greaterThan(vxPos, vec3(0))) && all(lessThan(vxPos, voxelVolumeSize))) {
+bool isInRange(vec3 vxPos) {
+	return all(greaterThan(vxPos, -0.5 * voxelVolumeSize)) && all(lessThan(vxPos, 0.5 * voxelVolumeSize));
+}
+
+ivec3 vxPosToVxCoords(vec3 vxPos) {
+	if (isInRange(vxPos)) {
+		vxPos += 0.5 * voxelVolumeSize;
 		return ivec3(vxPos);
 	}
 	return ivec3(-1);
-}
-
-int maxAvailableLod(vec3 vxPos) {
-	vxPos = abs(vxPos / voxelVolumeSize);
-	for (int k = voxelDetailAmount - 1; k >= 0; k--) {
-		if (all(lessThan(vxPos * (1<<k), vec3(0.5)))) {
-			return k;
-		}
-	}
-	return -1;
 }
