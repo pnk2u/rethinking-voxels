@@ -15,10 +15,10 @@
 		#elif VX_VOL_SIZE == 3
 			const ivec3 voxelVolumeSize = ivec3(512, 128, 512);
 		#endif
+		const int modelMemorySize = (1<<(VOXEL_DETAIL_AMOUNT-1)) * (1<<(VOXEL_DETAIL_AMOUNT-1)) * (1<<(VOXEL_DETAIL_AMOUNT-1));
 	#endif
 
 	layout(std430, binding=0) WRITE_TO_SSBOS buffer blockidmap {
-		int modelMemorySize;
 		int blockIdMap[];
 	};
 

@@ -26,7 +26,7 @@
         #define POM
     #endif
 
-    #define VOXEL_DETAIL_AMOUNT 3 //[0 1 2 3 4 5 6]
+    #define VOXEL_DETAIL_AMOUNT 4 //[1 2 3 4 5 6]
     #define VX_VOL_SIZE 0 //[0 1 2 3]
 
     #define REALTIME_SHADOWS

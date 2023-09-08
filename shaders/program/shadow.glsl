@@ -156,7 +156,7 @@ void main() {
 	#include "/lib/vx/voxelization.glsl"
 	for (int i = 0; i < 3; i++) {
 		gl_Position = gl_in[i].gl_Position;
-		mat = materialMap[matV[i]];
+		mat = blockIdMap[matV[i]];
 		texCoord = texCoordV[i];
 		sunVec = sunVecV[i];
 		upVec = upVecV[i];
