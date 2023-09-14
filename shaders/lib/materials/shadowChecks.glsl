@@ -93,3 +93,14 @@ bool isEmissive(int mat) {
 		mat == 50116    // TNT and TNT minecart
 	);
 }
+bool badPixel(vec4 color, vec4 glColor, int mat) {
+	switch(mat) {
+		case 4431:
+		case 4432:
+			if (color.g > max(color.r, color.b) + 0.05 && length(glColor.rgb - vec3(1)) < 0.1) {
+				return true;
+			}
+			break;
+	}
+	return false;
+}

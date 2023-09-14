@@ -38,6 +38,8 @@ void handleVoxel(inout raytrace_state_t state,
 	if (thisVoxelMat == 0) {
 		return;
 	}
+	int glColor0 = readGlColor(globalCoord);
+	vec3 glColor = vec3(glColor0 & 255, glColor0 >> 8 & 255, glColor0 >> 16 & 255) / 255.0;
 	vec3 baseBlock = floor(pos + state.eyeOffsets[state.normal]);
 	pos -= baseBlock;
 	int baseIndex = getBaseIndex(thisVoxelMat);
@@ -55,6 +57,9 @@ void handleVoxel(inout raytrace_state_t state,
 		k++) {
 		ivec3 coords = ivec3(lodResolution * pos + state.eyeOffsets[localNormal]);
 		voxel_t thisVoxel = readGeometry(baseIndex, coords);
+		if (thisVoxel.glColored) {
+			thisVoxel.color.rgb *= glColor;
+		}
 		returnVal.rayColor += (1 - returnVal.rayColor.a) *
 								thisVoxel.color.a *
 								vec4(thisVoxel.color.rgb, 1);

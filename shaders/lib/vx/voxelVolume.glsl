@@ -3,11 +3,15 @@ layout(r32i) uniform WRITE_TO_SSBOS iimage3D voxelVolumeI;
 struct voxel_t {
 	vec4 color;
 	bool emissive;
-	bool full;
+	bool glColored;
 };
 
 int readBlockVolume(ivec3 coords) {
 	return imageLoad(voxelVolumeI, coords).r;
+}
+
+int readGlColor(ivec3 coords) {
+	return imageLoad(voxelVolumeI, coords + ivec3(0, voxelVolumeSize.y, 0)).r;
 }
 int readBlockVolume(vec3 pos) {
 	return readBlockVolume(vxPosToVxCoords(pos));
@@ -24,9 +28,9 @@ voxel_t readGeometry(int index, ivec3 coord) {
 	      +  coord.z;
 	uint rawData = geometryData[index];
 	voxel_t voxelData;
-	voxelData.full     = ((rawData >> 31) % 2 == 0);
-	voxelData.emissive = ((rawData >> 30) % 2 != 0);
-	voxelData.color    = vec4(
+	voxelData.glColored = ((rawData >> 31) % 2 != 0);
+	voxelData.emissive  = ((rawData >> 30) % 2 != 0);
+	voxelData.color     = vec4(
 		(rawData      ) % 128,
 		(rawData >>  7) % 128,
 		(rawData >> 14) % 128,
@@ -63,7 +67,7 @@ bool getMaterialAvailability(int mat) {
 			+ (uint(data.color.b * 127.5) << 14)
 			+ (uint(data.color.a * 127.5) << 21)
 			+ (uint(data.emissive)        << 30)
-			+ (uint(!data.full)           << 31)
+			+ (uint(data.glColored)      << 31)
 		;
 		geometryData[index] = rawData;
 	}

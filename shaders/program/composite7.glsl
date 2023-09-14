@@ -42,7 +42,7 @@ void main() {
 	#ifdef FXAA
 		FXAA311(color);
 	#endif
-	if (all(lessThan(gl_FragCoord.xy, vec2(400)))) {
+	if (texCoord.x < 0.5) {
 		vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
 		playerPos.xyz = 40 * normalize(playerPos.xyz);
 		ray_hit_t rayHit = raytrace(fract(cameraPosition), playerPos.xyz);

@@ -146,6 +146,7 @@ flat out vec4 glColor;
 //Uniforms//
 uniform vec3 cameraPosition;
 uniform sampler2D tex;
+uniform sampler2D specular;
 
 //Includes//
 #define WRITE_TO_SSBOS
