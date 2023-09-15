@@ -6,6 +6,7 @@ struct ray_hit_t {
 	vec3 pos;
 	vec3 normal;
 	int mat;
+	bool emissive;
 	vec3 transPos;
 	vec3 transNormal;
 	vec4 transColor;
@@ -25,7 +26,7 @@ struct raytrace_state_t {
 	float w;
 	bool insideVolume;
 };
-
+#define MAX_RAY_ALPHA 0.999
 void handleVoxel(inout raytrace_state_t state,
                  inout ray_hit_t returnVal) {
 	vec3 pos = state.start + state.w * state.dir;
@@ -38,8 +39,6 @@ void handleVoxel(inout raytrace_state_t state,
 	if (thisVoxelMat == 0) {
 		return;
 	}
-	int glColor0 = readGlColor(globalCoord);
-	vec3 glColor = vec3(glColor0 & 255, glColor0 >> 8 & 255, glColor0 >> 16 & 255) / 255.0;
 	vec3 baseBlock = floor(pos + state.eyeOffsets[state.normal]);
 	pos -= baseBlock;
 	int baseIndex = getBaseIndex(thisVoxelMat);
@@ -58,16 +57,20 @@ void handleVoxel(inout raytrace_state_t state,
 		ivec3 coords = ivec3(lodResolution * pos + state.eyeOffsets[localNormal]);
 		voxel_t thisVoxel = readGeometry(baseIndex, coords);
 		if (thisVoxel.glColored) {
+			int glColor0 = readGlColor(globalCoord);
+			vec3 glColor = vec3(glColor0 & 255, glColor0 >> 8 & 255, glColor0 >> 16 & 255) / 255.0;
 			thisVoxel.color.rgb *= glColor;
 		}
-		returnVal.rayColor += (1 - returnVal.rayColor.a) *
-								thisVoxel.color.a *
-								vec4(thisVoxel.color.rgb, 1);
+		returnVal.rayColor.rgb *= mix(vec3(1), thisVoxel.color.rgb, thisVoxel.color.a);
+		returnVal.rayColor.a += (1 - returnVal.rayColor.a) * thisVoxel.color.a;
 		if (thisVoxel.color.a > 0.7) {
+			if (thisVoxel.emissive) {
+				returnVal.emissive = true;
+			}
 			returnVal.normal = -state.dirSgn[localNormal] * mat3(1)[localNormal];
 		}
 		localProgress[localNormal] += localStepSize[localNormal];
-		if (returnVal.rayColor.a > 0.99) {
+		if (returnVal.rayColor.a > MAX_RAY_ALPHA) {
 			break;
 		}
 		localNormal = 0;
@@ -84,12 +87,12 @@ void handleVoxel(inout raytrace_state_t state,
 
 ray_hit_t raytrace(vec3 start, vec3 dir) {
 	ray_hit_t returnVal;
+	returnVal.emissive = false;
 	returnVal.pos = start + dir;
 	returnVal.normal = vec3(0, 0, 0);
-	returnVal.rayColor = vec4(0);
+	returnVal.rayColor = vec4(1, 1, 1, 0);
 	returnVal.hitColor = vec4(0);
 	returnVal.transColor = vec4(0);
-	returnVal.rayColor = vec4(0);
 	returnVal.transNormal = vec3(-1);
 	returnVal.transMat = -1;
 	returnVal.mat = -1;
@@ -111,7 +114,7 @@ ray_hit_t raytrace(vec3 start, vec3 dir) {
 	state.normal = 0;
 	state.w = state.rayOffset;
 	handleVoxel(state, returnVal);
-	if (returnVal.rayColor.a > 0.99) {
+	if (returnVal.rayColor.a > MAX_RAY_ALPHA) {
 		return returnVal;
 	}
 	// closest upcoming intersection
@@ -128,7 +131,7 @@ ray_hit_t raytrace(vec3 start, vec3 dir) {
 	     k++) {
 		int outerNormal = state.normal;
 		handleVoxel(state, returnVal);
-		if (returnVal.rayColor.a > 0.99 || !state.insideVolume) {
+		if (returnVal.rayColor.a > MAX_RAY_ALPHA || !state.insideVolume) {
 			break;
 		}
 		state.progress[outerNormal] += state.stepSize[outerNormal];
