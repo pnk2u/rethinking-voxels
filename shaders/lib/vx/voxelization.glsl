@@ -124,8 +124,8 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 				y <= projectionBoundCoords[1].y; y++) {
 			vec3 thisProjectedPos = vec3(x + 0.5, y + 0.5, 1) / vec2(1 << (VOXEL_DETAIL_AMOUNT-1), 1).xxy;
 			vec3 localPos = projectedToLocal * thisProjectedPos;
-			if (localPos.x < 0 || localPos.y < 0 ||
-				localPos.x + localPos.y > 1) {
+			if (localPos.x < -0.001 || localPos.y < -0.001 ||
+				localPos.x + localPos.y > 1.001) {
 				continue;
 			}
 			vec2 thisTexCoord = (textureMatrix * localPos).xy;
@@ -133,17 +133,17 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 			vec4 s = textureLod(specular, thisTexCoord, 0);
 			if (s.a > 0.999) s.a = 0;
 			if (s.a > 0.1)  {
-				color *= s.a;
+				color.rgb *= s.a;
 			}
-			vec3 thisPos = clamp(projectedToBlockRel * thisProjectedPos, 0, 1);
-			if (color.a < 0.1 || badPixel(color, meanGlColor, matV[0])) {
+			vec3 thisPos = projectedToBlockRel * thisProjectedPos;
+			if (color.a < 0.1 || thisPos != clamp(thisPos, 0, 1) || badPixel(color, meanGlColor, matV[0])) {
 				continue;
 			}
 
 			voxel_t voxelData;
 			voxelData.color = color;
 			voxelData.glColored = hasGlColor;
-			voxelData.emissive = (isEmissive(blockIdMap[matV[0]]) || s.a > 0.1);
+			voxelData.emissive = (/*isEmissive(blockIdMap[matV[0]]) ||*/ s.a > 0.1);
 			writeGeometry(baseIndex, thisPos, voxelData);
 		}
 	}

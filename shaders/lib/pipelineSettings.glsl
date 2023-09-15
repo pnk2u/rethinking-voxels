@@ -1,14 +1,16 @@
 /*
-const int colortex0Format = R11F_G11F_B10F; //main color
+const int colortex0Format = R11F_G11F_B10F;	//main color
 const int colortex1Format = RGB8;			//smoothnessD & materialMask & skyLightFactor
-const int colortex2Format = RGB16;		    //taa
-const int colortex3Format = RGB8;		    //*cloud map on deferred* & translucentMult & bloom & final color
-const int colortex4Format = R8;				//volumetric cloud linear depth & volumetric light factor
-const int colortex5Format = RGBA8_SNORM;    //normalM & scene image for water reflections
+const int colortex2Format = RGBA16;			//taa, inverted depth
+const int colortex3Format = RGB8;			//*cloud map on deferred* & translucentMult & bloom & final color
+const int colortex4Format = RGBA8;			//volumetric cloud linear depth & volumetric light factor & normalM in composite
+const int colortex5Format = RGBA8_SNORM;	//normalM & scene image for water reflections
 #ifdef TEMPORAL_FILTER
-const int colortex6Format = R16;		    //previous depth
+const int colortex6Format = R16;			//previous depth
 const int colortex7Format = RGBA16F;		//*cloud map on gbuffers* & temporal filter
 #endif
+const int colortex8Format = RGBA16F;		//reprojected normal and depth data in prepare
+const int colortex9Format = RGBA32UI;		//scaled depth for atomics in reprojection validation
 */
 
 const bool colortex0Clear = true;

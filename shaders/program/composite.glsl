@@ -24,6 +24,7 @@ uniform vec3 cameraPosition;
 uniform mat4 gbufferProjectionInverse;
 
 uniform sampler2D colortex0;
+uniform sampler2D colortex4;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 
@@ -127,6 +128,7 @@ float sunFactor = SdotU < 0.0 ? clamp(SdotU + 0.375, 0.0, 0.75) / 0.75 : clamp(S
 //Program//
 void main() {
 	vec3 color = texelFetch(colortex0, texelCoord, 0).rgb;
+	vec3 passThroughData = texelFetch(colortex4, texelCoord, 0).gba;
 	float z0 = texelFetch(depthtex0, texelCoord, 0).r;
 	float z1 = texelFetch(depthtex1, texelCoord, 0).r;
 
@@ -222,7 +224,7 @@ void main() {
 	
 	#if LIGHTSHAFT_QUALITY > 0 && defined OVERWORLD && defined REALTIME_SHADOWS || defined END // Can't use LIGHTSHAFTS_ACTIVE on Optifine
 		/* DRAWBUFFERS:04 */
-		gl_FragData[1] = vec4(vlFactorM, 0.0, 0.0, 1.0);
+		gl_FragData[1] = vec4(vlFactorM, passThroughData);
 	#endif
 }
 

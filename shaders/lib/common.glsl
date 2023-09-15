@@ -28,6 +28,15 @@
 
     #define VOXEL_DETAIL_AMOUNT 4 //[1 2 3 4 5 6]
     #define VX_VOL_SIZE 0 //[0 1 2 3]
+    #if VX_VOL_SIZE == 0
+        const float voxelDistance = 48;
+    #elif VX_VOL_SIZE == 1
+        const float voxelDistance = 64;
+    #elif VX_VOL_SIZE == 2
+        const float voxelDistance = 128;
+    #elif VX_VOL_SIZE == 3
+        const float voxelDistance = 256;
+    #endif
 
     #define REALTIME_SHADOWS
     #define SHADOW_QUALITY 2 //[1 2 3 4 5]

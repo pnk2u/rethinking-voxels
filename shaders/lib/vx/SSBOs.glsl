@@ -19,6 +19,8 @@
 	#endif
 
 	layout(std430, binding=0) WRITE_TO_SSBOS buffer blockidmap {
+		mat4 gbufferPreviousModelViewInverse;
+		mat4 gbufferPreviousProjectionInverse;
 		int blockIdMap[];
 	};
 

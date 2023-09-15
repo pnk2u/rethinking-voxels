@@ -36,6 +36,7 @@ uniform mat4 shadowProjection;
 
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
+uniform sampler2D colortex5;
 uniform sampler2D depthtex0;
 uniform sampler2D noisetex;
 
@@ -49,8 +50,6 @@ uniform sampler2D noisetex;
 
 #ifdef PBR_REFLECTIONS
 	uniform mat4 gbufferModelView;
-	
-	uniform sampler2D colortex5;
 #endif
 
 #if AURORA_STYLE > 0
@@ -228,6 +227,7 @@ float GetLinearDepth(float depth) {
 void main() {
 	vec3 color = texelFetch(colortex0, texelCoord, 0).rgb;
 	float z0   = texelFetch(depthtex0, texelCoord, 0).r;
+	vec3 normal= texelFetch(colortex5, texelCoord, 0).rgb;
 
 	vec4 screenPos = vec4(texCoord, z0, 1.0);
 	vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
@@ -309,7 +309,7 @@ void main() {
 
 		#ifdef PBR_REFLECTIONS
 			float skyLightFactor = texture5.b;
-			vec3 normalM = mat3(gbufferModelView) * texelFetch(colortex5, texelCoord, 0).rgb;
+			vec3 normalM = mat3(gbufferModelView) * normal;
 
 			float fresnel = clamp(1.0 + dot(normalM, nViewPos), 0.0, 1.0);
 
@@ -473,7 +473,7 @@ void main() {
 	/*DRAWBUFFERS:054*/
     gl_FragData[0] = vec4(color, 1.0);
 	gl_FragData[1] = vec4(waterRefColor, 1.0 - skyFade);
-	gl_FragData[2] = vec4(cloudLinearDepth, 0.0, 0.0, 1.0);
+	gl_FragData[2] = vec4(cloudLinearDepth, normal * 0.5 + 0.5);
 	#ifdef TEMPORAL_FILTER
 		/*DRAWBUFFERS:0547*/
 		gl_FragData[3] = refToWrite;

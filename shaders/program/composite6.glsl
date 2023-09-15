@@ -47,9 +47,7 @@ void main() {
     vec3 temp = vec3(0.0);
     float depth;
 
-	#ifdef TEMPORAL_FILTER
-		depth = texelFetch(depthtex1, texelCoord, 0).r;
-	#endif
+    depth = texelFetch(depthtex1, texelCoord, 0).r;
 
     #ifdef TAA
         DoTAA(color, temp, depth);
@@ -57,7 +55,7 @@ void main() {
 
     /*DRAWBUFFERS:32*/
 	gl_FragData[0] = vec4(color, 1.0);
-    gl_FragData[1] = vec4(temp, 1.0);
+    gl_FragData[1] = vec4(temp, 1.0 - depth);
     
 	#ifdef TEMPORAL_FILTER
         /*DRAWBUFFERS:326*/
