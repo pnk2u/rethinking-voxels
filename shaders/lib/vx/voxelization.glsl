@@ -143,7 +143,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 			voxel_t voxelData;
 			voxelData.color = color;
 			voxelData.glColored = hasGlColor;
-			voxelData.emissive = (/*isEmissive(blockIdMap[matV[0]]) ||*/ s.a > 0.1);
+			voxelData.emissive = (isEmissive(blockIdMap[matV[0]]) || s.a > 0.1);
 			writeGeometry(baseIndex, thisPos, voxelData);
 		}
 	}

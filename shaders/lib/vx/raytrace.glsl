@@ -56,23 +56,30 @@ void handleVoxel(inout raytrace_state_t state,
 		k++) {
 		ivec3 coords = ivec3(lodResolution * pos + state.eyeOffsets[localNormal]);
 		voxel_t thisVoxel = readGeometry(baseIndex, coords);
-		if (thisVoxel.glColored) {
-			int glColor0 = readGlColor(globalCoord);
-			vec3 glColor = vec3(glColor0 & 255, glColor0 >> 8 & 255, glColor0 >> 16 & 255) / 255.0;
-			thisVoxel.color.rgb *= glColor;
-		}
-		returnVal.rayColor.rgb *= mix(vec3(1), thisVoxel.color.rgb, thisVoxel.color.a);
-		returnVal.rayColor.a += (1 - returnVal.rayColor.a) * thisVoxel.color.a;
-		if (thisVoxel.color.a > 0.7) {
-			if (thisVoxel.emissive) {
-				returnVal.emissive = true;
+		if (thisVoxel.color.a > 0.1) {
+			if (thisVoxel.glColored) {
+				int glColor0 = readGlColor(globalCoord);
+				vec3 glColor = vec3(glColor0 & 255, glColor0 >> 8 & 255, glColor0 >> 16 & 255) / 255.0;
+				thisVoxel.color.rgb *= glColor;
 			}
-			returnVal.normal = -state.dirSgn[localNormal] * mat3(1)[localNormal];
+			returnVal.transColor = returnVal.rayColor;
+			returnVal.rayColor.rgb *= mix(vec3(1), thisVoxel.color.rgb, thisVoxel.color.a);
+			returnVal.rayColor.a += (1 - returnVal.rayColor.a) * thisVoxel.color.a;
+			if (thisVoxel.color.a > 0.9) {
+				if (thisVoxel.emissive) {
+					returnVal.emissive = true;
+				}
+				returnVal.mat = thisVoxelMat;
+				returnVal.normal = -state.dirSgn[localNormal] * mat3(1)[localNormal];
+			} else {
+				returnVal.transMat = thisVoxelMat;
+				returnVal.transPos = pos + baseBlock;
+			}
+			if (returnVal.rayColor.a > MAX_RAY_ALPHA) {
+				break;
+			}
 		}
 		localProgress[localNormal] += localStepSize[localNormal];
-		if (returnVal.rayColor.a > MAX_RAY_ALPHA) {
-			break;
-		}
 		localNormal = 0;
 		state.w = localProgress[0];
 		for (int i = 1; i < 3; i++) {

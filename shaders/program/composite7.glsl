@@ -34,7 +34,7 @@ uniform mat4 gbufferProjectionInverse;
 #define DECLARE_CAMPOS
 #include "/lib/vx/SSBOs.glsl"
 #include "/lib/vx/raytrace.glsl"
-uniform sampler2D colortex8;
+uniform sampler2D colortex10;
 //Program//
 void main() {
     vec3 color = texelFetch(colortex3, texelCoord, 0).rgb;
@@ -48,7 +48,7 @@ void main() {
 		ray_hit_t rayHit = raytrace(fract(cameraPosition), playerPos.xyz);
 		color = (0.1 + 2 * float(rayHit.emissive)) * rayHit.rayColor.rgb * (dot(rayHit.normal, vec3(0.1, 0.3, 0.2)) + 0.8);
 */
-		color = mix(min(texelFetch(colortex8, texelCoord, 0).rgb, vec3(1)), color, 0.5);
+		color = mix(texelFetch(colortex10, texelCoord, 0).rgb, color, 0.0);
 	}
     /*DRAWBUFFERS:3*/
 	gl_FragData[0] = vec4(color, 1.0);
