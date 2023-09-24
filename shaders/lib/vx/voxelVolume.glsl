@@ -10,15 +10,16 @@ int readBlockVolume(ivec3 coords) {
 	return imageLoad(voxelVolumeI, coords).r;
 }
 
-int readGlColor(ivec3 coords) {
-	return imageLoad(voxelVolumeI, coords + ivec3(0, voxelVolumeSize.y, 0)).r;
-}
 int readBlockVolume(vec3 pos) {
 	return readBlockVolume(vxPosToVxCoords(pos));
 }
 
+int readGlColor(ivec3 coords) {
+	return imageLoad(voxelVolumeI, coords + ivec3(0, voxelVolumeSize.y, 0)).r;
+}
+
 int getBaseIndex(int mat) {
-	return modelMemorySize * mat;
+	return (modelMemorySize + (maxEmissiveVoxels + 2) / 3 + 1) * mat;
 }
 
 voxel_t readGeometry(int index, ivec3 coord) {
@@ -48,6 +49,19 @@ bool getMaterialAvailability(int mat) {
 	return false;
 }
 
+vec3 readEmissiveLoc(int baseIndex, int localIndex) {
+	uint rawData = geometryData[baseIndex + modelMemorySize + localIndex / 3];
+	int offset = 10 * (localIndex%3);
+	if ((rawData & (uint(1)<<(offset + 9))) == 0) {
+		return vec3(-1);
+	}
+	return vec3(int(rawData >> offset) & 7, int(rawData >> (offset + 3)) & 7, int(rawData >> (offset + 6)) & 7) * 0.125 + 0.0625;
+}
+
+int getEmissiveCount(int baseIndex) {
+	return int(geometryData[baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3]) & 0x3f;
+}
+
 #ifndef READONLY
 	bool claimMaterial(int mat, int side, ivec3 coords) {
 		int coordsHash = 1 + coords.x + voxelVolumeSize.x * coords.y + voxelVolumeSize.x * voxelVolumeSize.y * coords.z;
@@ -67,8 +81,32 @@ bool getMaterialAvailability(int mat) {
 			+ (uint(data.color.b * 127.5) << 14)
 			+ (uint(data.color.a * 127.5) << 21)
 			+ (uint(data.emissive)        << 30)
-			+ (uint(data.glColored)      << 31)
+			+ (uint(data.glColored)       << 31)
 		;
 		geometryData[index] = rawData;
+	}
+
+	void setEmissiveCount(int baseIndex, int count) {
+		if (count < 64) {
+			atomicAnd(geometryData[baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3], uint(0xffffffff) ^ uint(0x3f));
+			atomicOr(geometryData[baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3], uint(count));
+		}
+	}
+
+	void setEmissiveDirectionRanges(int baseIndex, int ranges[6]) {
+	}
+
+	void storeEmissive(int baseIndex, int localIndex, ivec3 lightData) {
+		uint clearData = uint(0xffffffff) ^ (uint(0x3ff) << (10*(localIndex % 3)));
+		atomicAnd(geometryData[baseIndex + modelMemorySize + localIndex / 3], clearData);
+		if (lightData != ivec3(-1)) {
+			uint data = lightData.x
+			          + (lightData.y << 3);
+			          + (lightData.z << 6);
+			          + (1<<9)
+			;
+			data <<= 10 * (localIndex%3);
+			atomicOr(geometryData[baseIndex + modelMemorySize + localIndex / 3], data);
+		}
 	}
 #endif

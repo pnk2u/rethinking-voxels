@@ -2,7 +2,6 @@
 
 //////Fragment Shader//////Fragment Shader//////
 #ifdef FSH
-flat in mat4 reprojectionMatrix;
 
 uniform float viewWidth;
 uniform float viewHeight;
@@ -13,6 +12,9 @@ uniform sampler2D colortex4;
 
 layout(rgba16f) uniform image2D colorimg8;
 layout(r32ui) uniform uimage2D colorimg9;
+
+#define MATERIALMAP_ONLY
+#include "/lib/vx/SSBOs.glsl"
 
 void main() {
 	float prevDepth = 1 - texelFetch(colortex2, ivec2(gl_FragCoord.xy), 0).w;
@@ -42,29 +44,7 @@ void main() {
 //////Vertex Shader//////Vertex Shader//////
 #ifdef VSH
 
-uniform mat4 gbufferModelView;
-uniform mat4 gbufferProjection;
-uniform vec3 cameraPosition;
-uniform vec3 previousCameraPosition;
-uniform int frameCounter;
-
-#include "/lib/vx/SSBOs.glsl"
-
-flat out mat4 reprojectionMatrix;
-
 void main() {
-	vec3 dcamPos = previousCameraPosition - cameraPosition;
-	reprojectionMatrix =
-		gbufferProjection *
-		gbufferModelView *
-		// the vec4s are interpreted as column vectors, not row vectors as suggested by this notation
-		mat4(
-			vec4(1, 0, 0, 0),
-			vec4(0, 1, 0, 0),
-			vec4(0, 0, 1, 0),
-			vec4(dcamPos, 1)) * 
-		gbufferPreviousModelViewInverse * 
-		gbufferPreviousProjectionInverse;
 	gl_Position = ftransform();
 }
 #endif

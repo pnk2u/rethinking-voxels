@@ -1,7 +1,7 @@
 #include "/lib/common.glsl"
 //////Fragment Shader//////Fragment Shader//////
 #ifdef FSH
-flat in mat4 reprojectionMatrix;
+flat in mat4 localReprojectionMatrix;
 
 uniform float viewWidth;
 uniform float viewHeight;
@@ -16,7 +16,7 @@ void main() {
 	vec4 prevClipPos = vec4(gl_FragCoord.xy / view, prevDepth, 1) * 2 - 1;
 	vec4 newClipPos = prevClipPos;
 	if (prevDepth > 0.56) {
-		newClipPos = reprojectionMatrix * prevClipPos;
+		newClipPos = localReprojectionMatrix * prevClipPos;
 		newClipPos /= newClipPos.w;
 	}
 	newClipPos = 0.5 * newClipPos + 0.5;
@@ -39,13 +39,14 @@ uniform vec3 cameraPosition;
 uniform vec3 previousCameraPosition;
 uniform int frameCounter;
 
+#define WRITE_TO_SSBOS
 #include "/lib/vx/SSBOs.glsl"
 
-flat out mat4 reprojectionMatrix;
+flat out mat4 localReprojectionMatrix;
 
 void main() {
 	vec3 dcamPos = previousCameraPosition - cameraPosition;
-	reprojectionMatrix =
+	localReprojectionMatrix =
 		gbufferProjection *
 		gbufferModelView *
 		// the vec4s are interpreted as column vectors, not row vectors as suggested by this notation
@@ -57,5 +58,6 @@ void main() {
 		gbufferPreviousModelViewInverse * 
 		gbufferPreviousProjectionInverse;
 	gl_Position = ftransform();
+	reprojectionMatrix = localReprojectionMatrix;
 }
 #endif

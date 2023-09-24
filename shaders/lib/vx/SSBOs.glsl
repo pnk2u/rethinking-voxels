@@ -16,11 +16,19 @@
 			const ivec3 voxelVolumeSize = ivec3(512, 128, 512);
 		#endif
 		const int modelMemorySize = (1<<(VOXEL_DETAIL_AMOUNT-1)) * (1<<(VOXEL_DETAIL_AMOUNT-1)) * (1<<(VOXEL_DETAIL_AMOUNT-1));
+		#if VOXEL_DETAIL_AMOUNT == 1
+			const int maxEmissiveVoxels = 1;
+		#elif VOXEL_DETAIL_AMOUNT == 2
+			const int maxEmissiveVoxels = 8;
+		#else
+			const int maxEmissiveVoxels = 64;
+		#endif
 	#endif
 
 	layout(std430, binding=0) WRITE_TO_SSBOS buffer blockidmap {
 		mat4 gbufferPreviousModelViewInverse;
 		mat4 gbufferPreviousProjectionInverse;
+		mat4 reprojectionMatrix;
 		int blockIdMap[];
 	};
 

@@ -122,6 +122,7 @@ ray_hit_t raytrace(vec3 start, vec3 dir) {
 	state.w = state.rayOffset;
 	handleVoxel(state, returnVal);
 	if (returnVal.rayColor.a > MAX_RAY_ALPHA) {
+		returnVal.pos = state.start + state.w * state.dir;
 		return returnVal;
 	}
 	// closest upcoming intersection
