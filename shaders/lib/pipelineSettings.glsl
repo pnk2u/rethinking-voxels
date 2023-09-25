@@ -11,8 +11,9 @@ const int colortex7Format = RGBA16F;		//*cloud map on gbuffers* & temporal filte
 #endif
 const int colortex8Format = RGBA16F;		//reprojected normal and depth data in prepare
 const int colortex9Format = RGBA32UI;		//scaled depth for atomics in reprojection validation
-const int colortex10Format= RGBA16F;		//block lighting
-const int colortex11Format= RGBA16I;        //valid light sample storage
+const int colortex10Format= RGBA16F;		//raw block lighting in bottom left quarter
+const int colortex11Format= RGBA16I;		//valid light sample storage in bottom left quarter
+const int colortex12Format= RGBA16F;		//accumulated block lighting
 */
 
 const bool colortex0Clear = true;
@@ -29,6 +30,7 @@ const bool colortex8Clear = false;
 const bool colortex9Clear = false;
 const bool colortex10Clear = true;
 const bool colortex11Clear = false;
+const bool colortex12Clear = false;
 
 const int noiseTextureResolution = 128;
 
