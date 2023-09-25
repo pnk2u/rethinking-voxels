@@ -141,6 +141,7 @@ void main() {
 	}
 	barrier();
 	memoryBarrierShared();
+	writeColors[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = vec4(0);
 	if (lightCount > 0 && validData) {
 		uint thisLightIndex = nextUint() % lightCount;
 		int mat = readBlockVolume(positions[thisLightIndex].xyz + 0.5);
@@ -171,9 +172,17 @@ void main() {
 		memoryBarrierBuffer();
 		int shareAmount = 1;
 		float compareLen = length(writeColor);
+		vec4[4] aroundNormalDepthData;
 		for (int k = 0; k < 4; k++) {
 			ivec2 offsetLocalCoord = ivec2(gl_LocalInvocationID.xy) + (2*(k/2%2)-1) * ivec2(k%2, (k-1)%2);
-			if (offsetLocalCoord.x > 0 && offsetLocalCoord.x < gl_WorkGroupSize.x && offsetLocalCoord.y > 0 && offsetLocalCoord.y < gl_WorkGroupSize.y && length(writeColors[offsetLocalCoord.x][offsetLocalCoord.y].xyz) < 0.1 * compareLen) {
+			aroundNormalDepthData[k] = texelFetch(colortex8, readTexelCoord + 2 * offsetLocalCoord, 0);
+			if (offsetLocalCoord.x > 0 &&
+				offsetLocalCoord.x < gl_WorkGroupSize.x &&
+				offsetLocalCoord.y > 0 &&
+				offsetLocalCoord.y < gl_WorkGroupSize.y &&
+				length(aroundNormalDepthData[k] - normalDepthData) < 0.1 &&
+				length(writeColors[offsetLocalCoord.x][offsetLocalCoord.y].xyz) <= 0.1 * compareLen
+			) {
 				shareAmount++;
 			}
 		}
@@ -183,7 +192,13 @@ void main() {
 		writeColor /= shareAmount;
 		for (int k = 0; k < 4; k++) {
 			ivec2 offsetLocalCoord = ivec2(gl_LocalInvocationID.xy) + (2*(k/2%2)-1) * ivec2(k%2, (k-1)%2);
-			if (offsetLocalCoord.x > 0 && offsetLocalCoord.x < gl_WorkGroupSize.x && offsetLocalCoord.y > 0 && offsetLocalCoord.y < gl_WorkGroupSize.y && length(writeColors[offsetLocalCoord.x][offsetLocalCoord.y].xyz) > 10 * compareLen) {
+			if (offsetLocalCoord.x > 0 &&
+				offsetLocalCoord.x < gl_WorkGroupSize.x &&
+				offsetLocalCoord.y > 0 &&
+				offsetLocalCoord.y < gl_WorkGroupSize.y &&
+				length(aroundNormalDepthData[k] - normalDepthData) < 0.1 &&
+				length(writeColors[offsetLocalCoord.x][offsetLocalCoord.y].xyz) > 10 * compareLen
+			) {
 				vec4 thisColor = writeColors[offsetLocalCoord.x][offsetLocalCoord.y];
 				writeColor += thisColor.xyz * thisColor.w;
 			}
