@@ -59,7 +59,17 @@ vec3 readEmissiveLoc(int baseIndex, int localIndex) {
 }
 
 int getEmissiveCount(int baseIndex) {
-	return int(geometryData[baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3]) & 0x3f;
+	return int(geometryData[baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3] & uint(0x3f));
+}
+
+int[6] getEmissiveDirectionRanges(int baseIndex) {
+	uint data = geometryData[baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3];
+	int[6] ranges;
+	ranges[0] = 0;
+	for (int i = 0; i < 5; i++) {
+		ranges[i+1] = ranges[i] + int((data >> 6 + 5 * i) & uint(0x1f));
+	}
+	return ranges;
 }
 
 #ifndef READONLY
@@ -88,25 +98,43 @@ int getEmissiveCount(int baseIndex) {
 
 	void setEmissiveCount(int baseIndex, int count) {
 		if (count < 64) {
-			atomicAnd(geometryData[baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3], uint(0xffffffff) ^ uint(0x3f));
-			atomicOr(geometryData[baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3], uint(count));
+			int writeIndex = baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3;
+			atomicAnd(geometryData[writeIndex], uint(0xffffffff) ^ uint(0x3f));
+			atomicOr(geometryData[writeIndex], uint(count));
 		}
 	}
 
-	void setEmissiveDirectionRanges(int baseIndex, int ranges[6]) {
+	void setEmissiveDirectionRanges(int baseIndex, int ranges[5]) {
+		int writeIndex = baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3;
+		if (ranges[0] > 31) {
+			ranges[1] += ranges[0] - 31;
+			ranges[0] = 31;
+		}
+		uint data = uint(ranges[0]);
+		for (int k = 1; k < 5; k++) {
+			int rangeLen = ranges[k] - ranges[k-1];
+			if (rangeLen > 31) {
+				if (k < 4) ranges[k+1] += rangeLen - 31;
+				rangeLen = 31;
+			}
+			data |= uint(rangeLen) << (k * 5);
+		}
+		atomicAnd(geometryData[writeIndex], uint(0x3f));
+		atomicOr(geometryData[writeIndex], data << 6);
 	}
 
 	void storeEmissive(int baseIndex, int localIndex, ivec3 lightData) {
 		uint clearData = uint(0xffffffff) ^ (uint(0x3ff) << (10*(localIndex % 3)));
-		atomicAnd(geometryData[baseIndex + modelMemorySize + localIndex / 3], clearData);
+		int writeIndex = baseIndex + modelMemorySize + localIndex / 3;
+		atomicAnd(geometryData[writeIndex], clearData);
 		if (lightData != ivec3(-1)) {
-			uint data = lightData.x
-			          + (lightData.y << 3);
-			          + (lightData.z << 6);
-			          + (1<<9)
+			uint data = uint(lightData.x)
+			          + uint(lightData.y << 3)
+			          + uint(lightData.z << 6)
+			          + uint(1<<9)
 			;
 			data <<= 10 * (localIndex%3);
-			atomicOr(geometryData[baseIndex + modelMemorySize + localIndex / 3], data);
+			atomicOr(geometryData[writeIndex], data);
 		}
 	}
 #endif

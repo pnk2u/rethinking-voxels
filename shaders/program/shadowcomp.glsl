@@ -23,6 +23,7 @@ void main() {
 	int mat = int(gl_WorkGroupID.x);
 	if (getMaterialAvailability(mat)) {
 		int responsibleSize = (1<<(VOXEL_DETAIL_AMOUNT-1)) / int(gl_WorkGroupSize.x);
+		if (responsibleSize == 0) responsibleSize = 1;
 		ivec3 baseCoord = ivec3(gl_LocalInvocationID) * responsibleSize;
 		int baseIndex = getBaseIndex(mat);
 		vec3 emissiveColor = vec3(0);
@@ -49,7 +50,7 @@ void main() {
 			}
 		#else
 			if (thisEmissiveCount > 0) {
-				vec3 blockRelCoord = (baseCoord + subCoord / thisEmissiveCount) * 8.0 / (1<<(VOXEL_DETAIL_AMOUNT-1));
+				vec3 blockRelCoord = (baseCoord + subCoord / thisEmissiveCount) * (8.0 / (1<<(VOXEL_DETAIL_AMOUNT-1)));
 				int sortVal = 0;
 				float maxRelDist = 0;
 				for (int k = 0; k < 3; k++) {
@@ -76,9 +77,9 @@ void main() {
 				}
 				int offset = atomicAdd(sortMap[sortedIndex], 1);
 				emissiveParts[sortedIndex + offset] = currentVal;
-				if (gl_LocalInvocationID + 1 == gl_WorkGroupSize) {
-					setEmissiveCount(baseIndex, emissiveCount);
-				}
+			}
+			if (index == 0) {
+				setEmissiveCount(baseIndex, emissiveCount);
 			}
 			barrier();
 			memoryBarrierShared();

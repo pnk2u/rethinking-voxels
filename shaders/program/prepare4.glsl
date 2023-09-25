@@ -2,7 +2,7 @@
 
 #ifdef CSH
 
-layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+layout(local_size_x = 32, local_size_y = 16, local_size_z = 1) in;
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 uniform int frameCounter;
@@ -17,7 +17,7 @@ uniform mat4 gbufferPreviousProjection;
 uniform mat4 gbufferPreviousModelView;
 uniform sampler2D colortex8;
 layout(rgba16f) uniform image2D colorimg10;
-layout(rgba16f) uniform image2D colorimg11;
+layout(rgba16i) uniform iimage2D colorimg11;
 
 #include "/lib/vx/SSBOs.glsl"
 #include "/lib/vx/raytrace.glsl"
@@ -53,19 +53,22 @@ vec3 randomSphereSample() {
 		1 - 2 * len2);
 }
 
-#define LIGHT_DISTANCE_FACTOR 0.1
+float infnorm(vec3 x) {
+	return max(max(abs(x.x), abs(x.y)), abs(x.z));
+}
+
 #define MAX_LIGHT_COUNT 16
 
 shared int lightCount = 0;
 shared ivec2 prevTexelCoord;
-shared vec4[MAX_LIGHT_COUNT] positions;
+shared ivec4[MAX_LIGHT_COUNT] positions;
 shared int[MAX_LIGHT_COUNT] mergeOffsets;
 shared uvec2 updatedPositions = uvec2(0);
 
 void main() {
 	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	vec4 normalDepthData = texelFetch(colortex8, texelCoord, 0);
-	vec3 vxPosFrameOffset = vec3(ivec3((floor(previousCameraPosition) - floor(cameraPosition)) * 1.1));
+	ivec3 vxPosFrameOffset = ivec3((floor(previousCameraPosition) - floor(cameraPosition)) * 1.1);
 	if (normalDepthData.a < 1.5 && length(normalDepthData.rgb) > 0.1) {
 		// valid data and not sky
 		vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((texelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
@@ -82,7 +85,7 @@ void main() {
 		if (rayHit0.emissive) {
 			int lightIndex = atomicAdd(lightCount, 1);
 			if (lightIndex < MAX_LIGHT_COUNT) {
-				positions[lightIndex] = vec4(rayHit0.pos - 0.05 * rayHit0.normal, GetLuminance(rayHit0.rayColor.xyz) * 2.0 / (0.1 + length(rayHit0.pos - vxPos)));
+				positions[lightIndex] = ivec4(rayHit0.pos - 0.05 * rayHit0.normal + 1000, 1) - ivec4(1000, 1000, 1000, 0);
 				mergeOffsets[lightIndex] = 0;
 			} else {
 				atomicMin(lightCount, MAX_LIGHT_COUNT);
@@ -93,10 +96,9 @@ void main() {
 		int mergeOffset = 0;
 		int oldLightCount = min(lightCount, MAX_LIGHT_COUNT);
 		int index = int(gl_LocalInvocationID.x + gl_WorkGroupSize.x * gl_LocalInvocationID.y);
-		vec4 thisPos = positions[index];
-		ivec3 comparePos = ivec3(thisPos.xyz + 1000);
+		ivec4 thisPos = positions[index];
 		int k = index + 1;
-		while (k < oldLightCount && ivec3(positions[k].xyz + 1000) != comparePos) k++;
+		while (k < oldLightCount && positions[k].xyz != thisPos.xyz) k++;
 		if (k < oldLightCount) {
 			atomicAdd(mergeOffsets[k], -1000);
 			mergeOffset = 1;
@@ -114,11 +116,54 @@ void main() {
 		}
 		barrier();
 		memoryBarrierShared();
+		oldLightCount = lightCount;
+		barrier();
+		memoryBarrierShared();
+		ivec4 thisLight = ivec4(imageLoad(colorimg11, texelCoord).xyz, 0);
+		bool known = (thisLight.xyz == ivec3(0));// || nextUint() % 100 == 0);
+		thisLight.xyz += vxPosFrameOffset;
+		for (int k = 0; k < oldLightCount && !known; k++) {
+			if (thisLight.xyz == positions[k].xyz) {
+				known = true;
+			}
+		}
+		if (!known) {
+			int thisLightIndex = atomicAdd(lightCount, 1);
+			if (thisLightIndex < MAX_LIGHT_COUNT) {
+				positions[thisLightIndex] = thisLight;
+			} else {
+				atomicMin(lightCount, MAX_LIGHT_COUNT);
+			}
+		}
+		barrier();
+		memoryBarrierShared();
 		if (lightCount > 0) {
 			uint thisLightIndex = nextUint() % lightCount;
-			ray_hit_t rayHit1 = raytrace(vxPos, 1.1 * (positions[thisLightIndex].xyz - vxPos));
-			imageStore(colorimg10, texelCoord, rayHit1.rayColor * float(rayHit1.emissive));
+			int mat = readBlockVolume(positions[thisLightIndex].xyz + 0.5);
+			int baseIndex = getBaseIndex(mat);
+			int emissiveVoxelCount = getEmissiveCount(baseIndex);
+			vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
+			if (emissiveVoxelCount > 0) {
+				//int[6] emissionRanges = getEmissiveDirectionRanges(baseIndex);
+				int subEmissiveIndex = int(nextUint() % emissiveVoxelCount);
+				vec3 localPos = readEmissiveLoc(baseIndex, subEmissiveIndex);
+				if (any(lessThan(localPos, vec3(-0.5)))) {
+					imageStore(colorimg10, texelCoord, vec4(1, 0, 0, 1));
+					return;
+				}
+				lightPos = floor(lightPos) + localPos;
+			}
+			vec3 dir = lightPos - vxPos;
+			float ndotl = max(0, dot(normalize(dir), normalDepthData.xyz));
+			ray_hit_t rayHit1 = raytrace(vxPos, 1.1 * dir);
+			vec3 storeColor = lightCount * rayHit1.rayColor.rgb * float(rayHit1.emissive) * ndotl * (1.0 / (length(dir) + 0.1));
+			if (length(storeColor) > 0.05 && infnorm(rayHit1.pos + 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
+				positions[thisLightIndex].w = 1;
+			}
+			imageStore(colorimg10, texelCoord, vec4(storeColor, 1.0));
 		}
+		ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
+		imageStore(colorimg11, texelCoord, lightPosToStore);
 	}
 }
 #endif
