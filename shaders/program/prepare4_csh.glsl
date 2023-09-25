@@ -3,7 +3,7 @@
 #ifdef CSH
 
 layout(local_size_x = 32, local_size_y = 16, local_size_z = 1) in;
-const vec2 workGroupsRender = vec2(1.0, 1.0);
+const vec2 workGroupsRender = vec2(0.5, 0.5);
 
 uniform int frameCounter;
 uniform float viewWidth;
@@ -66,12 +66,13 @@ shared int[MAX_LIGHT_COUNT] mergeOffsets;
 shared uvec2 updatedPositions = uvec2(0);
 
 void main() {
-	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-	vec4 normalDepthData = texelFetch(colortex8, texelCoord, 0);
+	ivec2 readTexelCoord = ivec2(gl_GlobalInvocationID.xy) * 2 + ivec2(frameCounter % 2, frameCounter / 2 % 2);
+	ivec2 writeTexelCoord = ivec2(gl_GlobalInvocationID.xy);
+	vec4 normalDepthData = texelFetch(colortex8, readTexelCoord, 0);
 	ivec3 vxPosFrameOffset = ivec3((floor(previousCameraPosition) - floor(cameraPosition)) * 1.1);
 	if (normalDepthData.a < 1.5 && length(normalDepthData.rgb) > 0.1) {
 		// valid data and not sky
-		vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((texelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
+		vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
 		playerPos /= playerPos.w;
 		if (gl_LocalInvocationID == gl_WorkGroupSize/2) {
 			vec4 prevClipPos = gbufferPreviousProjection * (gbufferPreviousModelView * playerPos);
@@ -119,7 +120,7 @@ void main() {
 		oldLightCount = lightCount;
 		barrier();
 		memoryBarrierShared();
-		ivec4 thisLight = ivec4(imageLoad(colorimg11, texelCoord).xyz, 0);
+		ivec4 thisLight = ivec4(imageLoad(colorimg11, writeTexelCoord).xyz, 0);
 		bool known = (thisLight.xyz == ivec3(0));// || nextUint() % 100 == 0);
 		thisLight.xyz += vxPosFrameOffset;
 		for (int k = 0; k < oldLightCount && !known; k++) {
@@ -148,7 +149,7 @@ void main() {
 				int subEmissiveIndex = int(nextUint() % emissiveVoxelCount);
 				vec3 localPos = readEmissiveLoc(baseIndex, subEmissiveIndex);
 				if (any(lessThan(localPos, vec3(-0.5)))) {
-					imageStore(colorimg10, texelCoord, vec4(1, 0, 0, 1));
+					imageStore(colorimg10, writeTexelCoord, vec4(1, 0, 0, 1));
 					return;
 				}
 				lightPos = floor(lightPos) + localPos;
@@ -160,10 +161,10 @@ void main() {
 			if (length(storeColor) > 0.05 && infnorm(rayHit1.pos + 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
 				positions[thisLightIndex].w = 1;
 			}
-			imageStore(colorimg10, texelCoord, vec4(storeColor, 1.0));
+			imageStore(colorimg10, writeTexelCoord, vec4(storeColor, 1.0));
 		}
 		ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
-		imageStore(colorimg11, texelCoord, lightPosToStore);
+		imageStore(colorimg11, writeTexelCoord, lightPosToStore);
 	}
 }
 #endif

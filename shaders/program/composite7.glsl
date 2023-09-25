@@ -42,13 +42,8 @@ void main() {
 	#ifdef FXAA
 		FXAA311(color);
 	#endif
-	if (texCoord.x < 1.0) {
-/*		vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
-		playerPos.xyz = 40 * normalize(playerPos.xyz);
-		ray_hit_t rayHit = raytrace(fract(cameraPosition), playerPos.xyz);
-		color = (0.1 + 2 * float(rayHit.emissive)) * rayHit.rayColor.rgb * (dot(rayHit.normal, vec3(0.1, 0.3, 0.2)) + 0.8);
-*/
-		color = mix(texelFetch(colortex10, texelCoord, 0).rgb, color, 0.5);
+	if (max(texCoord.x, texCoord.y) < 0.5) {
+		color = texelFetch(colortex10, texelCoord, 0).rgb;
 	}
     /*DRAWBUFFERS:3*/
 	gl_FragData[0] = vec4(color, 1.0);
