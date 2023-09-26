@@ -121,16 +121,16 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 							[(mostPerpendicularAxis + j + 1) % 3];
 		}
 	}
-
+	float offTriMargin = 1.0 / dot(vec2(1), projectionBoundCoords[1] - projectionBoundCoords[0] + 0.5);
 	int baseIndex = getBaseIndex(matV[0]);
 	for (int x = projectionBoundCoords[0].x;
 			x <= projectionBoundCoords[1].x; x++) {
 		for (int y = projectionBoundCoords[0].y;
 				y <= projectionBoundCoords[1].y; y++) {
 			vec3 thisProjectedPos = vec3(x + 0.5, y + 0.5, 1) / vec2(1 << (VOXEL_DETAIL_AMOUNT-1), 1).xxy;
-			vec3 localPos = projectedToLocal * thisProjectedPos;
-			if (localPos.x < -0.001 || localPos.y < -0.001 ||
-				localPos.x + localPos.y > 1.001) {
+			vec3 localPos = clamp(projectedToLocal * thisProjectedPos, 0, 1);
+			if (localPos.x < -offTriMargin || localPos.y < -offTriMargin ||
+				localPos.x + localPos.y > 1.0 + offTriMargin) {
 				continue;
 			}
 			vec2 thisTexCoord = (textureMatrix * localPos).xy;
