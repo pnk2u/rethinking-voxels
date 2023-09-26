@@ -56,7 +56,8 @@ void main() {
 			}
 		}
 		variance = clamp(sqrt(variance) * 4 / (brightness + 0.05) - 0.2, 0, 1);
-		int blurSize = 20 - int(17 * variance);
+		int blurSize = int((22 - 20 * variance) * (1.4 - thisLightData.a));
+		if (blurSize < 1) blurSize = 1;
 	#else
 		int blurSize = int(thisLightData.w + 0.5);
 	#endif
