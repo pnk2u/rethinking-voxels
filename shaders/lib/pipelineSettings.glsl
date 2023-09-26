@@ -32,7 +32,7 @@ const bool colortex9Clear = false;
 const bool colortex10Clear = true;
 const bool colortex11Clear = false;
 const bool colortex12Clear = false;
-const bool colortex13Clear = true;
+const bool colortex13Clear = false;
 
 const int noiseTextureResolution = 128;
 

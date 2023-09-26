@@ -1,6 +1,6 @@
 #!/bin/bash
 cd $(echo "$0" | sed 's/[^/]*$//')
-#./blockmapping.sh old_block.properties blockstatelist.txt
+./blockmapping.sh old_block.properties blockstatelist.txt
 linecount=$(cat id_map.txt | tail -n 1 | sed 's/\(.*\):.*$/(\1 + 511)\/512/' | bc)
 printf "P3
 512 ${linecount}

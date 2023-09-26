@@ -19,7 +19,8 @@ do
 		fi
 	else
 		wrotesomething="no"
-		localstates=$(cat $F | sed 's/^ *//' | grep -e '"[a-z_0-9]*": "[a-z_0-9]*"' | sed 's/": "/=/' | tr ',' '\n' | tr -d '"')
+		localstates=$(cat $F | sed 's/^ *//' | grep -e '"[a-z_0-9]*": "[a-z_0-9|]*"' | sed 's/": "/=/' | tr ',' '\n' | tr -d '"' | sed 's/^\([^=]*\)=\([^|]*\)|/\1=\2!\1=/g' | tr '!' '\n')
+
 		echo $blockname $localstates
 	    localbasestates=$(echo ${localstates} | tr ' ' '\n' | sed 's/=.*$//' | sort -u)
 		for basestate in ${localbasestates}

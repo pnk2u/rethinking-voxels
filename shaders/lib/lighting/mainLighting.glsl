@@ -24,6 +24,8 @@ uniform float darknessLightFactor;
     #include "/lib/colors/colorMultipliers.glsl"
 #endif
 
+uniform sampler2D colortex13;
+
 //
 vec3 highlightColor = normalize(pow(lightColor, vec3(0.37))) * (0.5 + 1.3 * sunVisibility2) * (1.0 - 0.85 * rainFactor);
 
@@ -404,7 +406,9 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Combine Lighting
-    vec3 blockLighting = lightmapXM * blocklightCol;
+    vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;//lightmapXM * blocklightCol;
+    float blockLightingLen = max(length(blockLighting), 0.0001);
+    blockLighting = 4 * log(blockLightingLen * 4.0 + 1.0) * (blockLighting / blockLightingLen);
     vec3 sceneLighting = shadowLighting * shadowMult + ambientColor * ambientMult;
     float dotSceneLighting = dot(sceneLighting, sceneLighting);
 

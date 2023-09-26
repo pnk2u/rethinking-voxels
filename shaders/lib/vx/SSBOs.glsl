@@ -31,7 +31,10 @@
 		mat4 reprojectionMatrix;
 		int blockIdMap[];
 	};
-
+int getProcessedBlockId(int mat) {
+	mat = blockIdMap[mat];
+	return mat/10000*10000 + mat/4*4%1000;
+}
 	#ifndef MATERIALMAP_ONLY
 		layout(std430, binding=1) WRITE_TO_SSBOS buffer geometrydata {
 			uint geometryData[];

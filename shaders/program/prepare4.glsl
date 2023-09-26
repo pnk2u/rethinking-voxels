@@ -20,13 +20,14 @@ uniform sampler2D colortex2;
 uniform sampler2D colortex8;
 uniform sampler2D colortex10;
 uniform sampler2D colortex12;
-
+uniform sampler2D colortex13;
 float GetLinearDepth(float depth) {
 	return (2.0 * near) / (farPlusNear - depth * (farMinusNear));
 }
 #define FALLOFF_SPEED 0.04
 void main() {
     vec4 normalDepthData = texelFetch(colortex8, ivec2(gl_FragCoord.xy), 0);
+    vec3 newColor = texture(colortex10, lrTexCoord).rgb;
     vec4 playerPos = unProjectionMatrix * vec4(gl_FragCoord.xy / view * 2 - 1, 1 - 2 * normalDepthData.w, 1);
     vec4 prevPlayerPos = vec4(playerPos.xyz / playerPos.w + cameraPosition - previousCameraPosition, 1);
     vec4 prevPos = prevProjectionMatrix * prevPlayerPos;
@@ -34,12 +35,14 @@ void main() {
     normalWeight *= normalWeight;
     prevPos.xyz = 0.5 * prevPos.xyz / prevPos.w + 0.5;
     vec4 prevColor = vec4(0);
-
+    vec4 tex13Data = vec4(0);
     float weight = clamp(0.9 + 0.2 * length(fract(view * lrTexCoord) - 0.5), 0, 1);
     float prevDepth = 1 - texelFetch(colortex2, ivec2(view * prevPos.xy), 0).w;
     if (prevPos.xy == clamp(prevPos.xy, vec2(0), vec2(1))) {
+        tex13Data = texture(colortex13, prevPos.xy);
         prevColor = texture(colortex12, prevPos.xy);
         prevColor.a = clamp(prevColor.a + FALLOFF_SPEED, 0, 0.99 * normalWeight);
+        prevColor.a = clamp(1 - 5 * (1 - GetLinearDepth(1 - normalDepthData.a)) * length(cameraPosition - previousCameraPosition), 0.8 * prevColor.a, prevColor.a);
     } else {
         prevColor.a = 0;
     }
@@ -50,14 +53,19 @@ void main() {
          || length(normalDepthData.rgb) < 0.1) {
         prevColor.a = 0;
     }
-    prevColor.a = clamp(1 - 5 * length(cameraPosition - previousCameraPosition), 0.8 * prevColor.a, prevColor.a);
-    /*RENDERTARGETS:12*/
+    tex13Data.a = min(1, mix(clamp((fract(tex13Data.a) - 0.05) * 1.111, 0, 1), length(newColor), 0.2));
+    if (tex13Data.a <= 0.4 * min(length(prevColor.rgb), 1)) {
+        prevColor.a *= 0.5;
+    }
+    tex13Data.a = 0.9 * tex13Data.a + 0.05;
+    /*RENDERTARGETS:12,13*/
     gl_FragData[0] = vec4(
-        mix(texture(colortex10, lrTexCoord).rgb,
+        mix(newColor,
             prevColor.rgb,
             weight * prevColor.a / (prevColor.a + FALLOFF_SPEED)
             ),
         prevColor.a);
+    gl_FragData[1] = tex13Data;
 }
 #endif
 #ifdef VSH

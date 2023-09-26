@@ -61,11 +61,7 @@ bool isEmissive(int mat) {
 		mat == 10584 || // lit candles
 		mat == 10592 || // respawn anchor
 		mat == 10596 || // redstone wire
-		mat == 10597 ||
-		mat == 10598 ||
-		mat == 10599 ||
-		mat == 12604 || // lit redstone torch
-		mat == 12605 ||
+		mat == 10604 || // lit redstone torch
 		mat == 10632 || // glow berries
 		mat == 10640 || // lit redstone lamp
 		mat == 10648 || // shroomlight

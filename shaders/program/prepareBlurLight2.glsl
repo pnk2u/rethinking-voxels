@@ -14,11 +14,11 @@ float farMinusNear = far - near;
 
 uniform sampler2D colortex8;
 uniform sampler2D colortex10;
+uniform sampler2D colortex13;
 #ifdef FIRST
 	uniform sampler2D colortex12;
 	#define LIGHT_SAMPLER colortex12
 #else
-	uniform sampler2D colortex13;
 	#define LIGHT_SAMPLER colortex13
 #endif
 
@@ -30,7 +30,7 @@ ivec2[2] readBounds = ivec2[2](ivec2(0), ivec2(view));
 
 void main() {
 	ivec2 texelCoord = ivec2(gl_FragCoord.xy);
-
+	vec4 prevTex13Data = texelFetch(colortex13, texelCoord, 0);
 
 	vec4 normalDepthData = texelFetch(colortex8, texelCoord, 0);
 	normalDepthData.w = 50.0 * GetLinearDepth(1 - normalDepthData.w);
@@ -79,7 +79,7 @@ void main() {
 //	#ifdef FIRST
 //	gl_FragData[0] = vec4(vec3(variance), 1);
 //	#else
-	gl_FragData[0] = vec4(totalLight / totalWeight, blurSize);
+	gl_FragData[0] = vec4(totalLight / totalWeight, blurSize + prevTex13Data.a);
 //	#endif
 }
 #endif

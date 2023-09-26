@@ -420,7 +420,7 @@ void main() {
 	signMidCoordPos = sign(texMinMidCoord);
 	absMidCoordPos  = abs(texMinMidCoord);
 
-	mat = blockIdMap[int(mc_Entity.x + 0.5)];
+	mat = getProcessedBlockId(int(mc_Entity.x + 0.5));
 
 	vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
 

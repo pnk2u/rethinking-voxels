@@ -58,6 +58,7 @@ float infnorm(vec3 x) {
 }
 
 #define MAX_LIGHT_COUNT 48
+#define SEARCH_DIST 30.0
 
 shared int lightCount = 0;
 shared ivec2 prevTexelCoord;
@@ -84,7 +85,7 @@ void main() {
 		vxPos = playerToVx(playerPos.xyz) + max(0.1, 0.005 * length(playerPos.xyz)) * normalDepthData.xyz;
 		vec3 dir = randomSphereSample();
 		if (dot(dir, normalDepthData.xyz) < 0) dir *= -1;
-		ray_hit_t rayHit0 = raytrace(vxPos, 20 * dir);
+		ray_hit_t rayHit0 = raytrace(vxPos, SEARCH_DIST * dir);
 		if (rayHit0.emissive) {
 			int lightIndex = atomicAdd(lightCount, 1);
 			if (lightIndex < MAX_LIGHT_COUNT) {
@@ -159,51 +160,57 @@ void main() {
 			lightPos = floor(lightPos) + localPos;
 		}
 		vec3 dir = lightPos - vxPos;
-		float ndotl = max(0, dot(normalize(dir), normalDepthData.xyz));
-		ray_hit_t rayHit1 = raytrace(vxPos, 1.05 * dir);
-		vec3 writeColor = lightCount * rayHit1.rayColor.rgb * float(rayHit1.emissive) * ndotl * (1.0 / (length(dir) + 0.1));
-		if (length(writeColor) > 0.03 && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
-			positions[thisLightIndex].w = 1;
-		} else {
-			writeColor = vec3(0);
-		}
-		writeColors[gl_LocalInvocationID.x][gl_LocalInvocationID.y].xyz = writeColor;
-		barrier();
-		memoryBarrierBuffer();
-		int shareAmount = 1;
-		float compareLen = length(writeColor);
-		vec4[4] aroundNormalDepthData;
-		for (int k = 0; k < 4; k++) {
-			ivec2 offsetLocalCoord = ivec2(gl_LocalInvocationID.xy) + (2*(k/2%2)-1) * ivec2(k%2, (k-1)%2);
-			aroundNormalDepthData[k] = texelFetch(colortex8, readTexelCoord + 2 * offsetLocalCoord, 0);
-			if (offsetLocalCoord.x > 0 &&
-				offsetLocalCoord.x < gl_WorkGroupSize.x &&
-				offsetLocalCoord.y > 0 &&
-				offsetLocalCoord.y < gl_WorkGroupSize.y &&
-				length(aroundNormalDepthData[k] - normalDepthData) < 0.1 &&
-				length(writeColors[offsetLocalCoord.x][offsetLocalCoord.y].xyz) <= 0.1 * compareLen
-			) {
-				shareAmount++;
+		if (length(dir) < SEARCH_DIST) {
+			float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.1;
+			lightBrightness *= lightBrightness;
+			float ndotl = max(0, dot(normalize(dir), normalDepthData.xyz)) * lightBrightness;
+			ray_hit_t rayHit1 = raytrace(vxPos, 1.05 * dir);
+			vec3 writeColor = lightCount * rayHit1.rayColor.rgb * float(rayHit1.emissive) * ndotl * (1.0 / (length(dir) + 0.1));
+			if (length(writeColor) > 0.03 && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
+				positions[thisLightIndex].w = 1;
+			} else {
+				writeColor = vec3(0);
 			}
-		}
-		writeColors[gl_LocalInvocationID.x][gl_LocalInvocationID.y].w = 1.0 / shareAmount;
-		barrier();
-		memoryBarrierBuffer();
-		writeColor /= shareAmount;
-		for (int k = 0; k < 4; k++) {
-			ivec2 offsetLocalCoord = ivec2(gl_LocalInvocationID.xy) + (2*(k/2%2)-1) * ivec2(k%2, (k-1)%2);
-			if (offsetLocalCoord.x > 0 &&
-				offsetLocalCoord.x < gl_WorkGroupSize.x &&
-				offsetLocalCoord.y > 0 &&
-				offsetLocalCoord.y < gl_WorkGroupSize.y &&
-				length(aroundNormalDepthData[k] - normalDepthData) < 0.1 &&
-				length(writeColors[offsetLocalCoord.x][offsetLocalCoord.y].xyz) > 10 * compareLen
-			) {
-				vec4 thisColor = writeColors[offsetLocalCoord.x][offsetLocalCoord.y];
-				writeColor += thisColor.xyz * thisColor.w;
+			writeColors[gl_LocalInvocationID.x][gl_LocalInvocationID.y].xyz = writeColor;
+			barrier();
+			memoryBarrierBuffer();
+			int shareAmount = 1;
+			float compareLen = length(writeColor);
+			vec4[4] aroundNormalDepthData;
+			for (int k = 0; k < 4; k++) {
+				ivec2 offsetLocalCoord = ivec2(gl_LocalInvocationID.xy) + (2*(k/2%2)-1) * ivec2(k%2, (k-1)%2);
+				aroundNormalDepthData[k] = texelFetch(colortex8, readTexelCoord + 2 * offsetLocalCoord, 0);
+				if (offsetLocalCoord.x > 0 &&
+					offsetLocalCoord.x < gl_WorkGroupSize.x &&
+					offsetLocalCoord.y > 0 &&
+					offsetLocalCoord.y < gl_WorkGroupSize.y &&
+					length(aroundNormalDepthData[k] - normalDepthData) < 0.1 &&
+					length(writeColors[offsetLocalCoord.x][offsetLocalCoord.y].xyz) <= 0.1 * compareLen
+				) {
+					shareAmount++;
+				}
 			}
+			writeColors[gl_LocalInvocationID.x][gl_LocalInvocationID.y].w = 1.0 / shareAmount;
+			barrier();
+			memoryBarrierBuffer();
+			writeColor /= shareAmount;
+			for (int k = 0; k < 4; k++) {
+				ivec2 offsetLocalCoord = ivec2(gl_LocalInvocationID.xy) + (2*(k/2%2)-1) * ivec2(k%2, (k-1)%2);
+				if (offsetLocalCoord.x > 0 &&
+					offsetLocalCoord.x < gl_WorkGroupSize.x &&
+					offsetLocalCoord.y > 0 &&
+					offsetLocalCoord.y < gl_WorkGroupSize.y &&
+					length(aroundNormalDepthData[k] - normalDepthData) < 0.1 &&
+					length(writeColors[offsetLocalCoord.x][offsetLocalCoord.y].xyz) > 10 * compareLen
+				) {
+					vec4 thisColor = writeColors[offsetLocalCoord.x][offsetLocalCoord.y];
+					writeColor += thisColor.xyz * thisColor.w;
+				}
+			}
+			imageStore(colorimg10, writeTexelCoord, vec4(writeColor, lightCount));
 		}
-		imageStore(colorimg10, writeTexelCoord, vec4(writeColor, lightCount));
+	} else {
+		imageStore(colorimg10, writeTexelCoord, vec4(0, 0, 0, lightCount));
 	}
 	ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
 	barrier();

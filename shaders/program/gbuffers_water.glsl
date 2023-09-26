@@ -401,7 +401,7 @@ void main() {
 	glColor = gl_Color;
 	int mat0 = int(mc_Entity.x + 0.5);
 
-	mat = blockIdMap[mat0];
+	mat = getProcessedBlockId(mat0);
 	#ifdef WAVING_WATER_VERTEX
 		vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
 

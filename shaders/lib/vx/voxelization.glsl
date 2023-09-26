@@ -43,12 +43,17 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 
 	vec4 meanGlColor = 0.333 * (glColorV[0] + glColorV[1] + glColorV[2]);
 	bool hasGlColor = (length(meanGlColor.rgb - vec3(1)) > 0.1);
+	meanGlColor.rgb = sqrt(meanGlColor.rgb);
 	if (hasGlColor) {
 		int packedGlColor =  int(255.5 * meanGlColor.r)
 		                  + (int(255.5 * meanGlColor.g) << 8)
 		                  + (int(255.5 * meanGlColor.b) << 16);
-		imageStore(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), ivec4(packedGlColor));
+		imageAtomicAnd(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), 0xff000000);
+		imageAtomicOr(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), packedGlColor);
 	}
+	int lightLevel = int(lmCoordV[0].x * 20) + 5;
+	imageAtomicAnd(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), 0x80ffffff);
+	imageAtomicOr(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), lightLevel << 24);
 	vec3 blockRelPos[3];
 	float sizeHeuristic = sqrt(area);
 	int mostPerpendicularAxis = 0;
@@ -141,7 +146,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 			}
 
 			voxel_t voxelData;
-			voxelData.color = color;
+			voxelData.color = vec4(sqrt(color.rgb), color.a);
 			voxelData.glColored = hasGlColor;
 			voxelData.emissive = (isEmissive(blockIdMap[matV[0]]) || s.a > 0.1);
 			writeGeometry(baseIndex, thisPos, voxelData);

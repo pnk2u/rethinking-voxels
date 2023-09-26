@@ -132,6 +132,7 @@ layout(triangle_strip, max_vertices=3) out;
 
 flat in int matV[3];
 in vec2 texCoordV[3];
+in vec2 lmCoordV[3];
 in vec3 midBlock[3];
 flat in vec3 sunVecV[3], upVecV[3];
 in vec4 positionV[3];
@@ -157,7 +158,7 @@ void main() {
 	#include "/lib/vx/voxelization.glsl"
 	for (int i = 0; i < 3; i++) {
 		gl_Position = gl_in[i].gl_Position;
-		mat = blockIdMap[matV[i]];
+		mat = getProcessedBlockId(matV[i]);
 		texCoord = texCoordV[i];
 		sunVec = sunVecV[i];
 		upVec = upVecV[i];
@@ -175,6 +176,7 @@ void main() {
 flat out int matV;
 
 out vec2 texCoordV;
+out vec2 lmCoordV;
 out vec3 midBlock;
 
 flat out vec3 sunVecV, upVecV;
@@ -197,6 +199,7 @@ uniform mat4 gbufferModelViewInverse;
 //Attributes//
 in vec4 mc_Entity;
 in vec3 at_midBlock;
+in ivec2 vaUV2;
 
 #if defined PERPENDICULAR_TWEAKS || defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
 	in vec4 mc_midTexCoord;
@@ -219,6 +222,7 @@ in vec3 at_midBlock;
 //Program//
 void main() {
 	texCoordV = gl_MultiTexCoord0.xy;
+	lmCoordV = 0.0625 * vaUV2;
 	glColorV = gl_Color;
 
 	sunVecV = GetSunVector();

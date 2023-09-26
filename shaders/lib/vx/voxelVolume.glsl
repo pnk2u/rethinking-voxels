@@ -15,7 +15,10 @@ int readBlockVolume(vec3 pos) {
 }
 
 int readGlColor(ivec3 coords) {
-	return imageLoad(voxelVolumeI, coords + ivec3(0, voxelVolumeSize.y, 0)).r;
+	return imageLoad(voxelVolumeI, coords + ivec3(0, voxelVolumeSize.y, 0)).r & 0xffffff;
+}
+int readLightLevel(ivec3 coords) {
+	return (imageLoad(voxelVolumeI, coords + ivec3(0, voxelVolumeSize.y, 0)).r & 0x7f000000) >> 24;
 }
 
 int getBaseIndex(int mat) {

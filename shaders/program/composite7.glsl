@@ -31,10 +31,6 @@ uniform mat4 gbufferProjectionInverse;
 	#include "/lib/antialiasing/fxaa.glsl"
 #endif
 
-#define DECLARE_CAMPOS
-#include "/lib/vx/SSBOs.glsl"
-#include "/lib/vx/raytrace.glsl"
-uniform sampler2D colortex13;
 //Program//
 void main() {
     vec3 color = texelFetch(colortex3, texelCoord, 0).rgb;
@@ -42,7 +38,6 @@ void main() {
 	#ifdef FXAA
 		FXAA311(color);
 	#endif
-	color = texelFetch(colortex13, texelCoord, 0).rgb;
     /*DRAWBUFFERS:3*/
 	gl_FragData[0] = vec4(color, 1.0);
 }

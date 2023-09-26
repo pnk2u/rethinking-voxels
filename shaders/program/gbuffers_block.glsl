@@ -120,7 +120,7 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 
 //Program//
 void main() {
-	int mat = blockIdMap[blockEntityId];
+	int mat = getProcessedBlockId(blockEntityId);
 	vec4 color = texture2D(tex, texCoord);
 	#ifdef GENERATED_NORMALS
 		vec3 colorP = color.rgb;
@@ -246,7 +246,7 @@ out vec4 glColor;
 //Program//
 void main() {
 	#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-		int mat = blockIdMap[blockEntityId];
+		int mat = getProcessedBlockId(blockEntityId);
 	#endif
 	gl_Position = ftransform();
 	#ifdef TAA
