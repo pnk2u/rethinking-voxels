@@ -1,4 +1,4 @@
-if (mat > 1) {
+if (mat < 60028) {
     if (mat < 60012) {
         if (mat < 60004) {
             if (mat == 10548) { // Enchanting Table:Book
@@ -7,8 +7,8 @@ if (mat > 1) {
                 if (color.b < 0.0001 && color.r > color.g) {
                     emission = color.g * 4.0;
                 }
-            } else if (mat == 60000) { // End Portal, End Gateway
-                #include "/lib/materials/specificMaterials/others/endPortalEffect.glsl"
+            } else if (mat == 60000) { //
+
             }
         } else {
             if (mat == 60004) { // Signs
@@ -63,7 +63,41 @@ if (mat > 1) {
                     emission = 20.0;
                     color.rgb *= vec3(1.0, 0.25, 0.1);
                 }
-            } else /*if (mat == 60024)*/ { //
+            } else /*if (mat == 60024)*/ { // End Portal
+                #include "/lib/materials/specificMaterials/others/endPortalEffect.glsl"
+            }
+        }
+    }
+} else {
+    if (mat < 60044) {
+        if (mat < 60036) {
+            if (mat == 60028) { // End Gateway
+                #include "/lib/materials/specificMaterials/others/endPortalEffect.glsl"
+            } else /*if (mat == 60032)*/ { // Bell
+                if (color.r + color.g > color.b + 0.5) { // Bell:Golden Part
+                    #include "/lib/materials/specificMaterials/terrain/goldBlock.glsl"
+                } else {
+                    #include "/lib/materials/specificMaterials/terrain/stone.glsl"
+                }
+            }
+        } else {
+            if (mat == 60036) { // 
+
+            } else /*if (mat == 60040)*/ { // 
+            
+            }
+        }
+    } else {
+        if (mat < 60052) {
+            if (mat == 60044) { //
+                
+            } else /*if (mat == 60048)*/ { //
+            
+            }
+        } else {
+            if (mat == 60052) { // 
+
+            } else if (mat == 60056) { // 
             
             }
         }

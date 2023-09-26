@@ -118,6 +118,10 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 #define MATERIALMAP_ONLY
 #include "/lib/vx/SSBOs.glsl"
 
+#ifdef COLOR_CODED_PROGRAMS
+	#include "/lib/misc/colorCodedPrograms.glsl"
+#endif
+
 //Program//
 void main() {
 	int mat = getProcessedBlockId(blockEntityId);
@@ -149,7 +153,7 @@ void main() {
 			GetCustomMaterials(color, normalM, lmCoordM, NdotU, shadowMult, smoothnessG, smoothnessD, highlightMult, emission, materialMask, viewPos, lViewPos);
 		#endif
 
-		if (mat == 60000) { // End Portal, End Gateway
+		if (mat == 60024) { // End Portal
 			#include "/lib/materials/specificMaterials/others/endPortalEffect.glsl"
 		} else if (mat == 60004) { // Signs
 			noSmoothLighting = true;
@@ -173,6 +177,10 @@ void main() {
 	           noSmoothLighting, noDirectionalShading, false, false,
 			   0, smoothnessG, highlightMult, emission);
 
+	#ifdef COLOR_CODED_PROGRAMS
+		ColorCodeProgram(color);
+	#endif
+ 
 	/* DRAWBUFFERS:015 */
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
@@ -213,9 +221,11 @@ out vec4 glColor;
 	uniform float viewWidth, viewHeight;
 #endif
 
-#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
+#if defined IPBR || defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
 	uniform int blockEntityId;
+#endif
 
+#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
 	uniform vec3 cameraPosition;
 
 	uniform mat4 gbufferModelViewInverse;
@@ -267,6 +277,12 @@ void main() {
 	sunVec = GetSunVector();
 
 	if (normal != normal) normal = -upVec; // Mod Fix: Fixes Better Nether Fireflies
+
+	#ifdef IPBR
+		if (blockEntityId == 60024) { // End Portal, End Gateway
+			gl_Position.z -= 0.002;
+		}
+	#endif
 
 	#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
 		if (mat == 60008) { // Chest

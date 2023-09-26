@@ -16,9 +16,10 @@ in vec3 normal;
 
 in vec4 glColor;
 
-#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
+#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined IPBR && defined IS_IRIS
 	in vec2 signMidCoordPos;
 	flat in vec2 absMidCoordPos;
+	flat in vec2 midCoord;
 #endif
 
 #if defined GENERATED_NORMALS || defined CUSTOM_PBR
@@ -38,6 +39,7 @@ uniform int frameCounter;
 uniform float viewWidth;
 uniform float viewHeight;
 uniform float nightVision;
+uniform float frameTimeCounter;
 
 uniform vec3 skyColor;
 uniform vec3 cameraPosition;
@@ -50,7 +52,7 @@ uniform mat4 shadowProjection;
 uniform sampler2D tex;
 uniform sampler2D noisetex;
 
-#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
+#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined IPBR && defined IS_IRIS
 	uniform ivec2 atlasSize;
 #endif
 
@@ -62,6 +64,10 @@ uniform sampler2D noisetex;
 #ifdef POM
 	uniform int heldItemId;
 	uniform int heldItemId2;
+#endif
+
+#ifdef IS_IRIS
+	uniform int currentRenderedItemId;
 #endif
 
 //Pipeline Constants//
@@ -113,6 +119,10 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 	#include "/lib/materials/materialHandling/customMaterials.glsl"
 #endif
 
+#ifdef COLOR_CODED_PROGRAMS
+	#include "/lib/misc/colorCodedPrograms.glsl"
+#endif
+
 //Program//
 void main() {
 	vec4 color = texture2D(tex, texCoord);
@@ -130,13 +140,19 @@ void main() {
 		vec3 playerPos = ViewToPlayer(viewPos);
 
 		if (color.a < 0.75) materialMask = 0.0;
-
-		float smoothnessG = 0.0, highlightMult = 0.0, emission = 0.0, noiseFactor = 0.6;
+		
+		bool noSmoothLighting = true, noGeneratedNormals = false;
+		float smoothnessG = 0.0, highlightMult = 1.0, emission = 0.0, noiseFactor = 0.6;
 		vec2 lmCoordM = lmCoord;
 		vec3 shadowMult = vec3(0.4);
 		#ifdef IPBR
+			#ifdef IS_IRIS
+				vec3 maRecolor = vec3(0.0);	
+				#include "/lib/materials/materialHandling/irisMaterials.glsl"
+			#endif
+
 			#ifdef GENERATED_NORMALS
-				GenerateNormals(normalM, colorP);
+				if (!noGeneratedNormals) GenerateNormals(normalM, colorP);
 			#endif
 
 			#ifdef COATED_TEXTURES
@@ -149,10 +165,14 @@ void main() {
 		#endif
 
 		DoLighting(color, shadowMult, playerPos, viewPos, 0.0, normalM, lmCoordM,
-				   true, false, false, false,
+				   noSmoothLighting, false, false, false,
 				   0, smoothnessG, highlightMult, emission);
 
-		#if defined CUSTOM_PBR && defined PBR_REFLECTIONS
+		#if defined IPBR && defined IS_IRIS
+			color.rgb += maRecolor;
+		#endif
+
+		#if (defined CUSTOM_PBR || defined IPBR && defined IS_IRIS) && defined PBR_REFLECTIONS
 			#ifdef OVERWORLD
 				skyLightFactor = pow2(max(lmCoord.y - 0.7, 0.0) * 3.33333);
 			#else
@@ -160,6 +180,10 @@ void main() {
 			#endif
 		#endif
 	}
+
+	#ifdef COLOR_CODED_PROGRAMS
+		ColorCodeProgram(color);
+	#endif
 
 	/* DRAWBUFFERS:015 */
 	gl_FragData[0] = color;
@@ -180,9 +204,10 @@ out vec3 normal;
 
 out vec4 glColor;
 
-#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
+#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined IPBR && defined IS_IRIS
 	out vec2 signMidCoordPos;
 	flat out vec2 absMidCoordPos;
+	flat out vec2 midCoord;
 #endif
 
 #if defined GENERATED_NORMALS || defined CUSTOM_PBR
@@ -201,7 +226,7 @@ out vec4 glColor;
 #endif
 
 //Attributes//
-#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
+#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined IPBR && defined IS_IRIS
 	attribute vec4 mc_midTexCoord;
 #endif
 
@@ -232,8 +257,8 @@ void main() {
 	northVec = normalize(gbufferModelView[2].xyz);
 	sunVec = GetSunVector();
 	
-	#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-		vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
+	#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined IPBR && defined IS_IRIS	
+		midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
 		vec2 texMinMidCoord = texCoord - midCoord;
 		signMidCoordPos = sign(texMinMidCoord);
 		absMidCoordPos  = abs(texMinMidCoord);

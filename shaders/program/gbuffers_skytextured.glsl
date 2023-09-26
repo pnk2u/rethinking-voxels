@@ -27,6 +27,10 @@ uniform mat4 gbufferProjectionInverse;
 
 uniform sampler2D tex;
 
+#ifdef CAVE_FOG
+	uniform vec3 cameraPosition;
+#endif
+
 //Pipeline Constants//
 
 //Common Variables//
@@ -40,6 +44,14 @@ uniform sampler2D tex;
 
 //Includes//
 #include "/lib/colors/lightAndAmbientColors.glsl"
+
+#ifdef CAVE_FOG
+    #include "/lib/atmospherics/fog/caveFactor.glsl"
+#endif
+
+#ifdef COLOR_CODED_PROGRAMS
+	#include "/lib/misc/colorCodedPrograms.glsl"
+#endif
 
 //Program//
 void main() {
@@ -57,27 +69,22 @@ void main() {
 		float VdotU = dot(nViewPos, upVec);
 
 		if (abs(tSize.y - 264.0) < 248.5) { //tSize.y must range from 16 to 512
-			#if SUN_MOON_STYLE == 2
+			#if SUN_MOON_STYLE >= 2
 				discard;
 			#endif
 
 			if (VdotS > 0.0) { // Sun
-				if (color.b > 0.1775) { // 0.065 to 0.290
-					if (color.b > 0.48) { // 0.295 to 0.665
-						color.rgb *= 12.0;
-					} else {
-						color.rgb *= 8.0;
-					}
-
-					color.rgb *= normalize(lightColor);
-					color.rgb *= 0.2 + 0.8 * sunVisibility2;
-				} else discard;
+				color.rgb *= dot(color.rgb, color.rgb) * normalize(lightColor) * 3.2;
+				color.rgb *= 0.25 + (0.75 - 0.25 * rainFactor) * sunVisibility2;
 			} else { // Moon
-				color.rgb *= sqrt2(max0(color.r - 0.115)); // 0.065 to 0.165
-				color.rgb *= 1.5;
+				color.rgb *= smoothstep1(min1(length(color.rgb))) * 1.3;
 			}
 
 			color.rgb *= GetHorizonFactor(VdotU);
+
+			#ifdef CAVE_FOG
+				color.rgb *= 1.0 - 0.75 * GetCaveFactor();
+			#endif
 		} else { // Custom Sky
 			#if MC_VERSION >= 11300
 				color.rgb *= color.rgb * smoothstep1(sqrt1(max0(VdotU)));
@@ -88,7 +95,7 @@ void main() {
 		}
 
 		if (isEyeInWater == 1) color.rgb *= 0.25;
-		color.a *= invRainFactor * invRainFactor;
+		color.a *= 1.0 - 0.8 * rainFactor;
 	#endif
 
 	#ifdef NETHER
@@ -97,6 +104,10 @@ void main() {
 
 	#ifdef END
 		vec4 color = vec4(endSkyColor, 1.0);
+	#endif
+
+	#ifdef COLOR_CODED_PROGRAMS
+		ColorCodeProgram(color);
 	#endif
 
 	/* DRAWBUFFERS:0 */

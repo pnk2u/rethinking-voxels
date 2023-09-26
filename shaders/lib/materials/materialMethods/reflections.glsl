@@ -30,9 +30,6 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
 
     vec3 start = viewPos + normalMR * (lViewPos * 0.025 * (1.0 - fresnel) + 0.05);
     vec3 vector = reflect(nViewPos, normalize(normalMR));
-    #ifdef GBUFFERS_WATER
-        if (dot(normal, vector) < 0.0) vector = reflect(nViewPos, normalize(normal));
-    #endif
     vector *= 0.5;
     vec3 viewPosRT = viewPos + vector;
     vec3 tvector = vector;
@@ -107,9 +104,7 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
         #ifdef OVERWORLD
             vec3 skyReflection = GetSky(RVdotU, RVdotS, dither, true, true);
 
-            /**/
-            vec3 vlColorApprox = pow(lightColor, vec3(0.8)) * 0.6;
-            skyReflection += vlColorApprox * rainFactor2;
+            //skyReflection += pow(lightColor, vec3(0.8)) * 0.6 * rainFactor2; // Add approximate light shaft color
 
             #ifdef ATM_COLOR_MULTS
                 skyReflection *= atmColorMult;

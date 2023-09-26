@@ -32,10 +32,14 @@ uniform mat4 gbufferModelViewInverse;
 	uniform vec3 cameraPosition;
 #endif
 
-#if SUN_MOON_STYLE == 2
+#if SUN_MOON_STYLE >= 2
 	uniform int moonPhase;
 	
 	uniform mat4 gbufferModelView;
+	uniform mat4 shadowModelView;
+	uniform mat4 shadowProjection;
+
+	uniform sampler2D noisetex;
 #endif
 
 //Pipeline Constants//
@@ -59,8 +63,20 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 	#include "/lib/atmospherics/stars.glsl"
 #endif
 
+#ifdef CAVE_FOG
+    #include "/lib/atmospherics/fog/caveFactor.glsl"
+#endif
+
 #ifdef ATM_COLOR_MULTS
     #include "/lib/colors/colorMultipliers.glsl"
+#endif
+
+#ifdef COLOR_CODED_PROGRAMS
+	#include "/lib/misc/colorCodedPrograms.glsl"
+#endif
+
+#if SUN_MOON_STYLE >= 2
+	#include "/lib/util/spaceConversion.glsl"
 #endif
 
 //Program//
@@ -80,23 +96,50 @@ void main() {
 
 		color.rgb = GetSky(VdotU, VdotS, dither, true, false);
 		
-		color.rgb += GetStars(viewPos.xyz, VdotU, VdotS);
+		vec2 starCoord = GetStarCoord(viewPos.xyz, 0.5);
+		color.rgb += GetStars(starCoord, VdotU, VdotS);
 
-		#if SUN_MOON_STYLE == 2
+		#if SUN_MOON_STYLE >= 2
 			float absVdotS = abs(VdotS);
-			if (absVdotS > 0.9965) {
-				float sunMoonMixer = 285.714 * (absVdotS - 0.9965) * invRainFactor;
+			#if SUN_MOON_STYLE == 2
+				float sunSizeFactor1 = 0.9975;
+				float sunSizeFactor2 = 400.0;
+				float moonCrescentOffset = 0.0055;
+				float moonPhaseFactor1 = 2.45;
+				float moonPhaseFactor2 = 750.0;
+			#else
+				float sunSizeFactor1 = 0.9983;
+				float sunSizeFactor2 = 588.235;
+				float moonCrescentOffset = 0.0042;
+				float moonPhaseFactor1 = 2.2;
+				float moonPhaseFactor2 = 1000.0;
+			#endif
+			if (absVdotS > sunSizeFactor1) {
+				float sunMoonMixer = sqrt1(sunSizeFactor2 * (absVdotS - sunSizeFactor1)) * (1.0 - 0.4 * rainFactor2);
+
 				if (VdotS > 0.0) {
 					sunMoonMixer = pow2(sunMoonMixer) * GetHorizonFactor(SdotU);
+
+					#ifdef CAVE_FOG
+						sunMoonMixer *= 1.0 - 0.65 * GetCaveFactor();
+					#endif
+
 					color.rgb = mix(color.rgb, vec3(0.9, 0.5, 0.3) * 10.0, sunMoonMixer);
 				} else {
-					vec3 moonColor = vec3(0.38, 0.4, 0.5);
-					sunMoonMixer = max0(sunMoonMixer - 0.25) * 1.33333 * GetHorizonFactor(-SdotU);
+					float horizonFactor = GetHorizonFactor(-SdotU);
+					sunMoonMixer = max0(sunMoonMixer - 0.25) * 1.33333 * horizonFactor;
+
+					starCoord = GetStarCoord(viewPos.xyz, 1.0) * 0.5 + 0.617;
+					float moonNoise = texture2D(noisetex, starCoord).g
+					                + texture2D(noisetex, starCoord * 2.5).g * 0.7
+					                + texture2D(noisetex, starCoord * 5.0).g * 0.5;
+					moonNoise = max0(moonNoise - 0.75) * 1.7;
+					vec3 moonColor = vec3(0.38, 0.4, 0.5) * (1.2 - (0.2 + 0.2 * sqrt1(nightFactor)) * moonNoise);
 
 					if (moonPhase >= 1) {
 						float moonPhaseOffset = 0.0;
 						if (moonPhase != 4) {
-							moonPhaseOffset = 0.0055;
+							moonPhaseOffset = moonCrescentOffset;
 							moonColor *= 8.5;
 						} else moonColor *= 10.0;
 						if (moonPhase > 4) {
@@ -110,8 +153,12 @@ void main() {
 					
 						float moonPhaseVdosS = dot(nViewPos, normalize(rawSunVec2.xyz));
 
-						sunMoonMixer *= pow2(1.0 - min1(pow(abs(moonPhaseVdosS), 750.0) * 3.0));
+						sunMoonMixer *= pow2(1.0 - min1(pow(abs(moonPhaseVdosS), moonPhaseFactor2) * moonPhaseFactor1));
 					} else moonColor *= 4.0;
+
+					#ifdef CAVE_FOG
+						sunMoonMixer *= 1.0 - 0.5 * GetCaveFactor();
+					#endif
 
 					color.rgb = mix(color.rgb, moonColor, sunMoonMixer);
 				}
@@ -125,6 +172,10 @@ void main() {
     #endif
 
 	if (max(blindness, darknessFactor) > 0.1) color.rgb = vec3(0.0);
+
+	#ifdef COLOR_CODED_PROGRAMS
+		ColorCodeProgram(color);
+	#endif
 
 	/* DRAWBUFFERS:0 */
 	gl_FragData[0] = color;

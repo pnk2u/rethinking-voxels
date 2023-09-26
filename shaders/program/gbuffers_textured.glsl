@@ -32,6 +32,7 @@ uniform float far;
 uniform float viewWidth;
 uniform float viewHeight;
 uniform float nightVision;
+uniform float frameTimeCounter;
 uniform float blindness;
 uniform float darknessFactor;
 
@@ -48,7 +49,7 @@ uniform mat4 shadowProjection;
 uniform sampler2D tex;
 uniform sampler2D noisetex;
 
-#ifdef CLOUDS_REIMAGINED
+#ifdef VL_CLOUDS_ACTIVE
 	uniform sampler2D gaux1;
 #endif
 
@@ -86,6 +87,10 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
     #include "/lib/colors/colorMultipliers.glsl"
 #endif
 
+#ifdef COLOR_CODED_PROGRAMS
+	#include "/lib/misc/colorCodedPrograms.glsl"
+#endif
+
 //Program//
 void main() {
 	vec4 color = texture2D(tex, texCoord);
@@ -106,7 +111,11 @@ void main() {
 		atmColorMult = GetAtmColorMult();
 	#endif
 
-	#ifdef CLOUDS_REIMAGINED
+	#ifdef REDUCE_CLOSE_PARTICLES
+		if (lViewPos - dither - 1.0 < 0.0) discard;
+	#endif
+
+	#ifdef VL_CLOUDS_ACTIVE
 		float cloudLinearDepth = texelFetch(gaux1, texelCoord, 0).r;
 
 		if (cloudLinearDepth > 0.0) // Because Iris changes the pipeline position of opaque particles
@@ -120,6 +129,16 @@ void main() {
 	if (atlasSize.x < 900.0) { // We don't want to detect particles from the block atlas
 		if (color.b > 1.15 * (color.r + color.g) && color.g > color.r * 1.25 && color.g < 0.425 && color.b > 0.75) { // Water Particle
 			color.rgb = sqrt3(color.rgb) * 0.45;
+		#ifdef OVERWORLD
+		} else if (color.b > 0.7 && color.r < 0.28 && color.g < 0.425 && color.g > color.r * 1.4){ // physics mod rain
+			if (color.a < 0.1 || isEyeInWater == 3) discard;
+			color.a *= rainTexOpacity;
+			color.rgb = sqrt2(color.rgb) * (blocklightCol * 2.0 * lmCoord.x + ambientColor * lmCoord.y * (0.7 + 0.35 * sunFactor));
+		} else if (color.rgb == vec3(1.0) && color.a < 0.765 && color.a > 0.605) { // physics mod snow (default snow opacity only)
+			if (color.a < 0.1 || isEyeInWater == 3) discard;
+			color.a *= snowTexOpacity;
+			color.rgb = sqrt2(color.rgb) * (blocklightCol * 2.0 * lmCoord.x + lmCoord.y * (0.7 + 0.35 * sunFactor) + ambientColor * 0.2);
+		#endif
 		} else if (color.r == color.g && color.r - 0.5 * color.b < 0.06) { // Underwater Particle
 			if (isEyeInWater == 1) {
 				color.rgb = sqrt2(color.rgb) * 0.35;
@@ -163,8 +182,11 @@ void main() {
 		DoFog(color.rgb, sky, lViewPos, playerPos, VdotU, VdotS, dither);
 	#endif
 
-	// Blending
-	vec3 translucentMult = mix(vec3(1.0), normalize(pow2(color.rgb)) * pow2(color.rgb), sqrt1(color.a)) * (1.0 - pow(color.a, 64.0));
+	vec3 translucentMult = mix(vec3(0.666), color.rgb * (1.0 - pow2(pow2(color.a))), color.a);
+
+	#ifdef COLOR_CODED_PROGRAMS
+		ColorCodeProgram(color);
+	#endif
 	
 	/* DRAWBUFFERS:013 */
 	gl_FragData[0] = color;

@@ -13,14 +13,13 @@ noperspective in vec2 texCoord;
 //Uniforms//
 uniform float viewWidth, viewHeight;
 
-uniform sampler2D colortex3;
-
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjectionInverse;
-//Pipeline Constants//
-#ifndef TAA
-	const bool colortex3MipmapEnabled = true;
+#ifndef LIGHT_COLORING
+    uniform sampler2D colortex3;
+#else
+    uniform sampler2D colortex8;
 #endif
+
+//Pipeline Constants//
 
 //Common Variables//
 
@@ -33,12 +32,21 @@ uniform mat4 gbufferProjectionInverse;
 
 //Program//
 void main() {
-    vec3 color = texelFetch(colortex3, texelCoord, 0).rgb;
+    #ifndef LIGHT_COLORING
+        vec3 color = texelFetch(colortex3, texelCoord, 0).rgb;
+    #else
+        vec3 color = texelFetch(colortex8, texelCoord, 0).rgb;
+    #endif
 
 	#ifdef FXAA
 		FXAA311(color);
 	#endif
-    /*DRAWBUFFERS:3*/
+
+    #ifndef LIGHT_COLORING
+    /* DRAWBUFFERS:3 */
+    #else
+    /* DRAWBUFFERS:8 */
+    #endif
 	gl_FragData[0] = vec4(color, 1.0);
 }
 

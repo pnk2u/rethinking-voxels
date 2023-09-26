@@ -22,6 +22,7 @@ uniform int frameCounter;
 uniform float viewWidth;
 uniform float viewHeight;
 uniform float nightVision;
+uniform float frameTimeCounter;
 
 uniform vec3 skyColor;
 uniform vec3 cameraPosition;
@@ -32,10 +33,6 @@ uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
 uniform sampler2D noisetex;
-
-#if SELECT_OUTLINE == 2
-	uniform float frameTimeCounter;
-#endif
 
 //Pipeline Constants//
 
@@ -66,6 +63,10 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 	#include "/lib/util/jitter.glsl"
 #endif
 
+#ifdef COLOR_CODED_PROGRAMS
+	#include "/lib/misc/colorCodedPrograms.glsl"
+#endif
+
 //Program//
 void main() {
 	vec4 color = glColor;
@@ -79,6 +80,7 @@ void main() {
 	float lViewPos = length(viewPos);
 	vec3 playerPos = ViewToPlayer(viewPos);
 
+	float materialMask = 0.0;
 	vec3 shadowMult = vec3(1.0);
 
 	#ifndef GBUFFERS_LINE
@@ -97,13 +99,20 @@ void main() {
 						0.0, 1.0) * vec3(3.0, 2.0, 3.0) * SELECT_OUTLINE_I;
 		#elif SELECT_OUTLINE == 3 // Select Color
 			color.rgb = vec3(SELECT_OUTLINE_R, SELECT_OUTLINE_G, SELECT_OUTLINE_B) * SELECT_OUTLINE_I;
+		#elif SELECT_OUTLINE == 4 // Versatile
+			color.a = 0.1;
+			materialMask = OSIEBCA * 252.0; // Versatile Selection Outline
 		#endif
 	}
 	#endif
 
+	#ifdef COLOR_CODED_PROGRAMS
+		ColorCodeProgram(color);
+	#endif
+
 	/* DRAWBUFFERS:01 */
 	gl_FragData[0] = color;
-	gl_FragData[1] = vec4(0.0, 0.0, 0.0, 1.0);
+	gl_FragData[1] = vec4(0.0, materialMask, 0.0, 1.0);
 }
 
 #endif

@@ -19,10 +19,9 @@
             fog = 1.0 - exp(-3.0 * fog);
         #endif
         #ifdef NETHER
-            float fog = lPlayerPosXZ / far;
-            fog *= fog;
-            fog *= fog;
-            fog = 1.0 - exp(-8.0 * fog);
+            float farM = min(far, 256.0); // consistency9023HFUE85JG
+            float fog = lPlayerPosXZ / farM;
+            fog = pow(fog, 2.0 - farM / 256.0);
         #endif
 
         if (fog > 0.0) {
@@ -31,7 +30,7 @@
             #ifdef OVERWORLD
                 vec3 fogColorM = GetSky(VdotU, VdotS, dither, true, false);
             #elif defined NETHER
-                vec3 fogColorM = netherSkyColor;
+                vec3 fogColorM = netherColor;
             #else 
                 vec3 fogColorM = endSkyColor;
             #endif
@@ -68,7 +67,7 @@
     // SRATA: Atm. fog starts reducing above this altitude
     // CRFTM: Atm. fog continues reducing for this meters
     #ifdef OVERWORLD
-        float atmFogSRATA = 63.1;
+        #define atmFogSRATA ATM_FOG_ALTITUDE + 0.1
         float atmFogCRFTM = 60.0;
     #else
         float atmFogSRATA = 55.1;
@@ -77,15 +76,22 @@
 
     float GetAtmFogAltitudeFactor(float altitude) {
         float altitudeFactor = pow2(1.0 - clamp(altitude - atmFogSRATA, 0.0, atmFogCRFTM) / atmFogCRFTM);
-        #if LIGHTSHAFT_QUALITY == 0
-            altitudeFactor = mix(altitudeFactor, 1.0, rainFactor * 0.5);
+        #ifndef LIGHTSHAFTS_ACTIVE
+            altitudeFactor = mix(altitudeFactor, 1.0, rainFactor * 0.2);
         #endif
         return altitudeFactor;
     }
 
     void DoAtmosphericFog(inout vec3 color, vec3 playerPos, float lViewPos, float VdotS) {
-        float fog = 1.0 - exp(-pow(lViewPos * (0.001 - 0.0007 * rainFactor), 2.0 - rainFactor2) * lViewPos);
-              fog *= ATM_FOG_MULT - 0.25 * invRainFactor;
+        float renDisFactor = min1(192.0 / far);
+
+        #if ATM_FOG_DISTANCE != 100
+            #define ATM_FOG_DISTANCE_M 100.0 / ATM_FOG_DISTANCE;
+            renDisFactor *= ATM_FOG_DISTANCE_M;
+        #endif
+
+        float fog = 1.0 - exp(-pow(lViewPos * (0.001 - 0.0007 * rainFactor), 2.0 - rainFactor2) * lViewPos * renDisFactor);
+              fog *= ATM_FOG_MULT - 0.1 - 0.15 * invRainFactor;
         
         float altitudeFactorP = GetAtmFogAltitudeFactor(playerPos.y + cameraPosition.y);
         float altitudeFactor = altitudeFactorP;
@@ -108,16 +114,12 @@
 
             #ifdef OVERWORLD
                 float nightFogMult = 2.5 - 0.625 * pow2(pow2(altitudeFactorP));
-                float dayNightFogBlend = pow(1.0 - nightFactor, 4.0 - VdotS - 2.5 * sunVisibility2);
-                vec3 clearFogColor = mix(
+                float dayNightFogBlend = pow(invNightFactor, 4.0 - VdotS - 2.5 * sunVisibility2);
+                vec3 fogColorM = mix(
                     nightUpSkyColor * (nightFogMult - dayNightFogBlend * nightFogMult),
-                    sqrt(dayDownSkyColor) * (0.9 + noonFactor * 0.5),
+                    dayDownSkyColor * (0.9 + 0.2 * noonFactor),
                     dayNightFogBlend
                 );
-
-                vec3 rainFogColor = mix(normalize(nightMiddleSkyColor) * 0.15, dayMiddleSkyColor * 1.1, dayNightFogBlend);
-
-                vec3 fogColorM = mix(clearFogColor, rainFogColor, rainFactor);
             #else
                 vec3 fogColorM = endSkyColor;
             #endif

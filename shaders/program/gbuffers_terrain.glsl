@@ -19,7 +19,7 @@ flat in vec2 midCoord;
 flat in vec3 upVec, sunVec, northVec, eastVec;
 in vec3 normal;
 
-in vec4 glColor;
+in vec4 glColorRaw;
 
 #if RAIN_PUDDLES >= 1 || defined GENERATED_NORMALS || defined CUSTOM_PBR
 	flat in vec3 binormal, tangent;
@@ -58,10 +58,10 @@ uniform sampler2D noisetex;
 #if RAIN_PUDDLES >= 1
 	#if RAIN_PUDDLES < 3
 		uniform float wetness;
-		uniform float isRainy;
+		uniform float inRainy;
 	#else
 		float wetness = 1.0;
-		float isRainy = 1.0;
+		float inRainy = 1.0;
 	#endif
 #endif
 
@@ -80,6 +80,10 @@ uniform sampler2D noisetex;
 	uniform sampler2D specular;
 #endif
 
+#ifdef LIGHT_COLORING
+	layout (rgba8) uniform image2D colorimg3;
+#endif
+
 //Pipeline Constants//
 
 //Common Variables//
@@ -92,6 +96,8 @@ float sunVisibility2 = sunVisibility * sunVisibility;
 float shadowTimeVar1 = abs(sunVisibility - 0.5) * 2.0;
 float shadowTimeVar2 = shadowTimeVar1 * shadowTimeVar1;
 float shadowTime = shadowTimeVar2 * shadowTimeVar2;
+
+vec4 glColor = glColorRaw;
 
 #ifdef OVERWORLD
 	vec3 lightVec = sunVec * ((timeAngle < 0.5325 || timeAngle > 0.9675) ? 1.0 : -1.0);
@@ -133,11 +139,6 @@ void DoOceanBlockTweaks(inout float smoothnessD) {
 	smoothnessD *= max0(lmCoord.y - 0.95) * 20.0;
 }
 
-float GetMaxColorDif(vec3 color) {
-	vec3 dif = abs(vec3(color.r - color.g, color.g - color.b, color.r - color.b));
-	return max(dif.r, max(dif.g, dif.b));
-}
-
 //Includes//
 #include "/lib/util/spaceConversion.glsl"
 #include "/lib/lighting/mainLighting.glsl"
@@ -160,6 +161,10 @@ float GetMaxColorDif(vec3 color) {
 
 #ifdef CUSTOM_PBR
 	#include "/lib/materials/materialHandling/customMaterials.glsl"
+#endif
+
+#ifdef COLOR_CODED_PROGRAMS
+	#include "/lib/misc/colorCodedPrograms.glsl"
 #endif
 
 //Program//
@@ -186,17 +191,8 @@ void main() {
 	vec3 playerPos = ViewToPlayer(viewPos);
 
 	int subsurfaceMode = 0;
-	bool noSmoothLighting = false, noDirectionalShading = false, noVanillaAO = false, centerShadowBias = false;
-	#ifdef SNOWY_WORLD
-		float snowFactor = 1.0;
-	#endif
-	#if RAIN_PUDDLES >= 1
-		float noPuddles = 0.0;
-	#endif
-	#ifdef GENERATED_NORMALS
-		bool noGeneratedNormals = false;
-	#endif
-	float smoothnessG = 0.0, highlightMult = 1.0, emission = 0.0, noiseFactor = 1.0, snowMinNdotU = 0.0;
+	bool noSmoothLighting = false, noDirectionalShading = false, noVanillaAO = false, centerShadowBias = false, noGeneratedNormals = false;
+	float smoothnessG = 0.0, highlightMult = 1.0, emission = 0.0, noiseFactor = 1.0, snowMinNdotU = 0.0, snowFactor = 1.0, noPuddles = 0.0;
 	vec2 lmCoordM = lmCoord;
 	vec3 shadowMult = vec3(1.0);
 	#ifdef IPBR
@@ -268,15 +264,14 @@ void main() {
 	#if RAIN_PUDDLES >= 1
 		float puddleLightFactor = max0(lmCoord.y * 32.0 - 31.0) * clamp((1.0 - 1.15 * lmCoord.x) * 10.0, 0.0, 1.0);
 		float puddleNormalFactor = pow2(max0(NdotUmax0 - 0.5) * 2.0);
-		float puddleMixer = puddleLightFactor * isRainy * puddleNormalFactor;
+		float puddleMixer = puddleLightFactor * inRainy * puddleNormalFactor;
 		if (pow2(pow2(wetness)) * puddleMixer - noPuddles > 0.00001) {
 			vec2 worldPosXZ = playerPos.xz + cameraPosition.xz;
+			vec2 puddleWind = vec2(frameTimeCounter) * 0.03;
 			#if WATER_STYLE == 1
 				vec2 puddlePosNormal = floor(worldPosXZ * 16.0) * 0.0625;
-				vec2 puddleWind = vec2(frameTimeCounter) * 0.015;
 			#else
 				vec2 puddlePosNormal = worldPosXZ;
-				vec2 puddleWind = vec2(frameTimeCounter) * 0.03;
 			#endif
 
 			puddlePosNormal *= 0.1;
@@ -291,18 +286,18 @@ void main() {
 
 			#if RAIN_PUDDLES == 1 || RAIN_PUDDLES == 3
 				vec2 puddlePosForm = puddlePosNormal * 0.05;
-				float pFormNoise  = texture2D(noisetex, puddlePosForm).b   * 3.0;
-						pFormNoise += texture2D(noisetex, puddlePosForm * 0.5).b  * 5.0;
-						pFormNoise += texture2D(noisetex, puddlePosForm * 0.25).b * 8.0;
-						pFormNoise *= sqrt1(wetness) * 0.5625 + 0.4375;
-						pFormNoise  = clamp(pFormNoise - 7.0, 0.0, 1.0);
+				float pFormNoise  = texture2D(noisetex, puddlePosForm).b        * 3.0;
+					  pFormNoise += texture2D(noisetex, puddlePosForm * 0.5).b  * 5.0;
+					  pFormNoise += texture2D(noisetex, puddlePosForm * 0.25).b * 8.0;
+					  pFormNoise *= sqrt1(wetness) * 0.5625 + 0.4375;
+					  pFormNoise  = clamp(pFormNoise - 7.0, 0.0, 1.0);
 			#else
 				float pFormNoise = wetness;
 			#endif
 			puddleMixer *= pFormNoise;
 
 			float puddleSmoothnessG = 0.7 - rainFactor * 0.3;
-			float puddleHighlight = (1.5 - subsurfaceMode * 0.6 * (1.0 - noonFactor));
+			float puddleHighlight = (1.5 - subsurfaceMode * 0.6 * invNoonFactor);
 			smoothnessG = mix(smoothnessG, puddleSmoothnessG, puddleMixer);
 			highlightMult = mix(highlightMult, puddleHighlight, puddleMixer);
 			smoothnessD = mix(smoothnessD, 1.0, sqrt1(puddleMixer));
@@ -330,6 +325,10 @@ void main() {
 		#endif
 	#endif
 
+	#ifdef COLOR_CODED_PROGRAMS
+		ColorCodeProgram(color);
+	#endif
+
 	/* DRAWBUFFERS:015 */
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
@@ -352,7 +351,7 @@ flat out vec2 midCoord;
 flat out vec3 upVec, sunVec, northVec, eastVec;
 out vec3 normal;
 
-out vec4 glColor;
+out vec4 glColorRaw;
 
 #if RAIN_PUDDLES >= 1 || defined GENERATED_NORMALS || defined CUSTOM_PBR
 	flat out vec3 binormal, tangent;
@@ -386,6 +385,7 @@ attribute vec4 mc_midTexCoord;
 #endif
 
 //Common Variables//
+vec4 glColor = vec4(1.0);
 
 //Common Functions//
 
@@ -406,8 +406,9 @@ void main() {
 	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 	lmCoord  = GetLightMapCoordinates();
 
-	glColor = gl_Color;
-	if (glColor.a < 0.1) glColor.a = 1.0;
+	glColorRaw = gl_Color;
+	if (glColorRaw.a < 0.1) glColorRaw.a = 1.0;
+	glColor = glColorRaw;
 
 	normal = normalize(gl_NormalMatrix * gl_Normal);
 	upVec = normalize(gbufferModelView[1].xyz);
@@ -440,6 +441,11 @@ void main() {
 		gl_Position = gl_ProjectionMatrix * gbufferModelView * position;
 	#else
 		gl_Position = ftransform();
+
+		#ifndef WAVING_LAVA
+			// G8FL735 Fixes Optifine-Iris parity. Optifine has 0.9 gl_Color.rgb on a lot of versions
+			glColorRaw.rgb = min(glColorRaw.rgb, vec3(0.9));
+		#endif
 	
 		#ifdef FLICKERING_FIX
 			//if (mat == 10256) gl_Position.z -= 0.00001; // Iron Bars

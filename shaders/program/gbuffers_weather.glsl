@@ -8,9 +8,6 @@
 //////////Fragment Shader//////////Fragment Shader//////////Fragment Shader//////////
 #ifdef FRAGMENT_SHADER
 
-/*in float discarder;
-in float discarder2;*/
-
 flat in vec2 lmCoord;
 in vec2 texCoord;
 
@@ -38,6 +35,10 @@ float sunVisibility2 = sunVisibility * sunVisibility;
 //Includes//
 #include "/lib/colors/lightAndAmbientColors.glsl"
 
+#ifdef COLOR_CODED_PROGRAMS
+	#include "/lib/misc/colorCodedPrograms.glsl"
+#endif
+
 //Program//
 void main() {
 	vec4 color = texture2D(tex, texCoord);
@@ -45,12 +46,14 @@ void main() {
 
 	if (color.a < 0.1 || isEyeInWater == 3) discard;
 
-	//if (abs(discarder - 0.5) < 0.499 || discarder2 < 0.35) discard;
+	if (color.r + color.g < 1.5) color.a *= rainTexOpacity;
+	else color.a *= snowTexOpacity;
 
-	if (color.r + color.g < 1.5) color.a *= 0.25;
-	else color.a *= 0.5;
+	color.rgb = sqrt3(color.rgb) * (blocklightCol * 2.0 * lmCoord.x + (ambientColor + 0.2 * lightColor) * lmCoord.y * (0.6 + 0.3 * sunFactor));
 
-	color.rgb = sqrt2(color.rgb) * (blocklightCol * 2.0 * lmCoord.x + ambientColor * lmCoord.y * (0.7 + 0.35 * sunFactor));
+	#ifdef COLOR_CODED_PROGRAMS
+		ColorCodeProgram(color);
+	#endif
 
 	/* DRAWBUFFERS:0 */
 	gl_FragData[0] = color;
@@ -60,9 +63,6 @@ void main() {
 
 //////////Vertex Shader//////////Vertex Shader//////////Vertex Shader//////////
 #ifdef VERTEX_SHADER
-
-/*out float discarder;
-out float discarder2;*/
 
 flat out vec2 lmCoord;
 out vec2 texCoord;
@@ -89,24 +89,10 @@ void main() {
 	vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
 	glColor = gl_Color;
 
-	/*discarder = 0.0;
-	discarder2 = 1.0;
-		
-	if (abs(length(position.xz) - 2.25) < 0.5) {
-		if (position.y > 0.0) {
-			position.xz *= 5.0;
-			position.y *= 0.5;
-			discarder2 = 1.0;
-		} else {
-			position.xz *= -3.0;
-			position.y = 5.0;
-			discarder2 = 0.0;
-		}
-		discarder = 1.0;
-		glColor.a *= 0.4;
-	} //else glColor.a = 0.0;
-	position.xz += (0.1 * position.y + 0.05) * vec2(sin(frameTimeCounter * 0.3) + 0.5, sin(frameTimeCounter * 0.5) * 0.5);
-	position.xz *= 1.0 - 0.08 * position.y;*/
+	#ifdef WAVING_RAIN
+		position.xz += (0.4 * position.y + 0.2) * vec2(sin(frameTimeCounter * 0.3) + 0.5, sin(frameTimeCounter * 0.5) * 0.5);
+		position.xz *= 1.0 - 0.08 * position.y;
+	#endif
 
 	gl_Position = gl_ProjectionMatrix * gbufferModelView * position;
 
