@@ -271,6 +271,7 @@ in ivec2 vaUV2;
 #endif
 
 #define MATERIALMAP_ONLY
+#define WRITE_TO_SSBOS
 #include "/lib/vx/SSBOs.glsl"
 
 //Program//
@@ -306,7 +307,7 @@ void main() {
 	#endif
 
 	if (mat == 31000) { // Water
-		position.y += 0.015 * max0(length(position.xyz) - 50.0);
+		positionV.y += 0.015 * max0(length(positionV.xyz) - 50.0);
 	}
 	gl_Position = shadowProjection * shadowModelView * positionV;
 

@@ -166,7 +166,7 @@ void main() {
 			float ndotl = max(0, dot(normalize(dir), normalDepthData.xyz)) * lightBrightness;
 			ray_hit_t rayHit1 = raytrace(vxPos, 1.05 * dir);
 			vec3 writeColor = lightCount * rayHit1.rayColor.rgb * float(rayHit1.emissive) * ndotl * (1.0 / (length(dir) + 0.1));
-			if (length(writeColor) > 0.03 && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
+			if (length(writeColor) > 0.003 && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
 				positions[thisLightIndex].w = 1;
 			} else {
 				writeColor = vec3(0);

@@ -16,23 +16,18 @@ const int colortex11Format= RGBA16I;		//valid light sample storage in bottom lef
 const int colortex12Format= RGBA16F;		//accumulated block lighting
 const int colortex13Format= RGBA16F;		//denoised block lighting
 */
-
-const int colortex8Format = RGBA8;          //light source info but replaces colortex3 to work as colorimg3
-*/
 const bool colortex0Clear = true;
 const bool colortex1Clear = true;
 const bool colortex2Clear = false;
-#ifndef LIGHT_COLORING
+
 const bool colortex3Clear = true;
-#else
-const bool colortex3Clear = false;
-#endif
+
 const bool colortex4Clear = false;
 const bool colortex5Clear = false;
 
 const bool colortex6Clear = false;
 const bool colortex7Clear = false;
-#endif
+
 const bool colortex8Clear = false;
 const bool colortex9Clear = false;
 const bool colortex10Clear = true;

@@ -72,10 +72,6 @@ uniform sampler2D depthtex1;
 	uniform sampler2D colortex1;
 #endif
 
-#if defined LIGHTSHAFTS_ACTIVE && defined LENSFLARE || RAINBOWS > 0 && defined OVERWORLD
-	uniform sampler2D colortex4;
-#endif
-
 #if RAINBOWS == 1
 	uniform float wetness;
 	uniform float inRainy;
