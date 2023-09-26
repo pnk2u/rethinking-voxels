@@ -240,6 +240,8 @@ uniform mat4 shadowProjection, shadowProjectionInverse;
 uniform mat4 shadowModelView, shadowModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
+uniform int entityId;
+uniform int blockEntityId;
 
 #if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
 	uniform float frameTimeCounter;
@@ -284,6 +286,11 @@ void main() {
 	upVecV = normalize(gbufferModelView[1].xyz);
 
 	matV = int(mc_Entity.x + 0.5);
+	if (blockEntityId > 0) {
+		matV = blockEntityId;
+	} else if (entityId > 0) {
+		matV = entityId;
+	}
 	int mat = getProcessedBlockId(matV);
 	positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
 	midBlock = at_midBlock / 64.0;

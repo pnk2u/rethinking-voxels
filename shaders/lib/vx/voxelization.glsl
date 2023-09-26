@@ -7,7 +7,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 		bounds[1] = max(bounds[1], vxPos[i]);
 	}
 
-	if (matV[0] == 0 || !isInRange(bounds[0]) || !isInRange(bounds[1])) break;
+	if (matV[0] == 0 || matV[0] / 10000 == 5 || !isInRange(bounds[0]) || !isInRange(bounds[1])) break;
 	vec3 normal = cross(vxPos[1] - vxPos[0], vxPos[2] - vxPos[0]);
 	float area = max(length(normal), 1e-10);
 	normal /= area;
