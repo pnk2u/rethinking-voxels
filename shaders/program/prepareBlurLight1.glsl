@@ -40,7 +40,7 @@ void main() {
 	vec4 normalDepthData = texelFetch(colortex8, screenTexelCoord, 0);
 	normalDepthData.w = 50.0 * GetLinearDepth(1 - normalDepthData.w);
 	vec4 thisLightData = texelFetch(LIGHT_SAMPLER, lightingTexelCoord, 0);
-	int blurSize = 10;
+	int blurSize = 14;
 	float totalWeight = 0.00001;
 	vec3 totalLight = vec3(0.0);
 	for (int k = -blurSize; k <= blurSize; k++) {
@@ -55,7 +55,7 @@ void main() {
 			offset /= 2;
 		#endif
 		vec4 aroundLight = texelFetch(LIGHT_SAMPLER, lightingTexelCoord + offset, 0);
-		float weight = exp(-k*k * (2.0 / (blurSize * blurSize))) * max0(1 - 4 * length(normalDepthData - aroundNormalDepthData));
+		float weight = exp(-k*k * (2.0 / (blurSize * blurSize))) * max0(1 - length(normalDepthData - aroundNormalDepthData));
 		totalWeight += weight;
 		totalLight += aroundLight.xyz * weight;
 	}
