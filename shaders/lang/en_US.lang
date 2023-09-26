@@ -163,6 +163,8 @@ screen.SELECT_OUTLINE_SETTINGS.comment=Settings that change the block selection 
 screen.WORLD_OUTLINE_SETTINGS=World Outline
 screen.WORLD_OUTLINE_SETTINGS.comment=Settings that are about optional outline effects.
 
+screen.VX_SETTINGS=Rethinking Voxels Settings
+screen.DENOISE_SETTINGS=Denoiser-Related Settings
 #Settings
 option.RP_MODE=RP Support
 option.RP_MODE.comment=Changes many internal calculations to determine how different blocks and materials will be rendered. §bIntegrated PBR+§r: Calculated PBR and extra effects, highly recommended for most use cases. §aBasic§r: No PBR or extra effects. §elabPBR/seuspbr§r: Materials using the required PBR resource packs.
@@ -881,3 +883,22 @@ option.ATM_END_I=Atmosphere Intensity Multiplier
 option.XLIGHT_R=Blocklight Red Multiplier
 option.XLIGHT_G=Blocklight Green Multiplier
 option.XLIGHT_B=Blocklight Blue Multiplier
+
+option.VX_VOL_SIZE=Voxel Volume Size
+value.VX_VOL_SIZE.0=96x64x96 Blocks
+value.VX_VOL_SIZE.1=128x96x128 Blocks
+value.VX_VOL_SIZE.2=256x128x256 Blocks
+value.VX_VOL_SIZE.3=512x128x512 Blocks
+
+option.VOXEL_DETAIL_AMOUNT=Voxel Resolution
+value.VOXEL_DETAIL_AMOUNT.1=1/Block
+value.VOXEL_DETAIL_AMOUNT.2=2/Block
+value.VOXEL_DETAIL_AMOUNT.3=4/Block
+value.VOXEL_DETAIL_AMOUNT.4=8/Block
+value.VOXEL_DETAIL_AMOUNT.5=§c[-]§r 16/Block (1GB VRAM needed)
+value.VOXEL_DETAIL_AMOUNT.6=§c[-]§r 32/Block (3GB VRAM needed)
+option.VOXEL_DETAIL_AMOUNT.comment=Adjusts the resolution at which models for blocks are generated. §c[-]§r 16 and more per block need large amounts of VRAM.
+
+option.DENOISE_MAX_BLUR=Maximum Blur Amount
+option.DENOISE_MIN_BLUR=Minimum Blur Amount
+option.DENOISE_CONVERGED_MULT=Accumulated Relax Factor

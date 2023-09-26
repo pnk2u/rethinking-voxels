@@ -65,7 +65,7 @@ void handleVoxel(inout raytrace_state_t state,
 			returnVal.transColor = returnVal.rayColor;
 			returnVal.rayColor.rgb *= mix(vec3(1), thisVoxel.color.rgb, thisVoxel.color.a);
 			returnVal.rayColor.a += (1 - returnVal.rayColor.a) * thisVoxel.color.a;
-			if (thisVoxel.color.a > 0.9) {
+			if (thisVoxel.color.a > 0.2) {
 				if (thisVoxel.emissive) {
 					returnVal.emissive = true;
 				}
