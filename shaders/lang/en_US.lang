@@ -889,6 +889,7 @@ value.VX_VOL_SIZE.0=96x64x96 Blocks
 value.VX_VOL_SIZE.1=128x96x128 Blocks
 value.VX_VOL_SIZE.2=256x128x256 Blocks
 value.VX_VOL_SIZE.3=512x128x512 Blocks
+option.VX_VOL_SIZE.comment=This setting changes the size of the part of the world in which advanced Blocklight is calculated.
 
 option.VOXEL_DETAIL_AMOUNT=Voxel Resolution
 value.VOXEL_DETAIL_AMOUNT.1=1/Block
@@ -898,6 +899,9 @@ value.VOXEL_DETAIL_AMOUNT.4=8/Block
 value.VOXEL_DETAIL_AMOUNT.5=§c[-]§r 16/Block (1GB VRAM needed)
 value.VOXEL_DETAIL_AMOUNT.6=§c[-]§r 32/Block (3GB VRAM needed)
 option.VOXEL_DETAIL_AMOUNT.comment=Adjusts the resolution at which models for blocks are generated. §c[-]§r 16 and more per block need large amounts of VRAM.
+
+option.LIGHT_TRACE_LENGTH=Light Spread Distance
+option.LIGHT_TRACE_LENGTH.comment=Controls the maximum distance at which a light source can still illuminate its surroundings.
 
 option.DENOISE_MAX_BLUR=Maximum Blur Amount
 option.DENOISE_MIN_BLUR=Minimum Blur Amount

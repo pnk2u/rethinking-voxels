@@ -47,17 +47,18 @@ void handleVoxel(inout raytrace_state_t state,
 	vec3 localStepSize = state.stepSize / lodResolution;
 	int localNormal = state.normal;
 	for (int i = 0; i < 3; i++) {
-		int overshoot = int((localProgress[i] - state.w - 0.0001) / localStepSize[i]);
+		int overshoot = int((localProgress[i] - state.w - state.rayOffset) / localStepSize[i]);
 		if (overshoot < 0) overshoot = 0;
 		localProgress[i] -= overshoot * localStepSize[i];
-
-		//while (state.w < localProgress[i] - localStepSize[i] - 0.000001) localProgress[i] -= localStepSize[i];
 	}
-
-	for (int k = 0;
-		floor(pos + state.eyeOffsets[localNormal]) == vec3(0) && k < 3 * (1 << VOXEL_DETAIL_AMOUNT-1);
-		k++) {
-		ivec3 coords = ivec3(lodResolution * pos + state.eyeOffsets[localNormal]);
+	float exitW = state.progress[0] + (state.normal == 0 ? state.stepSize[0] : 0);
+	for (int i = 1; i < 3; i++) {
+		exitW = min(exitW, state.progress[i] + (state.normal == i ? state.stepSize[i] : 0));
+	}
+	exitW -= state.rayOffset;
+	for (int k = 0; state.w < exitW && k < 3 * (1 << VOXEL_DETAIL_AMOUNT-1); k++) {
+		vec3 innerPos = state.start + state.w * state.dir - baseBlock;
+		ivec3 coords = ivec3(lodResolution * innerPos + state.eyeOffsets[localNormal]);
 		voxel_t thisVoxel = readGeometry(baseIndex, coords);
 		if (thisVoxel.color.a > 0.1) {
 			if (thisVoxel.glColored) {
@@ -68,18 +69,16 @@ void handleVoxel(inout raytrace_state_t state,
 			returnVal.transColor = returnVal.rayColor;
 			returnVal.rayColor.rgb *= mix(vec3(1), thisVoxel.color.rgb, thisVoxel.color.a);
 			returnVal.rayColor.a += (1 - returnVal.rayColor.a) * thisVoxel.color.a;
-			if (thisVoxel.color.a > 0.2) {
-				if (thisVoxel.emissive) {
-					returnVal.emissive = true;
-				}
+			returnVal.emissive = returnVal.emissive || thisVoxel.emissive;
+			if (thisVoxel.color.a > 0.9) {
 				returnVal.mat = thisVoxelMat;
 				returnVal.normal = -state.dirSgn[localNormal] * mat3(1)[localNormal];
 			} else {
 				returnVal.transMat = thisVoxelMat;
-				returnVal.transPos = pos + baseBlock;
+				returnVal.transPos = innerPos + baseBlock;
 			}
 			if (returnVal.rayColor.a > MAX_RAY_ALPHA) {
-				break;
+				return;
 			}
 		}
 		localProgress[localNormal] += localStepSize[localNormal];
@@ -91,7 +90,6 @@ void handleVoxel(inout raytrace_state_t state,
 				state.w = localProgress[localNormal];
 			}
 		}
-		pos = state.start + state.w * state.dir - baseBlock;
 	}
 }
 

@@ -58,7 +58,6 @@ float infnorm(vec3 x) {
 }
 
 #define MAX_LIGHT_COUNT 48
-#define SEARCH_DIST 30.0
 
 shared int lightCount = 0;
 shared ivec4[MAX_LIGHT_COUNT] positions;
@@ -81,7 +80,7 @@ void main() {
 		vxPos = playerToVx(playerPos.xyz) + max(0.1, 0.005 * length(playerPos.xyz)) * normalDepthData.xyz;
 		vec3 dir = randomSphereSample();
 		if (dot(dir, normalDepthData.xyz) < 0) dir *= -1;
-		ray_hit_t rayHit0 = raytrace(vxPos, SEARCH_DIST * dir);
+		ray_hit_t rayHit0 = raytrace(vxPos, LIGHT_TRACE_LENGTH * dir);
 		if (rayHit0.emissive) {
 			int lightIndex = atomicAdd(lightCount, 1);
 			if (lightIndex < MAX_LIGHT_COUNT) {
@@ -128,9 +127,10 @@ void main() {
 	ivec4 prevFrameLight = imageLoad(colorimg11, writeTexelCoord);
 	bool known = (prevFrameLight.xyz == ivec3(0) || prevFrameLight.w == 0);// || nextUint() % 100 == 0);
 	prevFrameLight.xyz += vxPosFrameOffset;
-	for (int k = 0; k < oldLightCount && !known; k++) {
+	for (int k = 0; k < oldLightCount; k++) {
 		if (prevFrameLight.xyz == positions[k].xyz) {
 			known = true;
+			break;
 		}
 	}
 	if (!known) {
@@ -160,7 +160,7 @@ void main() {
 			lightPos = floor(lightPos) + localPos;
 		}
 		vec3 dir = lightPos - vxPos;
-		if (length(dir) < SEARCH_DIST) {
+		if (length(dir) < LIGHT_TRACE_LENGTH) {
 			float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.1;
 			lightBrightness *= lightBrightness;
 			float ndotl = max(0, dot(normalize(dir), normalDepthData.xyz)) * lightBrightness;
