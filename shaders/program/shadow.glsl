@@ -207,17 +207,19 @@ uniform sampler2D specular;
 
 void main() {
 	#include "/lib/vx/voxelization.glsl"
-	for (int i = 0; i < 3; i++) {
-		gl_Position = gl_in[i].gl_Position;
-		mat = getProcessedBlockId(matV[i]);
-		texCoord = texCoordV[i];
-		sunVec = sunVecV[i];
-		upVec = upVecV[i];
-		position = positionV[i];
-		glColor = glColorV[i];
-		EmitVertex();
-	}
-	EndPrimitive();
+	#if (defined OVERWORLD || defined END) && defined REALTIME_SHADOWS
+		for (int i = 0; i < 3; i++) {
+			gl_Position = gl_in[i].gl_Position;
+			mat = getProcessedBlockId(matV[i]);
+			texCoord = texCoordV[i];
+			sunVec = sunVecV[i];
+			upVec = upVecV[i];
+			position = positionV[i];
+			glColor = glColorV[i];
+			EmitVertex();
+		}
+		EndPrimitive();
+	#endif
 }
 #endif
 
