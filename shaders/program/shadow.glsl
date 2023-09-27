@@ -241,6 +241,7 @@ uniform mat4 shadowModelView, shadowModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
 uniform int entityId;
+uniform int renderStage;
 uniform int blockEntityId;
 
 #if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
@@ -288,8 +289,9 @@ void main() {
 	matV = int(mc_Entity.x + 0.5);
 	if (blockEntityId > 0) {
 		matV = blockEntityId;
-	} else if (entityId > 0) {
-		matV = entityId;
+	}
+	if (renderStage == MC_RENDER_STAGE_ENTITIES) {
+		matV = 0;
 	}
 	int mat = getProcessedBlockId(matV);
 	positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
