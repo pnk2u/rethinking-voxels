@@ -157,6 +157,7 @@ void main() {
 				imageStore(colorimg10, writeTexelCoord, vec4(1, 0, 0, 1));
 				return;
 			}
+			localPos += (vec3(nextFloat(), nextFloat(), nextFloat()) - 0.5) / (1<<VOXEL_DETAIL_AMOUNT);
 			lightPos = floor(lightPos) + localPos;
 		}
 		vec3 dir = lightPos - vxPos;
