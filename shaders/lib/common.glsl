@@ -37,9 +37,9 @@
     #elif VX_VOL_SIZE == 3
         const float voxelDistance = 256;
     #endif
-    #define DENOISE_MAX_BLUR 25 //[1 10 12 14 16 18 20 22 25 28 32 36 40 45 50]
-    #define DENOISE_MIN_BLUR 3 //[1 2 3 4 6 8 10 15 20]
-    #define DENOISE_CONVERGED_MULT 0.4 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0]
+    #define DENOISE_MAX_BLUR 22 //[1 10 12 14 16 18 20 22 25 28 32 36 40 45 50]
+    #define DENOISE_MIN_BLUR 2 //[1 2 3 4 6 8 10 15 20]
+    #define DENOISE_CONVERGED_MULT 0.2 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0]
 
     #define REALTIME_SHADOWS
     #define SHADOW_QUALITY 2 //[0 1 2 3 4 5]
