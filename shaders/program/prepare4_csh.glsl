@@ -63,8 +63,6 @@ float infnorm(vec3 x) {
 shared int lightCount = 0;
 shared ivec4[MAX_LIGHT_COUNT] positions;
 shared int[MAX_LIGHT_COUNT] mergeOffsets;
-shared vec4[gl_WorkGroupSize.x][gl_WorkGroupSize.y] writeColors;
-shared uvec2 updatedPositions = uvec2(0);
 
 void main() {
 	ivec2 readTexelCoord = ivec2(gl_GlobalInvocationID.xy) * 2 + ivec2(frameCounter % 2, frameCounter / 2 % 2);
@@ -143,7 +141,6 @@ void main() {
 			atomicMin(lightCount, MAX_LIGHT_COUNT);
 		}
 	}
-	writeColors[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = vec4(0);
 	barrier();
 	memoryBarrierShared();
 	if (lightCount > 0 && validData) {
@@ -157,7 +154,7 @@ void main() {
 			vec3 localPos = readEmissiveLoc(baseIndex, subEmissiveIndex);
 			if (any(lessThan(localPos, vec3(-0.5)))) {
 				imageStore(colorimg10, writeTexelCoord, vec4(1, 0, 0, 1));
-				return;
+				lightPos = vec3(-10000);
 			}
 			localPos += (vec3(nextFloat(), nextFloat(), nextFloat()) - 0.5) / (1<<VOXEL_DETAIL_AMOUNT);
 			lightPos = floor(lightPos) + localPos;

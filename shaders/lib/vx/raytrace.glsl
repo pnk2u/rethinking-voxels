@@ -47,8 +47,11 @@ void handleVoxel(inout raytrace_state_t state,
 	vec3 localStepSize = state.stepSize / lodResolution;
 	int localNormal = state.normal;
 	for (int i = 0; i < 3; i++) {
-		for (; state.w < localProgress[i] - localStepSize[i] - 0.000001;
-			localProgress[i] -= localStepSize[i]);
+		int overshoot = int((localProgress[i] - state.w - 0.0001) / localStepSize[i]);
+		if (overshoot < 0) overshoot = 0;
+		localProgress[i] -= overshoot * localStepSize[i];
+
+		//while (state.w < localProgress[i] - localStepSize[i] - 0.000001) localProgress[i] -= localStepSize[i];
 	}
 
 	for (int k = 0;
@@ -95,10 +98,11 @@ void handleVoxel(inout raytrace_state_t state,
 ray_hit_t raytrace(vec3 start, vec3 dir) {
 	ray_hit_t returnVal;
 	returnVal.emissive = false;
-	returnVal.pos = start + dir;
+	returnVal.pos = start;
 	returnVal.normal = vec3(0, 0, 0);
 	returnVal.rayColor = vec4(1, 1, 1, 0);
 	returnVal.hitColor = vec4(0);
+	returnVal.transPos = vec3(-1000);
 	returnVal.transColor = vec4(0);
 	returnVal.transNormal = vec3(-1);
 	returnVal.transMat = -1;

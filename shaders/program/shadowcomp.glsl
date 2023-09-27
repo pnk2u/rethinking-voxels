@@ -21,11 +21,14 @@ uniform vec3 cameraPosition;
 
 void main() {
 	int mat = int(gl_WorkGroupID.x);
-	if (getMaterialAvailability(mat)) {
+	bool matIsAvailable = getMaterialAvailability(mat);
+	int index = int(gl_LocalInvocationID.x + gl_LocalInvocationID.y * gl_WorkGroupSize.x + gl_LocalInvocationID.z * gl_WorkGroupSize.y * gl_WorkGroupSize.x);
+	ivec4 currentVal;
+	int baseIndex = getBaseIndex(mat);
+	if (matIsAvailable) {
 		int responsibleSize = (1<<(VOXEL_DETAIL_AMOUNT-1)) / int(gl_WorkGroupSize.x);
 		if (responsibleSize == 0) responsibleSize = 1;
 		ivec3 baseCoord = ivec3(gl_LocalInvocationID) * responsibleSize;
-		int baseIndex = getBaseIndex(mat);
 		vec3 emissiveColor = vec3(0);
 		int thisEmissiveCount = 0;
 		vec3 subCoord = vec3(0);
@@ -63,29 +66,14 @@ void main() {
 				int index = atomicAdd(emissiveCount, 1);
 				emissiveParts[index] = ivec4(blockRelCoord, sortVal);
 			}
-			int index = int(gl_LocalInvocationID.x) + int(gl_LocalInvocationID.y * gl_WorkGroupSize.x) + int(gl_LocalInvocationID.z * gl_WorkGroupSize.y * gl_WorkGroupSize.x);
-			ivec4 currentVal = emissiveParts[index];
-			sortMap[index] = 0;
-			barrier();
-			memoryBarrierShared();
-			if (index < emissiveCount) {
-				int sortedIndex = 0;
-				for (int k = 0; k < emissiveCount; k++) {
-					if (currentVal.w < emissiveParts[k].w) {
-						sortedIndex++;
-					}
-				}
-				int offset = atomicAdd(sortMap[sortedIndex], 1);
-				emissiveParts[sortedIndex + offset] = currentVal;
-			}
-			if (index == 0) {
-				setEmissiveCount(baseIndex, emissiveCount);
-			}
-			barrier();
-			memoryBarrierShared();
-			storeEmissive(baseIndex, index, index < emissiveCount ? emissiveParts[index].xyz : ivec3(-1));
-		#endif
-	}
+		}
+		if (index == 0) {
+			setEmissiveCount(baseIndex, emissiveCount);
+		}
+		barrier();
+		memoryBarrierShared();
+		storeEmissive(baseIndex, index, index < emissiveCount ? emissiveParts[index].xyz : ivec3(-1));
+	#endif
 }
 
 #endif
