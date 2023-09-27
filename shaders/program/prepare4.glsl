@@ -34,7 +34,8 @@ void main() {
     vec4 playerPos = unProjectionMatrix * vec4(gl_FragCoord.xy / view * 2 - 1, 1 - 2 * normalDepthData.w, 1);
     vec4 prevPlayerPos = vec4(playerPos.xyz / playerPos.w + cameraPosition - previousCameraPosition, 1);
     vec4 prevPos = prevProjectionMatrix * prevPlayerPos;
-    float normalWeight = clamp(dot(prevPlayerPos.xyz, normalDepthData.xyz) / dot(playerPos.xyz, normalDepthData.xyz), 0, 1);
+    float ndotv = dot(playerPos.xyz, normalDepthData.xyz);
+    float normalWeight = clamp(1.05 * dot(prevPlayerPos.xyz, normalDepthData.xyz) / ndotv, 1 + ndotv, 1);
     normalWeight *= normalWeight;
     prevPos.xyz = 0.5 * prevPos.xyz / prevPos.w + 0.5;
     vec4 prevColor = vec4(0);
@@ -74,7 +75,7 @@ void main() {
             prevColor.a / (prevColor.a + weight)
             ),
         prevColor.a + weight);
-    //gl_FragData[0].rgb = newLodColor;
+    //gl_FragData[0].rgb = newColor;
     gl_FragData[1] = tex13Data;
 }
 #endif
