@@ -56,7 +56,7 @@ void main() {
 			}
 		}
 		variance = clamp(sqrt(variance) * 4 / (brightness + 0.05) - 0.2, 0, 1);
-		int blurSize = int((DENOISE_MAX_BLUR - max0(DENOISE_MAX_BLUR - DENOISE_MIN_BLUR) * variance) * (1.0 + DENOISE_CONVERGED_MULT - thisLightData.a));
+		int blurSize = int((DENOISE_MAX_BLUR - max(DENOISE_MAX_BLUR - DENOISE_MIN_BLUR, 0) * variance) * (1.0 + DENOISE_CONVERGED_MULT - thisLightData.a));
 		if (blurSize < 1) blurSize = 1;
 	#else
 		int blurSize = int(thisLightData.w + 0.5);
@@ -72,7 +72,7 @@ void main() {
 		vec4 aroundNormalDepthData = texelFetch(colortex8, texelCoord + offset, 0);
 		aroundNormalDepthData.w = 50.0 * GetLinearDepth(1 - aroundNormalDepthData.w);
 		vec4 aroundLight = texelFetch(LIGHT_SAMPLER, texelCoord + offset, 0);
-		float weight = exp(-k*k * (2.0 / (blurSize * blurSize))) * max0(1 - 6 * length(normalDepthData - aroundNormalDepthData));
+		float weight = exp(-k*k * (2.0 / (blurSize * blurSize))) * max0(1 - 7 * length(normalDepthData - aroundNormalDepthData));
 		totalWeight += weight;
 		totalLight += aroundLight.xyz * weight;
 	}
