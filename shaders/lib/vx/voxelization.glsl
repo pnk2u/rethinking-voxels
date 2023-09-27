@@ -133,7 +133,10 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 				localPos.x + localPos.y > 1.0 + offTriMargin) {
 				continue;
 			}
-			localPos = clamp(localPos, 0.001, 0.999);
+			localPos = clamp(localPos, 0.0, 1.0);
+			if (localPos.x + localPos.y > 1.0) {
+				localPos /= localPos.x + localPos.y;
+			}
 			vec2 thisTexCoord = (textureMatrix * localPos).xy;
 			vec4 color = textureLod(tex, thisTexCoord, 0);
 			vec4 s = textureLod(specular, thisTexCoord, 0);
