@@ -1,4 +1,4 @@
-#include "/lib/common.glsl
+#include "/lib/common.glsl"
 
 #ifdef CSH
 
@@ -61,7 +61,6 @@ float infnorm(vec3 x) {
 #define SEARCH_DIST 30.0
 
 shared int lightCount = 0;
-shared ivec2 prevTexelCoord;
 shared ivec4[MAX_LIGHT_COUNT] positions;
 shared int[MAX_LIGHT_COUNT] mergeOffsets;
 shared vec4[gl_WorkGroupSize.x][gl_WorkGroupSize.y] writeColors;
@@ -80,7 +79,6 @@ void main() {
 		if (gl_LocalInvocationID == gl_WorkGroupSize/2) {
 			vec4 prevClipPos = gbufferPreviousProjection * (gbufferPreviousModelView * playerPos);
 			prevClipPos /= prevClipPos.w;
-			prevTexelCoord = ivec2(view * (0.5 * prevClipPos.xy + 0.5)) - ivec2(gl_WorkGroupSize.xy/2);
 		}
 		vxPos = playerToVx(playerPos.xyz) + max(0.1, 0.005 * length(playerPos.xyz)) * normalDepthData.xyz;
 		vec3 dir = randomSphereSample();
@@ -98,51 +96,56 @@ void main() {
 	}
 	barrier();
 	memoryBarrierShared();
-	int mergeOffset = 0;
-	int oldLightCount = min(lightCount, MAX_LIGHT_COUNT);
 	int index = int(gl_LocalInvocationID.x + gl_WorkGroupSize.x * gl_LocalInvocationID.y);
-	ivec4 thisPos = positions[index];
+	int oldLightCount = lightCount;
+	int mergeOffset = 0;
+	ivec4 thisPos;
 	int k = index + 1;
-	while (k < oldLightCount && positions[k].xyz != thisPos.xyz) k++;
-	if (k < oldLightCount) {
-		atomicAdd(mergeOffsets[k], -1000);
-		mergeOffset = 1;
-	}
-	for (k++; k < oldLightCount; k++) {
-		atomicAdd(mergeOffsets[k], 1);
+	if (index < oldLightCount) {
+		thisPos = positions[index];
+		while (k < oldLightCount && positions[k].xyz != thisPos.xyz) k++;
+		if (k < oldLightCount) {
+			atomicAdd(mergeOffsets[k], -1000);
+			mergeOffset = 1;
+			for (k++; k < oldLightCount; k++) {
+				atomicAdd(mergeOffsets[k], 1);
+			}
+		}
 	}
 	barrier();
 	memoryBarrierShared();
-	if (mergeOffsets[index] > 0 && index < oldLightCount) {
-		positions[index - mergeOffsets[index]] = thisPos;
-	}
-	if (mergeOffset > 0) {
-		atomicAdd(lightCount, -1);
+	if (index < oldLightCount) {
+		if (mergeOffsets[index] > 0) {
+			positions[index - mergeOffsets[index]] = thisPos;
+		}
+		if (mergeOffset > 0) {
+			atomicAdd(lightCount, -1);
+		}
 	}
 	barrier();
 	memoryBarrierShared();
 	oldLightCount = lightCount;
 	barrier();
 	memoryBarrierShared();
-	ivec4 thisLight = ivec4(imageLoad(colorimg11, writeTexelCoord).xyz, 0);
-	bool known = (thisLight.xyz == ivec3(0));// || nextUint() % 100 == 0);
-	thisLight.xyz += vxPosFrameOffset;
+	ivec4 prevFrameLight = imageLoad(colorimg11, writeTexelCoord);
+	bool known = (prevFrameLight.xyz == ivec3(0) || prevFrameLight.w == 0);// || nextUint() % 100 == 0);
+	prevFrameLight.xyz += vxPosFrameOffset;
 	for (int k = 0; k < oldLightCount && !known; k++) {
-		if (thisLight.xyz == positions[k].xyz) {
+		if (prevFrameLight.xyz == positions[k].xyz) {
 			known = true;
 		}
 	}
 	if (!known) {
 		int thisLightIndex = atomicAdd(lightCount, 1);
 		if (thisLightIndex < MAX_LIGHT_COUNT) {
-			positions[thisLightIndex] = thisLight;
+			positions[thisLightIndex] = ivec4(prevFrameLight.xyz, 0);
 		} else {
 			atomicMin(lightCount, MAX_LIGHT_COUNT);
 		}
 	}
+	writeColors[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = vec4(0);
 	barrier();
 	memoryBarrierShared();
-	writeColors[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = vec4(0);
 	if (lightCount > 0 && validData) {
 		uint thisLightIndex = nextUint() % lightCount;
 		int mat = readBlockVolume(positions[thisLightIndex].xyz + 0.5);
@@ -150,7 +153,6 @@ void main() {
 		int emissiveVoxelCount = getEmissiveCount(baseIndex);
 		vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
 		if (emissiveVoxelCount > 0) {
-			//int[6] emissionRanges = getEmissiveDirectionRanges(baseIndex);
 			int subEmissiveIndex = int(nextUint() % emissiveVoxelCount);
 			vec3 localPos = readEmissiveLoc(baseIndex, subEmissiveIndex);
 			if (any(lessThan(localPos, vec3(-0.5)))) {
@@ -172,50 +174,78 @@ void main() {
 			} else {
 				writeColor = vec3(0);
 			}
-			writeColors[gl_LocalInvocationID.x][gl_LocalInvocationID.y].xyz = writeColor;
-			barrier();
-			memoryBarrierBuffer();
-			int shareAmount = 1;
-			float compareLen = length(writeColor);
-			vec4[4] aroundNormalDepthData;
-			for (int k = 0; k < 4; k++) {
-				ivec2 offsetLocalCoord = ivec2(gl_LocalInvocationID.xy) + (2*(k/2%2)-1) * ivec2(k%2, (k-1)%2);
-				aroundNormalDepthData[k] = texelFetch(colortex8, readTexelCoord + 2 * offsetLocalCoord, 0);
-				if (offsetLocalCoord.x > 0 &&
-					offsetLocalCoord.x < gl_WorkGroupSize.x &&
-					offsetLocalCoord.y > 0 &&
-					offsetLocalCoord.y < gl_WorkGroupSize.y &&
-					length(aroundNormalDepthData[k] - normalDepthData) < 0.1 &&
-					length(writeColors[offsetLocalCoord.x][offsetLocalCoord.y].xyz) <= 0.1 * compareLen
-				) {
-					shareAmount++;
-				}
-			}
-			writeColors[gl_LocalInvocationID.x][gl_LocalInvocationID.y].w = 1.0 / shareAmount;
-			barrier();
-			memoryBarrierBuffer();
-			writeColor /= shareAmount;
-			for (int k = 0; k < 4; k++) {
-				ivec2 offsetLocalCoord = ivec2(gl_LocalInvocationID.xy) + (2*(k/2%2)-1) * ivec2(k%2, (k-1)%2);
-				if (offsetLocalCoord.x > 0 &&
-					offsetLocalCoord.x < gl_WorkGroupSize.x &&
-					offsetLocalCoord.y > 0 &&
-					offsetLocalCoord.y < gl_WorkGroupSize.y &&
-					length(aroundNormalDepthData[k] - normalDepthData) < 0.1 &&
-					length(writeColors[offsetLocalCoord.x][offsetLocalCoord.y].xyz) > 10 * compareLen
-				) {
-					vec4 thisColor = writeColors[offsetLocalCoord.x][offsetLocalCoord.y];
-					writeColor += thisColor.xyz * thisColor.w;
-				}
-			}
 			imageStore(colorimg10, writeTexelCoord, vec4(writeColor, lightCount));
 		}
 	} else {
 		imageStore(colorimg10, writeTexelCoord, vec4(0, 0, 0, lightCount));
 	}
-	ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
 	barrier();
 	memoryBarrierShared();
+	ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
 	imageStore(colorimg11, writeTexelCoord, lightPosToStore);
 }
+#endif
+
+#ifdef CSH_A
+
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+const vec2 workGroupsRender = vec2(0.5, 0.5);
+
+uniform int frameCounter;
+uniform float viewWidth;
+uniform float viewHeight;
+vec2 view = vec2(viewWidth, viewHeight);
+
+uniform sampler2D colortex8;
+layout(rgba16f) uniform image2D colorimg10;
+
+
+void main() {
+	ivec2 readTexelCoord = ivec2(gl_GlobalInvocationID.xy) * 2 + ivec2(frameCounter % 2, frameCounter / 2 % 2);
+	ivec2 writeTexelCoord = ivec2(gl_GlobalInvocationID.xy);
+	vec4 normalDepthData = texelFetch(colortex8, readTexelCoord, 0);
+	vec4 thisLightData = imageLoad(colorimg10, writeTexelCoord);
+	int shareAmount = 1;
+	float compareLen = length(thisLightData.xyz);
+	vec4[4] aroundNormalDepthData;
+	for (int k = 0; k < 4; k++) {
+		ivec2 offset = (2*(k/2%2)-1) * ivec2(k%2, (k-1)%2);
+		ivec2 offsetLocalCoord = ivec2(gl_LocalInvocationID.xy) + offset;
+		aroundNormalDepthData[k] = texelFetch(colortex8, readTexelCoord + 2 * offsetLocalCoord, 0);
+		if (offsetLocalCoord.x > 0 &&
+			offsetLocalCoord.x < gl_WorkGroupSize.x &&
+			offsetLocalCoord.y > 0 &&
+			offsetLocalCoord.y < gl_WorkGroupSize.y &&
+			writeTexelCoord.x + offset.x < int(view.x * 0.5 + 0.1) &&
+			writeTexelCoord.y + offset.y < int(view.y * 0.5 + 0.1) &&
+			length(aroundNormalDepthData[k] - normalDepthData) < 0.1 &&
+			length(imageLoad(colorimg10, writeTexelCoord + offset).xyz) <= 0.1 * compareLen
+		) {
+			shareAmount++;
+		}
+	}
+	imageStore(colorimg10, writeTexelCoord, vec4(thisLightData.xyz, 1.0 / shareAmount));
+	thisLightData.xyz /= shareAmount;
+	barrier();
+	memoryBarrierImage();
+	for (int k = 0; k < 4; k++) {
+		ivec2 offset = (2*(k/2%2)-1) * ivec2(k%2, (k-1)%2);
+		ivec2 offsetLocalCoord = ivec2(gl_LocalInvocationID.xy) + offset;
+		vec4 thisColor = imageLoad(colorimg10, writeTexelCoord + offset);
+		if (offsetLocalCoord.x > 0 &&
+			offsetLocalCoord.x < gl_WorkGroupSize.x &&
+			offsetLocalCoord.y > 0 &&
+			offsetLocalCoord.y < gl_WorkGroupSize.y &&
+			writeTexelCoord.x + offset.x < int(view.x * 0.5 + 0.1) &&
+			writeTexelCoord.y + offset.y < int(view.y * 0.5 + 0.1) &&
+			length(aroundNormalDepthData[k] - normalDepthData) < 0.1 &&
+			length(thisColor.xyz) > 10 * compareLen
+		) {
+			thisLightData.xyz += thisColor.xyz * thisColor.w;
+		}
+	}
+	barrier();
+	imageStore(colorimg10, writeTexelCoord, thisLightData);
+}
+
 #endif
