@@ -70,6 +70,7 @@ void main() {
 	ivec3 vxPosFrameOffset = ivec3((floor(previousCameraPosition) - floor(cameraPosition)) * 1.1);
 	bool validData = (normalDepthData.a < 1.5 && length(normalDepthData.rgb) > 0.1 && all(lessThan(readTexelCoord, ivec2(view + 0.1))));
 	vec3 vxPos = vec3(1000);
+	int index = int(gl_LocalInvocationID.x + gl_WorkGroupSize.x * gl_LocalInvocationID.y);
 	if (validData) {
 		vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
 		playerPos /= playerPos.w;
@@ -78,22 +79,23 @@ void main() {
 			prevClipPos /= prevClipPos.w;
 		}
 		vxPos = playerToVx(playerPos.xyz) + max(0.1, 0.005 * length(playerPos.xyz)) * normalDepthData.xyz;
-		vec3 dir = randomSphereSample();
-		if (dot(dir, normalDepthData.xyz) < 0) dir *= -1;
-		ray_hit_t rayHit0 = raytrace(vxPos, LIGHT_TRACE_LENGTH * dir);
-		if (rayHit0.emissive) {
-			int lightIndex = atomicAdd(lightCount, 1);
-			if (lightIndex < MAX_LIGHT_COUNT) {
-				positions[lightIndex] = ivec4(rayHit0.pos - 0.05 * rayHit0.normal + 1000, 1) - ivec4(1000, 1000, 1000, 0);
-				mergeOffsets[lightIndex] = 0;
-			} else {
-				atomicMin(lightCount, MAX_LIGHT_COUNT);
+		if (index < LIGHT_DISCOVERY_RAY_AMOUNT * gl_WorkGroupSize.x * gl_WorkGroupSize.y) {
+			vec3 dir = randomSphereSample();
+			if (dot(dir, normalDepthData.xyz) < 0) dir *= -1;
+			ray_hit_t rayHit0 = raytrace(vxPos, LIGHT_TRACE_LENGTH * dir);
+			if (rayHit0.emissive) {
+				int lightIndex = atomicAdd(lightCount, 1);
+				if (lightIndex < MAX_LIGHT_COUNT) {
+					positions[lightIndex] = ivec4(rayHit0.pos - 0.05 * rayHit0.normal + 1000, 1) - ivec4(1000, 1000, 1000, 0);
+					mergeOffsets[lightIndex] = 0;
+				} else {
+					atomicMin(lightCount, MAX_LIGHT_COUNT);
+				}
 			}
 		}
 	}
 	barrier();
 	memoryBarrierShared();
-	int index = int(gl_LocalInvocationID.x + gl_WorkGroupSize.x * gl_LocalInvocationID.y);
 	int oldLightCount = lightCount;
 	int mergeOffset = 0;
 	ivec4 thisPos;
@@ -208,10 +210,10 @@ void main() {
 	for (int k = 0; k < 4; k++) {
 		ivec2 offset = (2*(k/2%2)-1) * ivec2(k%2, (k-1)%2);
 		ivec2 offsetLocalCoord = ivec2(gl_LocalInvocationID.xy) + offset;
-		aroundNormalDepthData[k] = texelFetch(colortex8, readTexelCoord + 2 * offsetLocalCoord, 0);
-		if (offsetLocalCoord.x > 0 &&
+		aroundNormalDepthData[k] = texelFetch(colortex8, readTexelCoord + 2 * offset, 0);
+		if (offsetLocalCoord.x >= 0 &&
 			offsetLocalCoord.x < gl_WorkGroupSize.x &&
-			offsetLocalCoord.y > 0 &&
+			offsetLocalCoord.y >= 0 &&
 			offsetLocalCoord.y < gl_WorkGroupSize.y &&
 			writeTexelCoord.x + offset.x < int(view.x * 0.5 + 0.1) &&
 			writeTexelCoord.y + offset.y < int(view.y * 0.5 + 0.1) &&
@@ -229,9 +231,9 @@ void main() {
 		ivec2 offset = (2*(k/2%2)-1) * ivec2(k%2, (k-1)%2);
 		ivec2 offsetLocalCoord = ivec2(gl_LocalInvocationID.xy) + offset;
 		vec4 thisColor = imageLoad(colorimg10, writeTexelCoord + offset);
-		if (offsetLocalCoord.x > 0 &&
+		if (offsetLocalCoord.x >= 0 &&
 			offsetLocalCoord.x < gl_WorkGroupSize.x &&
-			offsetLocalCoord.y > 0 &&
+			offsetLocalCoord.y >= 0 &&
 			offsetLocalCoord.y < gl_WorkGroupSize.y &&
 			writeTexelCoord.x + offset.x < int(view.x * 0.5 + 0.1) &&
 			writeTexelCoord.y + offset.y < int(view.y * 0.5 + 0.1) &&

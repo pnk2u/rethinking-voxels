@@ -42,7 +42,7 @@
     #define DENOISE_CONVERGED_MULT 0.2 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0]
 
 	#define LIGHT_TRACE_LENGTH 30.0 //[10.0 12.0 15.0 18.0 22.0 26.0 30.0 35.0 40.0 57.0 55.0 65.0 76.0 88.0 100.0]
-
+	#define LIGHT_DISCOVERY_RAY_AMOUNT 0.3 //[0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
     #define REALTIME_SHADOWS
     #define SHADOW_QUALITY 2 //[0 1 2 3 4 5]
     const float shadowDistance = 192.0; //[64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0]

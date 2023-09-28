@@ -29,8 +29,7 @@ float GetLinearDepth(float depth) {
 #define MAX_OLDWEIGHT 0.5
 void main() {
     vec4 normalDepthData = texelFetch(colortex8, ivec2(gl_FragCoord.xy), 0);
-    vec3 newColor = texture(colortex10, lrTexCoord).rgb;
-    vec3 newLodColor = textureLod(colortex10, lrTexCoord, 4).rgb;
+    vec4 newColor = texture(colortex10, lrTexCoord);
     vec4 playerPos = unProjectionMatrix * vec4(gl_FragCoord.xy / view * 2 - 1, 1 - 2 * normalDepthData.w, 1);
     vec4 prevPlayerPos = vec4(playerPos.xyz / playerPos.w + cameraPosition - previousCameraPosition, 1);
     vec4 prevPos = prevProjectionMatrix * prevPlayerPos;
@@ -57,20 +56,19 @@ void main() {
     float prevLinDepth = GetLinearDepth(prevDepth);
     float prevCompareDepth = GetLinearDepth(prevPos.z);
     if ((max(abs(prevDepth - prevPos.z),
-            abs(prevLinDepth - prevCompareDepth) / (prevLinDepth + prevCompareDepth)) > 0.0051
+            abs(prevLinDepth - prevCompareDepth) / (prevLinDepth + prevCompareDepth)) > 0.05
             && length(view * prevPos.xy - gl_FragCoord.xy) > 2.5)
          || normalDepthData.a > 1.5
          || length(normalDepthData.rgb) < 0.1) {
         prevColor.a = 0;
     }
-    tex13Data.a = min(1, mix(clamp((fract(tex13Data.a) - 0.05) * 1.111, 0, 1), length(newLodColor), 0.2));
-    if (tex13Data.a <= 0.3 * min(length(prevColor.rgb), 1)) {
+    if (fract(tex13Data.a) > 0.12 * newColor.a) {
         prevColor.a *= 0.0;
     }
-    tex13Data.a = 0.9 * tex13Data.a + 0.05;
+    tex13Data.a = clamp(0.1 * newColor.a - 0.05, 0.05, 0.95);
     /*RENDERTARGETS:12,13*/
     gl_FragData[0] = vec4(
-        mix(newColor,
+        mix(newColor.rgb,
             prevColor.rgb,
             prevColor.a / (prevColor.a + weight)
             ),
