@@ -43,7 +43,7 @@ void handleVoxel(inout raytrace_state_t state,
 	vec3 localProgress = state.progress;
 	vec3 localStepSize = state.stepSize / lodResolution;
 	vec3 localNormal = state.normal;
-	vec3 overshoot = max(floor((localProgress - state.w - state.rayOffset) / localStepSize), 0);
+	vec3 overshoot = max(floor((localProgress - state.w - state.rayOffset) / abs(localStepSize)), 0);
 	localProgress -= overshoot * localStepSize;
 	vec3 exitWs = state.progress + localNormal * state.stepSize;
 	float exitW = min(min(exitWs[0], exitWs[1]), exitWs[2]);
@@ -106,7 +106,7 @@ ray_hit_t raytrace(vec3 start, vec3 dir) {
 	state.progress =
 	    (0.5 + 0.5 * state.dirSgn - fract(state.start)) / state.dir;
 	// handle voxel at starting position
-	state.normal = vec3(1, 0, 0);
+	state.normal = vec3(0);
 	state.w = state.rayOffset;
 	handleVoxel(state, returnVal);
 	if (returnVal.rayColor.a > MAX_RAY_ALPHA) {
