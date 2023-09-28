@@ -79,18 +79,16 @@ void main() {
 			prevClipPos /= prevClipPos.w;
 		}
 		vxPos = playerToVx(playerPos.xyz) + max(0.1, 0.005 * length(playerPos.xyz)) * normalDepthData.xyz;
-		if (index < LIGHT_DISCOVERY_RAY_AMOUNT * gl_WorkGroupSize.x * gl_WorkGroupSize.y) {
-			vec3 dir = randomSphereSample();
-			if (dot(dir, normalDepthData.xyz) < 0) dir *= -1;
-			ray_hit_t rayHit0 = raytrace(vxPos, LIGHT_TRACE_LENGTH * dir);
-			if (rayHit0.emissive) {
-				int lightIndex = atomicAdd(lightCount, 1);
-				if (lightIndex < MAX_LIGHT_COUNT) {
-					positions[lightIndex] = ivec4(rayHit0.pos - 0.05 * rayHit0.normal + 1000, 1) - ivec4(1000, 1000, 1000, 0);
-					mergeOffsets[lightIndex] = 0;
-				} else {
-					atomicMin(lightCount, MAX_LIGHT_COUNT);
-				}
+		vec3 dir = randomSphereSample();
+		if (dot(dir, normalDepthData.xyz) < 0) dir *= -1;
+		ray_hit_t rayHit0 = raytrace(vxPos, LIGHT_TRACE_LENGTH * dir);
+		if (rayHit0.emissive) {
+			int lightIndex = atomicAdd(lightCount, 1);
+			if (lightIndex < MAX_LIGHT_COUNT) {
+				positions[lightIndex] = ivec4(rayHit0.pos - 0.05 * rayHit0.normal + 1000, 1) - ivec4(1000, 1000, 1000, 0);
+				mergeOffsets[lightIndex] = 0;
+			} else {
+				atomicMin(lightCount, MAX_LIGHT_COUNT);
 			}
 		}
 	}
