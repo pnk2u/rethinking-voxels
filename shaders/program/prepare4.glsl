@@ -26,7 +26,7 @@ float GetLinearDepth(float depth) {
 	return (2.0 * near) / (farPlusNear - depth * (farMinusNear));
 }
 #define FALLOFF_SPEED 0.04
-#define MAX_OLDWEIGHT 0.5
+#define MAX_OLDWEIGHT 0.9
 void main() {
     vec4 normalDepthData = texelFetch(colortex8, ivec2(gl_FragCoord.xy), 0);
     vec4 newColor = texture(colortex10, lrTexCoord);
@@ -38,12 +38,15 @@ void main() {
     normalWeight *= normalWeight;
     prevPos.xyz = 0.5 * prevPos.xyz / prevPos.w + 0.5;
     vec4 prevColor = vec4(0);
+	float prevLightCount = 0;
     vec4 tex13Data = vec4(0);
     float weight = FALLOFF_SPEED * (1 - length(fract(view * lrTexCoord) - 0.5));
     float prevDepth = 1 - texelFetch(colortex2, ivec2(view * prevPos.xy), 0).w;
     if (prevPos.xy == clamp(prevPos.xy, vec2(0), vec2(1))) {
         tex13Data = texture(colortex13, prevPos.xy);
         prevColor = texture(colortex12, prevPos.xy);
+		prevLightCount = max(floor(prevColor.a), 0);
+		prevColor.a -= prevLightCount;
         prevColor.a *= normalWeight;
         prevColor.a = clamp(
             MAX_OLDWEIGHT * (
@@ -55,23 +58,27 @@ void main() {
     }
     float prevLinDepth = GetLinearDepth(prevDepth);
     float prevCompareDepth = GetLinearDepth(prevPos.z);
+    tex13Data.a = clamp(mix(fract(tex13Data.a), 0.1 * abs(prevLightCount - newColor.a) + 0.05, 0.1), 0.05, 0.95);
 	prevColor.a *= float(
-		(newColor.a > 3.5 || fract(tex13Data.a) < 0.12 * newColor.a) &&
+		#ifdef RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
+			(((newColor.a > 1.5 || prevLightCount < 0.5 + newColor.a) &&
+				newColor.a > 0.5) ||
+				tex13Data.a > 0.06) &&
+		#endif
 		(max(abs(prevDepth - prevPos.z),
 		abs(prevLinDepth - prevCompareDepth) / (prevLinDepth + prevCompareDepth)) < 0.05
 		|| length(view * prevPos.xy - gl_FragCoord.xy) < 2.5) &&
 		normalDepthData.a < 1.5 &&
 		length(normalDepthData.rgb) > 0.1
 	);
-    tex13Data.a = clamp(0.1 * newColor.a - 0.05, 0.05, 0.95);
     /*RENDERTARGETS:12,13*/
     gl_FragData[0] = vec4(
         mix(newColor.rgb,
             prevColor.rgb,
             prevColor.a / (prevColor.a + weight)
             ),
-        prevColor.a + weight);
-    //gl_FragData[0].rgb = newColor;
+        min(prevColor.a + weight, MAX_OLDWEIGHT) + newColor.a);
+    //gl_FragData[0].rgb = tex13Data.aaa - 0.05;
     gl_FragData[1] = tex13Data;
 }
 #endif

@@ -13,7 +13,7 @@ const int colortex8Format = RGBA16F;		//reprojected normal and depth data in pre
 const int colortex9Format = R32UI;			//scaled depth for atomics in reprojection validation
 const int colortex10Format= RGBA16F;		//raw block lighting in bottom left quarter
 const int colortex11Format= RGBA16I;		//valid light sample storage in bottom left quarter
-const int colortex12Format= RGBA16F;		//accumulated block lighting
+const int colortex12Format= RGBA32F;		//accumulated block lighting
 const int colortex13Format= RGBA16F;		//denoised block lighting
 */
 const bool colortex0Clear = true;
