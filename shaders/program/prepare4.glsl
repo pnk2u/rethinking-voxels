@@ -55,16 +55,14 @@ void main() {
     }
     float prevLinDepth = GetLinearDepth(prevDepth);
     float prevCompareDepth = GetLinearDepth(prevPos.z);
-    if ((max(abs(prevDepth - prevPos.z),
-            abs(prevLinDepth - prevCompareDepth) / (prevLinDepth + prevCompareDepth)) > 0.05
-            && length(view * prevPos.xy - gl_FragCoord.xy) > 2.5)
-         || normalDepthData.a > 1.5
-         || length(normalDepthData.rgb) < 0.1) {
-        prevColor.a = 0;
-    }
-    if (fract(tex13Data.a) > 0.12 * newColor.a) {
-        prevColor.a *= 0.0;
-    }
+	prevColor.a *= float(
+		(newColor.a > 3.5 || fract(tex13Data.a) < 0.12 * newColor.a) &&
+		(max(abs(prevDepth - prevPos.z),
+		abs(prevLinDepth - prevCompareDepth) / (prevLinDepth + prevCompareDepth)) < 0.05
+		|| length(view * prevPos.xy - gl_FragCoord.xy) < 2.5) &&
+		normalDepthData.a < 1.5 &&
+		length(normalDepthData.rgb) > 0.1
+	);
     tex13Data.a = clamp(0.1 * newColor.a - 0.05, 0.05, 0.95);
     /*RENDERTARGETS:12,13*/
     gl_FragData[0] = vec4(
