@@ -2,7 +2,7 @@
 
 #ifdef CSH
 
-const ivec3 workGroups = ivec3(2048, 1, 1);
+const ivec3 workGroups = ivec3(16384, 1, 1);
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 uniform int frameCounter;
@@ -12,17 +12,12 @@ uniform int frameCounter;
 #include "/lib/vx/SSBOs.glsl"
 
 void main() {
-	int mat = int(gl_WorkGroupID.x) * 8 + frameCounter%8;
+	int mat = int(gl_WorkGroupID.x);
 	if (!getMaterialAvailability(mat)) {
 		return;
 	}
-	if (gl_LocalInvocationID.z == 0 && gl_LocalInvocationID.x < 7 && gl_LocalInvocationID.y < 7) {
-		if (gl_LocalInvocationID.y == 0) {
-			blockIdMap[16384+7*mat+gl_LocalInvocationID.x] = 0;
-		}
-		if (blockIdMap[16384+7*(mat+gl_LocalInvocationID.x + 1) + gl_LocalInvocationID.y] != 0) {
-			blockIdMap[16384+7*(mat+gl_LocalInvocationID.x + 1) + gl_LocalInvocationID.y] = -1;
-		}
+	if (gl_LocalInvocationID.z == 0 && gl_LocalInvocationID.x < 7 && gl_LocalInvocationID.y == 0) {
+		blockIdMap[16384+7*mat+gl_LocalInvocationID.x] = 0;
 	}
 	int baseIndex = getBaseIndex(mat);
 	const int lodSubdivisions = 1<<(VOXEL_DETAIL_AMOUNT-1);

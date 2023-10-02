@@ -9,7 +9,7 @@ bool isEmissive(int mat) {
 		mat == 10076 || // soul fire
 		mat == 10216 || // crimson wood
 		mat == 10224 || // warped wood
-#if GLOWING_ORES > 0
+#if GLOWING_ORE_MASTER == 2 || (GLOWING_ORE_MASTER == 1 && SHADER_STYLE == 4)
 		mat == 10272 || // iron ore
 		mat == 10276 ||
 		mat == 10284 || // copper ore
@@ -27,9 +27,13 @@ bool isEmissive(int mat) {
 #endif
 		mat == 10616 || // lit redstone ore
 		mat == 10624 ||
-#ifdef GLOWING_MINERAL_BLOCKS
+#ifdef EMISSIVE_EMERALD_BLOCK
 		mat == 10336 || // emerald block
+#endif
+#ifdef EMISSIVE_LAPIS_BLOCK
 		mat == 10352 || // lapis block
+#endif
+#ifdef EMISSIVE_REDSTONE_BLOCK
 		mat == 10608 || // redstone block
 #endif
 		mat == 10332 || // amethyst buds

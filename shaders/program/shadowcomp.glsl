@@ -57,6 +57,7 @@ void main() {
 		float meanEmissiveColorMax = max(max(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
 		float meanEmissiveColorMin = min(min(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
 		vec3 saturatedMeanEmissiveColor = meanEmissiveColorMax + meanEmissiveColorMax / max(meanEmissiveColorMax - meanEmissiveColorMin, 0.001) * (meanEmissiveColor - meanEmissiveColorMax);
+		saturatedMeanEmissiveColor = mix(meanEmissiveColor, saturatedMeanEmissiveColor, LIGHT_COLOR_SATURATION);
 		for (int x = 0; x < responsibleSize; x++) {
 			for (int y = 0; y < responsibleSize; y++) {
 				for (int z = 0; z < responsibleSize; z++) {
@@ -68,10 +69,10 @@ void main() {
 				}
 			}
 		}
-	}
-	barrier();
-	memoryBarrierShared();
-	if (matIsAvailable) {
+//	}
+//	barrier();
+//	memoryBarrierShared();
+//	if (matIsAvailable) {
 		vec3 emissiveColor = vec3(0);
 		int thisEmissiveCount = 0;
 		vec3 subCoord = vec3(0);

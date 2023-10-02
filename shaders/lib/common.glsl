@@ -46,7 +46,7 @@
     #define DENOISE_CONVERGED_MULT 0.2 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0]
 
     #define LIGHT_TRACE_LENGTH 30.0 //[10.0 12.0 15.0 18.0 22.0 26.0 30.0 35.0 40.0 57.0 55.0 65.0 76.0 88.0 100.0]
-
+    #define LIGHT_COLOR_SATURATION 0.5 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
   //#define TRACE_ALL_LIGHTS
 
     #if DENOISING_DEFINE == 1
