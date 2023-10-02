@@ -155,7 +155,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 			#if RP_MODE <= 1
 				voxelData.emissive = isEmissive(blockIdMap[matV[0]]);
 			#else
-				voxelData.emissivev = s.a > 0.1;
+				voxelData.emissive = s.a > 0.1;
 			#endif
 			writeGeometry(baseIndex, thisPos, voxelData);
 		}
