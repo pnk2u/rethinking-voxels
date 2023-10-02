@@ -24,7 +24,7 @@ void main() {
 	if (all(greaterThan(newClipPos.xyz, vec3(0))) && all(lessThan(newClipPos.xyz, vec3(0.999999)))) {
 		newClipPos.xy *= view;
 		vec2 diff = newClipPos.xy - gl_FragCoord.xy + 0.01;
-		ivec2 writePixelCoord = ivec2(gl_FragCoord.xy + floor(diff) + 0.5);
+		ivec2 writePixelCoord = ivec2(gl_FragCoord.xy + floor(diff));
 		uint depth = uint((1<<30) * newClipPos.z);
 		imageAtomicMin(colorimg9, writePixelCoord, depth);
 	}

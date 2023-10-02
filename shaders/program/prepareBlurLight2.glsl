@@ -80,11 +80,7 @@ void main() {
 		totalLight += aroundLight.xyz * weight;
 	}
 	/*RENDERTARGETS:13*/
-//	#ifdef FIRST
-//	gl_FragData[0] = vec4(vec3(variance), 1);
-//	#else
-	gl_FragData[0] = vec4(totalLight / totalWeight, blurSize + prevTex13Data.a);
-//	#endif
+	gl_FragData[0] = vec4(totalLight / totalWeight, blurSize + fract(prevTex13Data.a + 0.05) - 0.05);
 }
 #elif defined FIRST
 void main() {

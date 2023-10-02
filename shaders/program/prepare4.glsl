@@ -1,8 +1,8 @@
 #include "/lib/common.glsl"
 #ifdef FSH
-in vec2 lrTexCoord;
-in mat4 unProjectionMatrix;
-in mat4 prevProjectionMatrix;
+noperspective in vec2 lrTexCoord;
+flat in mat4 unProjectionMatrix;
+flat in mat4 prevProjectionMatrix;
 #ifdef ACCUMULATION
     uniform float viewWidth;
     uniform float viewHeight;
@@ -26,7 +26,11 @@ in mat4 prevProjectionMatrix;
     }
 #endif
 uniform sampler2D colortex10;
-#define FALLOFF_SPEED 0.04
+#if DENOISING_DEFINE == 1 && TRACE_ALL_LIGHTS
+    #define FALLOFF_SPEED 0.1
+#else
+    #define FALLOFF_SPEED 0.04
+#endif
 #define MAX_OLDWEIGHT 0.9
 void main() {
     vec4 newColor = texture(colortex10, lrTexCoord);
@@ -35,52 +39,62 @@ void main() {
         vec4 playerPos = unProjectionMatrix * vec4(gl_FragCoord.xy / view * 2 - 1, 1 - 2 * normalDepthData.w, 1);
         vec4 prevPlayerPos = vec4(playerPos.xyz / playerPos.w + cameraPosition - previousCameraPosition, 1);
         vec4 prevPos = prevProjectionMatrix * prevPlayerPos;
-        float ndotv = dot(playerPos.xyz, normalDepthData.xyz);
-        float normalWeight = clamp(1.05 * dot(prevPlayerPos.xyz, normalDepthData.xyz) / ndotv, 1 + ndotv, 1);
+        float ndotv = dot(normalize(playerPos.xyz), normalDepthData.xyz);
+        float normalWeight = clamp(dot(normalize(prevPlayerPos.xyz), normalDepthData.xyz) / ndotv, 1 + ndotv, 1);
         normalWeight *= normalWeight;
-        prevPos.xyz = 0.5 * prevPos.xyz / prevPos.w + 0.5;
+        if (normalDepthData.a < 0.44) {
+            prevPos.xyz = 0.5 * prevPos.xyz / prevPos.w + 0.5;
+            prevPos.xy *= view;
+        } else {
+            prevPos = vec4(gl_FragCoord.xy, 1 - normalDepthData.a, 1);
+        }
         vec4 prevColor = vec4(0);
         float prevLightCount = 0;
         vec4 tex13Data = vec4(0);
-        float weight = FALLOFF_SPEED * (1 - length(fract(view * lrTexCoord) - 0.5));
-        float prevDepth = 1 - texelFetch(colortex2, ivec2(view * prevPos.xy), 0).w;
-        if (prevPos.xy == clamp(prevPos.xy, vec2(0), vec2(1))) {
-            tex13Data = texture(colortex13, prevPos.xy);
-            prevColor = texture(colortex12, prevPos.xy);
-            prevLightCount = max(floor(prevColor.a), 0);
+        float weight = FALLOFF_SPEED * max(0, 1 - 1.5 * length(fract(view * lrTexCoord) - 0.5));
+        float prevDepth = 1 - texture(colortex2, prevPos.xy / view).w;
+        float origPrevColora = 0;
+        if (prevPos.xy == clamp(prevPos.xy, vec2(0), view)) {
+            ivec2 prevCoords = ivec2(prevPos.xy);
+            tex13Data = texture(colortex13, prevPos.xy / view);
+
+            prevColor.rgb = texture(colortex12, prevPos.xy / view).rgb;
+            prevColor.a = texelFetch(colortex12 , prevCoords, 0).a;
+            origPrevColora = prevColor.a;
+            prevLightCount = max(floor(prevColor.a + 0.05), 0);
             prevColor.a -= prevLightCount;
             prevColor.a *= normalWeight;
             prevColor.a = clamp(
                 MAX_OLDWEIGHT * (
-                    1 - 5 * (1 - GetLinearDepth(1 - normalDepthData.a)) * 
+                    1 - 2 * (1 - GetLinearDepth(1 - normalDepthData.a)) * 
                     length(cameraPosition - previousCameraPosition)
                 ), 0.8 * prevColor.a, prevColor.a);
-        } else {
-            prevColor.a = 0;
         }
-        float prevLinDepth = GetLinearDepth(prevDepth);
+        float prevLinDepth = prevDepth < 0.99999 && prevDepth > 0 ? GetLinearDepth(prevDepth) : 20;
         float prevCompareDepth = GetLinearDepth(prevPos.z);
         tex13Data.a = clamp(mix(fract(tex13Data.a), 0.1 * abs(prevLightCount - newColor.a) + 0.05, 0.1), 0.05, 0.95);
-        prevColor.a *= float(
+        float validMult = float(
             #ifdef RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
                 (((newColor.a > 1.5 || prevLightCount < 0.5 + newColor.a) &&
                     newColor.a > 0.5) ||
                     tex13Data.a > 0.06) &&
             #endif
             (max(abs(prevDepth - prevPos.z),
-            abs(prevLinDepth - prevCompareDepth) / (prevLinDepth + prevCompareDepth)) < 0.05
-            || length(view * prevPos.xy - gl_FragCoord.xy) < 2.5) &&
+            abs(prevLinDepth - prevCompareDepth) / (prevLinDepth + prevCompareDepth)) < 0.005// + 0.1 * length(cameraPosition - previousCameraPosition)
+            || length(prevPos.xy - gl_FragCoord.xy) < 2.5) &&
             normalDepthData.a < 1.5 &&
             length(normalDepthData.rgb) > 0.1
         );
+        prevColor.a *= validMult;
         /*RENDERTARGETS:12,13*/
         gl_FragData[0] = vec4(
             mix(newColor.rgb,
                 prevColor.rgb,
-                prevColor.a / (prevColor.a + weight)
+                prevColor.a / (prevColor.a + weight + 0.001)
                 ),
-            min(prevColor.a + weight, MAX_OLDWEIGHT) + newColor.a);
-        //gl_FragData[0].rgb = tex13Data.aaa - 0.05;
+            min(prevColor.a + weight, MAX_OLDWEIGHT) + floor(newColor.a + 0.1)
+        );
+        //gl_FragData[0].rgb = vec3(prevColor.a);
         gl_FragData[1] = tex13Data;
     #else
         /*RENDERTARGETS:12*/
@@ -90,11 +104,11 @@ void main() {
 #endif
 #ifdef VSH
 
-out vec2 lrTexCoord;
-out mat4 unProjectionMatrix;
-out mat4 prevProjectionMatrix;
-uniform int frameCounter;
+noperspective out vec2 lrTexCoord;
+flat out mat4 unProjectionMatrix;
+flat out mat4 prevProjectionMatrix;
 
+uniform int frameCounter;
 uniform float viewWidth;
 uniform float viewHeight;
 vec2 view = vec2(viewWidth, viewHeight);

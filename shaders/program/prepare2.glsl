@@ -28,11 +28,11 @@ void main() {
 	if (prevClipPos.z > 0.99998) newClipPos.z = 0.9999985;
 	if (all(greaterThan(newClipPos.xyz, vec3(0))) && all(lessThan(newClipPos.xyz, vec3(0.999999)))) {
 		newClipPos.xy *= view;
-		vec2 diff = newClipPos.xy - gl_FragCoord.xy + 0.01;
-		ivec2 writePixelCoord = ivec2(gl_FragCoord.xy + floor(diff) + 0.5);
+		vec2 diff = newClipPos.xy - gl_FragCoord.xy + 0.001;
+		ivec2 writePixelCoord = ivec2(gl_FragCoord.xy + floor(diff));
 		uint depth = uint((1<<30) * newClipPos.z);
 		if (imageLoad(colorimg9, writePixelCoord).r == depth) {
-			vec2 prevSampleCoord = (gl_FragCoord.xy - fract(diff) + 0.5) / view;
+			vec2 prevSampleCoord = (gl_FragCoord.xy - fract(diff)) / view;
 			vec4 writeData = vec4(newClipPos.z < 0.999998 ? texture(colortex4, prevSampleCoord).gba * 2 - 1 : vec3(0), 1 - newClipPos.z);
 			imageStore(colorimg8, writePixelCoord, writeData);
 		}

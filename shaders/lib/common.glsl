@@ -53,7 +53,7 @@
         #ifndef TRACE_ALL_LIGHTS
             #define DENOISING
         #endif
-    #elif DENOISING_DEFINE == 1
+    #elif DENOISING_DEFINE == 2
         #define DENOISING
     #endif
 
