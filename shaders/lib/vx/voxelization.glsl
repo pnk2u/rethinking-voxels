@@ -152,7 +152,11 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 			voxel_t voxelData;
 			voxelData.color = vec4(color.rgb, color.a);
 			voxelData.glColored = hasGlColor;
-			voxelData.emissive = (isEmissive(blockIdMap[matV[0]]) || s.a > 0.1);
+			#if RP_MODE <= 1
+				voxelData.emissive = isEmissive(blockIdMap[matV[0]]);
+			#else
+				voxelData.emissivev = s.a > 0.1;
+			#endif
 			writeGeometry(baseIndex, thisPos, voxelData);
 		}
 	}

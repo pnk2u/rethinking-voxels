@@ -13,7 +13,7 @@ const ivec3 workGroups = ivec3(16384, 1, 1);
 shared ivec4 emissiveParts[64];
 shared int sortMap[64];
 shared int emissiveCount;
-
+shared uvec4 totalEmissiveColor;
 uniform vec3 cameraPosition;
 
 #define WRITE_TO_SSBOS
@@ -22,6 +22,7 @@ uniform vec3 cameraPosition;
 void main() {
 	if (gl_LocalInvocationID == uvec3(0)) {
 		emissiveCount = 0;
+		totalEmissiveColor = uvec4(0);
 	}
 	barrier();
 	memoryBarrierShared();
@@ -30,10 +31,49 @@ void main() {
 	int index = int(gl_LocalInvocationID.x + gl_LocalInvocationID.y * gl_WorkGroupSize.x + gl_LocalInvocationID.z * gl_WorkGroupSize.y * gl_WorkGroupSize.x);
 	ivec4 currentVal;
 	int baseIndex = getBaseIndex(mat);
+	int responsibleSize = 1;
+	ivec3 baseCoord = ivec3(0);
 	if (matIsAvailable) {
-		int responsibleSize = (1<<(VOXEL_DETAIL_AMOUNT-1)) / int(gl_WorkGroupSize.x);
+		responsibleSize = (1<<(VOXEL_DETAIL_AMOUNT-1)) / int(gl_WorkGroupSize.x);
 		if (responsibleSize == 0) responsibleSize = 1;
-		ivec3 baseCoord = ivec3(gl_LocalInvocationID) * responsibleSize;
+		baseCoord = ivec3(gl_LocalInvocationID) * responsibleSize;
+		#if RP_MODE <= 1
+			for (int x = 0; x < responsibleSize; x++) {
+				for (int y = 0; y < responsibleSize; y++) {
+					for (int z = 0; z < responsibleSize; z++) {
+						voxel_t thisVoxel = readGeometry(baseIndex, baseCoord + ivec3(x, y, z));
+						if (thisVoxel.emissive) {
+							for (int i = 0; i < 4; i++) {
+								atomicAdd(totalEmissiveColor[i], uint(thisVoxel.color[i] * thisVoxel.color[i] * 255 + 0.5));
+							}
+						}
+					}
+				}
+			}
+		}
+		barrier();
+		memoryBarrierShared();
+		if (matIsAvailable) {
+			vec3 meanEmissiveColor = sqrt(vec3(totalEmissiveColor.rgb) / max(totalEmissiveColor.a, 1));
+			float meanEmissiveColorMax = max(max(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
+			float meanEmissiveColorMin = min(min(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
+			vec3 saturatedMeanEmissiveColor = meanEmissiveColorMax + meanEmissiveColorMax / max(meanEmissiveColorMax - meanEmissiveColorMin, 0.001) * (meanEmissiveColor - meanEmissiveColorMax);
+			for (int x = 0; x < responsibleSize; x++) {
+				for (int y = 0; y < responsibleSize; y++) {
+					for (int z = 0; z < responsibleSize; z++) {
+						voxel_t thisVoxel = readGeometry(baseIndex, baseCoord + ivec3(x, y, z));
+						if (thisVoxel.emissive) {
+							thisVoxel.color.rgb = mix(thisVoxel.color.rgb, saturatedMeanEmissiveColor, 0.5);
+							writeGeometry(baseIndex, (baseCoord + ivec3(x, y, z)) * (1.0 / (1<<(VOXEL_DETAIL_AMOUNT - 1))), thisVoxel);
+						}
+					}
+				}
+			}
+		}
+		barrier();
+		memoryBarrierShared();
+		if (matIsAvailable) {
+		#endif
 		vec3 emissiveColor = vec3(0);
 		int thisEmissiveCount = 0;
 		vec3 subCoord = vec3(0);
