@@ -12,7 +12,7 @@ const ivec3 workGroups = ivec3(16384, 1, 1);
 #endif
 shared ivec4 emissiveParts[64];
 shared int sortMap[64];
-shared int emissiveCount = 0;
+shared int emissiveCount;
 
 uniform vec3 cameraPosition;
 
@@ -20,6 +20,11 @@ uniform vec3 cameraPosition;
 #include "/lib/vx/SSBOs.glsl"
 
 void main() {
+	if (gl_LocalInvocationID == uvec3(0)) {
+		emissiveCount = 0;
+	}
+	barrier();
+	memoryBarrierShared();
 	int mat = int(gl_WorkGroupID.x);
 	bool matIsAvailable = getMaterialAvailability(mat);
 	int index = int(gl_LocalInvocationID.x + gl_LocalInvocationID.y * gl_WorkGroupSize.x + gl_LocalInvocationID.z * gl_WorkGroupSize.y * gl_WorkGroupSize.x);
@@ -66,7 +71,9 @@ void main() {
 				int index = atomicAdd(emissiveCount, 1);
 				emissiveParts[index] = ivec4(blockRelCoord, sortVal);
 			}
-		}
+		#endif
+	}
+	#if VOXEL_DETAIL_AMOUNT > 1
 		if (index == 0) {
 			setEmissiveCount(baseIndex, emissiveCount);
 		}
