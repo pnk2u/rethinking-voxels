@@ -1,6 +1,6 @@
 #include "/lib/common.glsl"
 #ifdef FSH
-
+#ifdef DENOISING
 uniform int frameCounter;
 
 uniform float viewWidth;
@@ -66,6 +66,11 @@ void main() {
 	/*RENDERTARGETS:10*/
 	gl_FragData[0] = vec4(totalLight / totalWeight, blurSize);
 }
+#else
+void main() {
+	discard;
+}
+#endif
 #endif
 #ifdef VSH
 void main() {

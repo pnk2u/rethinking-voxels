@@ -37,12 +37,25 @@
     #elif VX_VOL_SIZE == 3
         const float voxelDistance = 256;
     #endif
-    #define DENOISE_MAX_BLUR 22 //[1 10 12 14 16 18 20 22 25 28 32 36 40 45 50]
+
+    #define ACCUMULATION
+    #define RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
+    #define DENOISING_DEFINE 1 //[0 1 2]
+    #define DENOISE_MAX_BLUR 22 //[10 12 14 16 18 20 22 25 28 32 36 40 45 50]
     #define DENOISE_MIN_BLUR 2 //[1 2 3 4 6 8 10 15 20]
     #define DENOISE_CONVERGED_MULT 0.2 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0]
 
-	#define LIGHT_TRACE_LENGTH 30.0 //[10.0 12.0 15.0 18.0 22.0 26.0 30.0 35.0 40.0 57.0 55.0 65.0 76.0 88.0 100.0]
-	#define RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
+    #define LIGHT_TRACE_LENGTH 30.0 //[10.0 12.0 15.0 18.0 22.0 26.0 30.0 35.0 40.0 57.0 55.0 65.0 76.0 88.0 100.0]
+
+  //#define TRACE_ALL_LIGHTS
+
+    #if DENOISING_DEFINE == 1
+        #ifndef TRACE_ALL_LIGHTS
+            #define DENOISING
+        #endif
+    #elif DENOISING_DEFINE == 1
+        #define DENOISING
+    #endif
 
     #define REALTIME_SHADOWS
     #define SHADOW_QUALITY 2 //[0 1 2 3 4 5]

@@ -59,11 +59,16 @@ float infnorm(vec3 x) {
 
 #define MAX_LIGHT_COUNT 48
 
-shared int lightCount = 0;
+shared int lightCount;
 shared ivec4[MAX_LIGHT_COUNT] positions;
 shared int[MAX_LIGHT_COUNT] mergeOffsets;
 
 void main() {
+	if (gl_LocalInvocationID.xy == uvec2(0)) {
+		lightCount = 0;
+	}
+	barrier();
+	memoryBarrierShared();
 	ivec2 readTexelCoord = ivec2(gl_GlobalInvocationID.xy) * 2 + ivec2(frameCounter % 2, frameCounter / 2 % 2);
 	ivec2 writeTexelCoord = ivec2(gl_GlobalInvocationID.xy);
 	vec4 normalDepthData = texelFetch(colortex8, readTexelCoord, 0);
@@ -74,10 +79,6 @@ void main() {
 	if (validData) {
 		vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
 		playerPos /= playerPos.w;
-		if (gl_LocalInvocationID == gl_WorkGroupSize/2) {
-			vec4 prevClipPos = gbufferPreviousProjection * (gbufferPreviousModelView * playerPos);
-			prevClipPos /= prevClipPos.w;
-		}
 		vxPos = playerToVx(playerPos.xyz) + max(0.1, 0.005 * length(playerPos.xyz)) * normalDepthData.xyz;
 		vec3 dir = randomSphereSample();
 		if (dot(dir, normalDepthData.xyz) < 0) dir *= -1;
@@ -143,8 +144,13 @@ void main() {
 	}
 	barrier();
 	memoryBarrierShared();
-	if (lightCount > 0 && validData) {
-		uint thisLightIndex = nextUint() % lightCount;
+	vec3 writeColor = vec3(0);
+	#ifdef TRACE_ALL_LIGHTS
+		for (uint thisLightIndex = lightCount * uint(!validData); thisLightIndex < lightCount; thisLightIndex++) {
+	#else
+		if (lightCount > 0 && validData) {
+			uint thisLightIndex = nextUint() % lightCount;
+		#endif
 		int mat = readBlockVolume(positions[thisLightIndex].xyz + 0.5);
 		int baseIndex = getBaseIndex(mat);
 		int emissiveVoxelCount = getEmissiveCount(baseIndex);
@@ -164,18 +170,17 @@ void main() {
 			float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.1;
 			lightBrightness *= lightBrightness;
 			float ndotl = max(0, dot(normalize(dir), normalDepthData.xyz)) * lightBrightness;
-			ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / length(dir)) * dir);
-			vec3 writeColor = lightCount * rayHit1.rayColor.rgb * float(rayHit1.emissive) * ndotl * (1.0 / (length(dir) + 0.1));
-			if (length(writeColor) > 0.003 && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
+			ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / (length(dir) + 0.1)) * dir);
+			if (length(rayHit1.rayColor.rgb) > 0.003 && rayHit1.emissive && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
+				writeColor += rayHit1.rayColor.rgb * float(rayHit1.emissive) * ndotl * (1.0 / (length(dir) + 0.1));
 				positions[thisLightIndex].w = 1;
-			} else {
-				writeColor = vec3(0);
 			}
-			imageStore(colorimg10, writeTexelCoord, vec4(writeColor, lightCount));
 		}
-	} else {
-		imageStore(colorimg10, writeTexelCoord, vec4(0, 0, 0, lightCount));
 	}
+	#ifndef TRACE_ALL_LIGHTS
+		writeColor *= lightCount;
+	#endif
+	imageStore(colorimg10, writeTexelCoord, vec4(writeColor, lightCount));
 	barrier();
 	memoryBarrierShared();
 	ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);

@@ -1,27 +1,30 @@
 #include "/lib/common.glsl"
 #ifdef FSH
+#ifdef DENOISING
+	uniform int frameCounter;
 
-uniform int frameCounter;
+	uniform float viewWidth;
+	uniform float viewHeight;
+	vec2 view = vec2(viewWidth, viewHeight);
 
-uniform float viewWidth;
-uniform float viewHeight;
-vec2 view = vec2(viewWidth, viewHeight);
+	uniform float near;
+	uniform float far;
+	float farPlusNear = far + near;
+	float farMinusNear = far - near;
 
-uniform float near;
-uniform float far;
-float farPlusNear = far + near;
-float farMinusNear = far - near;
-
-uniform sampler2D colortex8;
-uniform sampler2D colortex10;
+	uniform sampler2D colortex8;
+	uniform sampler2D colortex10;
+#endif
 uniform sampler2D colortex13;
 #ifdef FIRST
 	uniform sampler2D colortex12;
-	#define LIGHT_SAMPLER colortex12
-#else
+	#ifdef DENOISING
+		#define LIGHT_SAMPLER colortex12
+	#endif
+#elif defined DENOISING
 	#define LIGHT_SAMPLER colortex13
 #endif
-
+#ifdef DENOISING
 float GetLinearDepth(float depth) {
 	return (2.0 * near) / (farPlusNear - depth * (farMinusNear));
 }
@@ -83,6 +86,18 @@ void main() {
 	gl_FragData[0] = vec4(totalLight / totalWeight, blurSize + prevTex13Data.a);
 //	#endif
 }
+#elif defined FIRST
+void main() {
+	ivec2 texelCoord = ivec2(gl_FragCoord.xy);
+	vec4 prevTex13Data = texelFetch(colortex13, texelCoord, 0);
+	/*RENDERTARGETS:13*/
+	gl_FragData[0] = vec4(texelFetch(colortex12, texelCoord, 0).rgb, prevTex13Data.a);
+}
+#else
+	void main() {
+		discard;
+	}
+#endif
 #endif
 #ifdef VSH
 void main() {

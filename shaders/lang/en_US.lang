@@ -906,3 +906,16 @@ option.LIGHT_TRACE_LENGTH.comment=Controls the maximum distance at which a light
 option.DENOISE_MAX_BLUR=Maximum Blur Amount
 option.DENOISE_MIN_BLUR=Minimum Blur Amount
 option.DENOISE_CONVERGED_MULT=Accumulated Relax Factor
+
+option.RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE=Fast Light-Removal Reaction
+option.RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE.comment=Enabling this will cause temporal blocklight data to be reset when the light source count at a location decreases between frames. This means that breaking a light source will cause the light emitted by it to turn off instantly.
+
+option.DENOISING_DEFINE=Denoising
+value.DENOISING_DEFINE.0=Off
+value.DENOISING_DEFINE.1=Auto
+value.DENOISING_DEFINE.2=On
+
+option.ACCUMULATION=Accumulation
+option.ACCUMULATION.comment=If enabled, block light data will be smoothed across multiple frames. Without this, lighting will look flickery and low-resolution.
+option.TRACE_ALL_LIGHTS=Trace to all lights
+option.TRACE_ALL_LIGHTS.comment=If enabled, block light calculation will happen for all light sources in every frame, rather than only happening for a randomly selected one. [§c-§r] High performance impact.

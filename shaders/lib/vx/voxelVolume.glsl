@@ -32,13 +32,13 @@ voxel_t readGeometry(int index, ivec3 coord) {
 	      +  coord.z;
 	uint rawData = geometryData[index];
 	voxel_t voxelData;
-	voxelData.glColored = bool(rawData >> 31 & 1);
-	voxelData.emissive  = bool(rawData >> 30 & 1);
+	voxelData.glColored = bool(rawData >> 31 & 1u);
+	voxelData.emissive  = bool(rawData >> 30 & 1u);
 	voxelData.color     = vec4(
-		(rawData      ) & 127,
-		(rawData >>  7) & 127,
-		(rawData >> 14) & 127,
-		(rawData >> 21) & 127
+		(rawData      ) & 127u,
+		(rawData >>  7) & 127u,
+		(rawData >> 14) & 127u,
+		(rawData >> 21) & 127u
 	) * (1.0 / 127.0);
 	return voxelData;
 }
