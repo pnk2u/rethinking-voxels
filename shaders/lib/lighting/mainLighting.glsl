@@ -416,7 +416,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     // Combine Lighting
     vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;//lightmapXM * blocklightCol;
     float blockLightingLen = max(length(blockLighting), 0.0001);
-    blockLighting = 4 * log(blockLightingLen * 4.0 + 1.0) * (blockLighting / blockLightingLen);
+    blockLighting = 4 * log(blockLightingLen * 5.0 * BLOCKLIGHT_I + 1.0) * (blockLighting / blockLightingLen);
     vec3 sceneLighting = lightColorM * shadowMult + ambientColorM * ambientMult;
     float dotSceneLighting = dot(sceneLighting, sceneLighting);
 

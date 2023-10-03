@@ -919,3 +919,5 @@ option.ACCUMULATION=Accumulation
 option.ACCUMULATION.comment=If enabled, block light data will be smoothed across multiple frames. Without this, lighting will look flickery and low-resolution.
 option.TRACE_ALL_LIGHTS=Trace to all lights
 option.TRACE_ALL_LIGHTS.comment=If enabled, block light calculation will happen for all light sources in every frame, rather than only happening for a randomly selected one. [§c-§r] High performance impact.
+
+option.BLOCKLIGHT_I=Blocklight Brightness
