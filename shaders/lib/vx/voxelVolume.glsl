@@ -45,7 +45,7 @@ voxel_t readGeometry(int index, ivec3 coord) {
 
 bool getMaterialAvailability(int mat) {
 	for (int k = 0; k < 7; k++) {
-		if (blockIdMap[16384 + 7 * mat + k] != 0) {
+		if (blockIdMap[MATERIALCOUNT + 7 * mat + k] != 0) {
 			return true;
 		}
 	}
@@ -78,7 +78,7 @@ int[6] getEmissiveDirectionRanges(int baseIndex) {
 #ifndef READONLY
 	bool claimMaterial(int mat, int side, ivec3 coords) {
 		int coordsHash = 1 + coords.x + voxelVolumeSize.x * coords.y + voxelVolumeSize.x * voxelVolumeSize.y * coords.z;
-		int prevHash = atomicCompSwap(blockIdMap[16384 + 7 * mat + side], 0, coordsHash);
+		int prevHash = atomicCompSwap(blockIdMap[MATERIALCOUNT + 7 * mat + side], 0, coordsHash);
 		if (prevHash == 0 || prevHash == coordsHash) return true;
 		return false;
 	}

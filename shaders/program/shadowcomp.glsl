@@ -1,8 +1,11 @@
 #include "/lib/common.glsl"
 //////1st Compute Shader//////1st Compute Shader//////1st Compute Shader//////
 #ifdef CSH
-
-const ivec3 workGroups = ivec3(16384, 1, 1);
+#if VOXEL_DETAIL_AMOUNT <= 5
+	const ivec3 workGroups = ivec3(16384, 1, 1);
+#else
+	const ivec3 workGroups = ivec3(15000, 1, 1);
+#endif
 #if VOXEL_DETAIL_AMOUNT == 1
 	layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 #elif VOXEL_DETAIL_AMOUNT == 2

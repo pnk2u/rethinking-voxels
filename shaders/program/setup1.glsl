@@ -1,6 +1,10 @@
 #include "/lib/common.glsl"
-// workGroups.x = 16384 + 512
-const ivec3 workGroups = ivec3(16896, 1, 1);
+// workGroups.x = MATERIALCOUNT + 512
+#if VOXEL_DETAIL_AMOUNT <= 5
+	const ivec3 workGroups = ivec3(16896, 1, 1);
+#else
+	const ivec3 workGroups = ivec3(15512, 1, 1);
+#endif
 layout(local_size_x=32, local_size_y = 1, local_size_z = 1) in;
 
 uniform sampler2D colortex3;
@@ -19,7 +23,7 @@ void main() {
 			blockIdMap[mat] = 0;
 		}
 		for (int k = 0; k < 7; k++) {
-			blockIdMap[16384 + 7 * mat + k] = 0;
+			blockIdMap[MATERIALCOUNT + 7 * mat + k] = 0;
 		}
 	} else {
 		int mat = int(gl_WorkGroupID.x);

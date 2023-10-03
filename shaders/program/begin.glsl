@@ -2,7 +2,11 @@
 
 #ifdef CSH
 
-const ivec3 workGroups = ivec3(16384, 1, 1);
+#if VOXEL_DETAIL_AMOUNT <= 5
+	const ivec3 workGroups = ivec3(16384, 1, 1);
+#else
+	const ivec3 workGroups = ivec3(15000, 1, 1);
+#endif
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 uniform int frameCounter;
@@ -17,7 +21,7 @@ void main() {
 		return;
 	}
 	if (gl_LocalInvocationID.z == 0 && gl_LocalInvocationID.x < 7 && gl_LocalInvocationID.y == 0) {
-		blockIdMap[16384+7*mat+gl_LocalInvocationID.x] = 0;
+		blockIdMap[workGroups.x+7*mat+gl_LocalInvocationID.x] = 0;
 	}
 	int baseIndex = getBaseIndex(mat);
 	const int lodSubdivisions = 1<<(VOXEL_DETAIL_AMOUNT-1);

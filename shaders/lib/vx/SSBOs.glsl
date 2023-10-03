@@ -23,6 +23,11 @@
 		#else
 			const int maxEmissiveVoxels = 64;
 		#endif
+		#if VOXEL_DETAIL_AMOUNT <= 5
+			#define MATERIALCOUNT 16384
+		#else
+			#define MATERIALCOUNT 15000
+		#endif
 	#endif
 
 	layout(std430, binding=0) WRITE_TO_SSBOS buffer blockidmap {
