@@ -9,7 +9,7 @@ const int colortex5Format = RGBA8_SNORM;	//normalM & scene image for water refle
 const int colortex6Format = R16;			//previous depth
 const int colortex7Format = RGBA16F;		//(cloud/water map on gbuffers) | temporal filter
 #endif
-const int colortex8Format = RGBA16F;		//reprojected normal and depth data in prepare
+const int colortex8Format = RGBA32F;		//reprojected normal and depth data in prepare
 const int colortex9Format = R32UI;			//scaled depth for atomics in reprojection validation
 const int colortex10Format= RGBA16F;		//raw block lighting in bottom left quarter
 const int colortex11Format= RGBA16I;		//valid light sample storage in bottom left quarter

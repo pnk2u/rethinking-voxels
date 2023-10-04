@@ -34,6 +34,7 @@ uniform sampler2D colortex10;
 #define MAX_OLDWEIGHT 0.9
 void main() {
     vec4 newColor = texture(colortex10, lrTexCoord);
+    newColor.a = texelFetch(colortex10, ivec2(lrTexCoord * view), 0).a;
     #ifdef ACCUMULATION
         vec4 normalDepthData = texelFetch(colortex8, ivec2(gl_FragCoord.xy), 0);
         vec4 playerPos = unProjectionMatrix * vec4(gl_FragCoord.xy / view * 2 - 1, 1 - 2 * normalDepthData.w, 1);
@@ -56,7 +57,7 @@ void main() {
         float origPrevColora = 0;
         if (prevPos.xy == clamp(prevPos.xy, vec2(0), view)) {
             ivec2 prevCoords = ivec2(prevPos.xy);
-            tex13Data = texture(colortex13, prevPos.xy / view);
+            tex13Data = texelFetch(colortex13, prevCoords, 0);
 
             prevColor.rgb = texture(colortex12, prevPos.xy / view).rgb;
             prevColor.a = texelFetch(colortex12 , prevCoords, 0).a;
@@ -70,21 +71,22 @@ void main() {
                     length(cameraPosition - previousCameraPosition)
                 ), 0.8 * prevColor.a, prevColor.a);
         }
+        float velocity = length(prevPos.xy - gl_FragCoord.xy);
         float prevLinDepth = prevDepth < 0.99999 && prevDepth > 0 ? GetLinearDepth(prevDepth) : 20;
         float prevCompareDepth = GetLinearDepth(prevPos.z);
         tex13Data.a = clamp(mix(fract(tex13Data.a), 0.1 * abs(prevLightCount - newColor.a) + 0.05, 0.1), 0.05, 0.95);
         float validMult = float(
-            #ifdef RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
-                (((newColor.a > 1.5 || prevLightCount < 0.5 + newColor.a) &&
-                    newColor.a > 0.5) ||
-                    tex13Data.a > 0.06) &&
-            #endif
             (max(abs(prevDepth - prevPos.z),
             abs(prevLinDepth - prevCompareDepth) / (prevLinDepth + prevCompareDepth)) < 0.005// + 0.1 * length(cameraPosition - previousCameraPosition)
-            || length(prevPos.xy - gl_FragCoord.xy) < 2.5) &&
+            || velocity < 2.5) &&
             normalDepthData.a < 1.5 &&
             length(normalDepthData.rgb) > 0.1
         );
+        #ifdef RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
+        float accumulationReset = min(1.0, abs(newColor.a - prevLightCount) / (tex13Data.a * 10 + 0.3 + 0.1 * velocity));
+
+        validMult *= 1 - accumulationReset;
+        #endif
         prevColor.a *= validMult;
         /*RENDERTARGETS:12,13*/
         gl_FragData[0] = vec4(
