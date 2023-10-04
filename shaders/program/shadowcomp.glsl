@@ -110,6 +110,7 @@ void main() {
 					voxel_t thisVoxel = readGeometry(baseIndex, baseCoord + ivec3(x, y, z));
 					if (thisVoxel.emissive) {
 						thisVoxel.color.rgb = mix(thisVoxel.color.rgb, saturatedMeanEmissiveColor, 0.5);
+						thisVoxel.color.a = 1.0;
 						writeGeometry(baseIndex, (baseCoord + ivec3(x, y, z)) * (1.0 / (1<<(VOXEL_DETAIL_AMOUNT - 1))), thisVoxel);
 					}
 				}
