@@ -157,13 +157,14 @@ void main() {
 			lightPos = floor(lightPos) + localPos;
 		}
 		vec3 dir = lightPos - vxPos;
-		if (length(dir) < LIGHT_TRACE_LENGTH) {
+		float dirLen = length(dir);
+		if (dirLen < LIGHT_TRACE_LENGTH) {
 			float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.1;
 			lightBrightness *= lightBrightness;
 			float ndotl = max(0, dot(normalize(dir), normalDepthData.xyz)) * lightBrightness;
 			ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / (length(dir) + 0.1)) * dir);
 			if (length(rayHit1.rayColor.rgb) > 0.003 && rayHit1.emissive && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
-				writeColor += rayHit1.rayColor.rgb * float(rayHit1.emissive) * ndotl * (1.0 / (length(dir) + 0.1));
+				writeColor += rayHit1.rayColor.rgb * float(rayHit1.emissive) * ndotl * (sqrt(1 - dirLen / LIGHT_TRACE_LENGTH)) / (dirLen + 0.1);
 				positions[thisLightIndex].w = 1;
 			}
 		}

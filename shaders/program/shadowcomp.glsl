@@ -102,8 +102,9 @@ void main() {
 	if (matIsAvailable) {
 		float meanEmissiveColorMax = max(max(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
 		float meanEmissiveColorMin = min(min(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
+		float meanEmissiveSaturation = getSaturation(meanEmissiveColor);
 		vec3 saturatedMeanEmissiveColor = meanEmissiveColorMax + meanEmissiveColorMax / max(meanEmissiveColorMax - meanEmissiveColorMin, 0.001) * (meanEmissiveColor - meanEmissiveColorMax);
-		saturatedMeanEmissiveColor = mix(meanEmissiveColor, saturatedMeanEmissiveColor, LIGHT_COLOR_SATURATION);
+		saturatedMeanEmissiveColor = mix(meanEmissiveColor, saturatedMeanEmissiveColor, sqrt(meanEmissiveSaturation) * LIGHT_COLOR_SATURATION);
 		for (int x = 0; x < responsibleSize; x++) {
 			for (int y = 0; y < responsibleSize; y++) {
 				for (int z = 0; z < responsibleSize; z++) {

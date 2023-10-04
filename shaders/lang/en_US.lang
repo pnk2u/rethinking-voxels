@@ -925,8 +925,12 @@ option.TRACE_ALL_LIGHTS.comment=If enabled, block light calculation will happen 
 
 option.BLOCKLIGHT_I=Blocklight Brightness
 
+option.LIGHT_COLOR_SATURATION=Light Color Saturation
+
 option.CONWAY=End Game of Life
 option.CONWAY.comment=Simulates Conway's game of life at the bottom of the end. Cells that are close to the player revive.
 value.CONWAY.0=Off
 value.CONWAY.1=Grayscale
 value.CONWAY.2=End-Colors
+
+option.MANDELBROT_GALAXY=Mandelbrot Set in Night Sky
