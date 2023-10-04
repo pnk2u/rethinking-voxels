@@ -19,14 +19,14 @@ uniform vec3 cameraPosition, previousCameraPosition;
 uniform mat4 gbufferPreviousProjection, gbufferProjectionInverse;
 uniform mat4 gbufferPreviousModelView, gbufferModelViewInverse;
 
+uniform sampler2D colortex12;
+uniform sampler2D colortex8;
 uniform sampler2D colortex2;
 uniform sampler2D colortex1;
 uniform sampler2D depthtex1;
 
 #ifndef LIGHT_COLORING
-    uniform sampler2D colortex3;
-#else
-    uniform sampler2D colortex8;
+uniform sampler2D colortex3;
 #endif
 
 //Pipeline Constants//
@@ -67,21 +67,29 @@ void main() {
         DoTAA(color, temp, depth);
     #endif
 
+    vec4 accumulatedLight = texelFetch(colortex12, texelCoord, 0);
+    float guessedDepth = texelFetch(colortex8, texelCoord, 0).a;
+    float guessedLinDepth = guessedDepth < 1.0 ? GetLinearDepth(1 - guessedDepth) : 20;
+    float actualLinDepth = GetLinearDepth(depth);
+    if (abs(guessedLinDepth - actualLinDepth) / (guessedLinDepth + actualLinDepth) > 0.01) {
+        accumulatedLight.a = 0;
+    }
     #ifndef LIGHT_COLORING
-    /* DRAWBUFFERS:32 */
+    /* RENDERTARGETS:3,2,12 */
     #else
-    /* DRAWBUFFERS:82 */
+    /* RENDERTARGETS:8,2,12 */
     #endif
 	gl_FragData[0] = vec4(color, 1.0);
     gl_FragData[1] = vec4(temp, 1.0 - depth);
+    gl_FragData[2] = accumulatedLight;
     
 	#ifdef TEMPORAL_FILTER
         #ifndef LIGHT_COLORING
-        /* DRAWBUFFERS:326 */
+        /* RENDERTARGETS:3,2,12,6 */
         #else
-        /* DRAWBUFFERS:826 */
+        /* RENDERTARGETS:8,2,12,6 */
         #endif
-        gl_FragData[2] = vec4(depth, 0.0, 0.0, 1.0);
+        gl_FragData[3] = vec4(depth, 0.0, 0.0, 1.0);
 	#endif
 }
 

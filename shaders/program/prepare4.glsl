@@ -77,8 +77,7 @@ void main() {
         tex13Data.a = clamp(mix(fract(tex13Data.a), 0.1 * abs(prevLightCount - newColor.a) + 0.05, 0.1), 0.05, 0.95);
         float validMult = float(
             (max(abs(prevDepth - prevPos.z),
-            abs(prevLinDepth - prevCompareDepth) / (prevLinDepth + prevCompareDepth)) < 0.005// + 0.1 * length(cameraPosition - previousCameraPosition)
-            || velocity < 2.5) &&
+            abs(prevLinDepth - prevCompareDepth) / (prevLinDepth + prevCompareDepth)) < 0.05) &&
             normalDepthData.a < 1.5 &&
             length(normalDepthData.rgb) > 0.1
         );
@@ -92,7 +91,7 @@ void main() {
         gl_FragData[0] = vec4(
             mix(newColor.rgb,
                 prevColor.rgb,
-                prevColor.a / (prevColor.a + weight + 0.001)
+                prevColor.a / max(prevColor.a + weight, 0.001)
                 ),
             min(prevColor.a + weight, MAX_OLDWEIGHT) + floor(newColor.a + 0.1)
         );
