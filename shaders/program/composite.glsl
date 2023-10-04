@@ -204,7 +204,7 @@ void main() {
 	
 	#if CONWAY > 0
 		vec4 conway = GetConway(translucentMult, playerPos, lViewPos, lViewPos1, dither);
-		volumetricEffect.rgb += conway.rgb * conway.a;
+		volumetricEffect.rgb = mix(volumetricEffect.rgb, conway.rgb, conway.a);
 		//volumetricEffect.a = conway.a + (1 - conway.a) * volumetricEffect.a;
 		//color *= 1 - conway.a;
 	#endif

@@ -1,7 +1,5 @@
 #include "/lib/colors/lightAndAmbientColors.glsl"
 
-#define CONWAY_HEIGHT 30.1
-
 uniform sampler2D colortex14;
 
 #if CONWAY == 1
@@ -68,7 +66,7 @@ vec4 GetConway(vec3 translucentMult, vec3 playerPos, float dist0, float dist1, f
 			float cylinderFactor = exp(0.3 * max(starty, stopy)) * livelihood;
 			float baseCylinderDensity = cylinderColor0.a * cylinderFactor;
 			float cylinderDensity = 1 - exp(-baseCylinderDensity * insideLen * dist1);
-			color += cylinderDensity * vec4(mix(cylinderColor0.rgb, cylinderColor1.rgb, cylinderFactor * 0.5 + 0.4 * hash12(floor(pos.xz) + 0.25 * cameraPosition.xz) - 0.2) * cylinderFactor, 1.0) * (1 - color.a);
+			color += cylinderDensity * vec4((circleW > dist0 / dist1 ? translucentMult : vec3(1)) * mix(cylinderColor0.rgb, cylinderColor1.rgb, cylinderFactor * 0.5 + 0.4 * hash12(floor(pos.xz) + 0.25 * cameraPosition.xz) - 0.2) * cylinderFactor, 1.0) * (1 - color.a);
 			if (color.a > 0.999) {
 				break;
 			}

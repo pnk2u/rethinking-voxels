@@ -60,6 +60,7 @@
 
     #ifdef END
         #define CONWAY 2 //[0 1 2]
+        #define CONWAY_HEIGHT 50.1
     #endif
 
     #define REALTIME_SHADOWS

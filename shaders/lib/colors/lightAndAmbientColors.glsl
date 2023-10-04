@@ -51,7 +51,7 @@
     vec3 lightColor   = vec3(0.0);
     vec3 ambientColor = (netherColor + 0.5 * lavaLightColor) * (0.9 + 0.45 * vsBrightness);
 #elif defined END
-    vec3 endLightColor = vec3(0.68, 0.51, 1.07);
+    const vec3 endLightColor = vec3(0.68, 0.51, 1.07);
     float endLightBalancer = 0.2 * vsBrightness;
     vec3 lightColor    = endLightColor * (0.35 - endLightBalancer);
     vec3 ambientColor  = endLightColor * (0.2 + endLightBalancer);

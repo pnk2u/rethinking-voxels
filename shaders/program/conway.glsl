@@ -37,7 +37,7 @@
 			} else if ((liveCount != 4 && prevFractTime > fractTime) || writeVal <= 0.995) {
 				writeVal -= falloffFrameMult;
 			}
-			if (all(lessThan(abs(texelCoord - view / 2), ivec2(4))) || dot(abs(texelCoord - view / 2), ivec2(1)) < 6) {
+			if (abs(cameraPosition.y - CONWAY_HEIGHT) < 20 && (all(lessThan(abs(texelCoord - view / 2), ivec2(4))) || dot(abs(texelCoord - view / 2), ivec2(1)) < 6)) {
 				writeVal = 1.0;
 			}
 			gl_FragData[0] = vec4(writeVal, 0, 0, 1);
