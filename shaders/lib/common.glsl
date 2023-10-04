@@ -59,7 +59,7 @@
     #endif
 
     #ifdef END
-        #define CONWAY
+        #define CONWAY 2 //[0 1 2]
     #endif
 
     #define REALTIME_SHADOWS

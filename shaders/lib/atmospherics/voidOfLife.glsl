@@ -1,8 +1,28 @@
+#include "/lib/colors/lightAndAmbientColors.glsl"
+
 #define CONWAY_HEIGHT 30.1
 
 uniform sampler2D colortex14;
 
-const vec4 cylinderColor = vec4(1.0, 1.0, 1.0, 3.0);
+#if CONWAY == 1
+	const vec4 cylinderColor0 = vec4(0.9, 0.9, 0.9, 3.0);
+	const vec4 cylinderColor1 = vec4(0.4, 0.4, 0.4, 3.0);
+#else
+	const vec4 cylinderColor0 = vec4(0.8 * endLightColor, 3.0);
+	const vec4 cylinderColor1 = vec4(0.8 * vec3(1.0, 0.3, 0.0), 3.0);
+#endif
+// hash without sin by david hoskins (https://www.shadertoy.com/view/XdGfRR)
+#define UI0 1597334673U
+#define UI1 3812015801U
+#define UI2 uvec2(UI0, UI1)
+#define UIF (1.0 / float(0xffffffffU))
+
+float hash12(vec2 p)
+{
+	uvec2 q = uvec2(ivec2(p)) * UI2;
+	uint n = (q.x ^ q.y) * UI0;
+	return float(n) * UIF;
+}
 
 vec4 GetConway(vec3 translucentMult, vec3 playerPos, float dist0, float dist1, float dither) {
     if (min(cameraPosition.y, playerPos.y + cameraPosition.y) > CONWAY_HEIGHT) {
@@ -45,10 +65,10 @@ vec4 GetConway(vec3 translucentMult, vec3 playerPos, float dist0, float dist1, f
         if (offset > onset && onset < 1.0) {
 			float starty = start.y + playerPos.y * onset - CONWAY_HEIGHT;
 			float stopy = start.y + playerPos.y * offset - CONWAY_HEIGHT;
-			float cylinderFactor = exp(0.2 * max(starty, stopy)) * livelihood;
-			float baseCylinderDensity = cylinderColor.a * cylinderFactor;
+			float cylinderFactor = exp(0.3 * max(starty, stopy)) * livelihood;
+			float baseCylinderDensity = cylinderColor0.a * cylinderFactor;
 			float cylinderDensity = 1 - exp(-baseCylinderDensity * insideLen * dist1);
-			color += cylinderDensity * vec4(cylinderColor.rgb * cylinderFactor, 1.0) * (1 - color.a);
+			color += cylinderDensity * vec4(mix(cylinderColor0.rgb, cylinderColor1.rgb, cylinderFactor * 0.5 + 0.4 * hash12(floor(pos.xz) + 0.25 * cameraPosition.xz) - 0.2) * cylinderFactor, 1.0) * (1 - color.a);
 			if (color.a > 0.999) {
 				break;
 			}
