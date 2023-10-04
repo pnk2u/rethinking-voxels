@@ -32,9 +32,9 @@ void main() {
         if (liveCount == 3 && prevFractTime > fractTime) {
             writeVal = 1.0;
         } else if ((liveCount != 4 && prevFractTime > fractTime) || writeVal <= 0.995) {
-            writeVal *= falloffFrameMult;
+            writeVal -= falloffFrameMult;
         }
-        if (all(lessThan(abs(texelCoord - view / 2), ivec2(3)))) {
+        if (all(lessThan(abs(texelCoord - view / 2), ivec2(4))) || dot(abs(texelCoord - view / 2), ivec2(1)) < 6) {
             writeVal = 1.0;
         }
         gl_FragData[0] = vec4(writeVal, 0, 0, 1);
@@ -47,7 +47,7 @@ flat out float falloffFrameMult;
 uniform float frameTimeSmooth;
 
 void main() {
-    falloffFrameMult = min(0.99, pow(0.05, frameTimeSmooth));
+    falloffFrameMult = max(1.0 / 254.0, 1.0 * frameTimeSmooth);
     gl_Position = ftransform();
 }
 #endif

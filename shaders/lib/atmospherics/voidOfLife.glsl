@@ -24,7 +24,6 @@ vec4 GetConway(vec3 translucentMult, vec3 playerPos, float dist0, float dist1, f
     stopInVolume = stopInVolume < 0.0 ? 1.0 : min(stopInVolume, 1.0);
     stopInVolume = playerPos.y < 0 ? min(stopInVolume, (CONWAY_HEIGHT - 30 - start.y) / playerPos.y) : stopInVolume;
     float rayOffset = 0.001 / lPlayerPos;
-    float lastOffset = startInVolume;
     float w = startInVolume;
     progress += floor((startInVolume - progress) / stepSize) * stepSize;
     for (; w < stopInVolume; w = min(progress.x, progress.y)) {
@@ -43,19 +42,16 @@ vec4 GetConway(vec3 translucentMult, vec3 playerPos, float dist0, float dist1, f
         float onset = max(circleW - 0.5 * insideLen, startInVolume);
         float offset = min(circleW + 0.5 * insideLen, stopInVolume);
         insideLen = offset - onset;
-        if (offset > onset) {
-            if (onset < 1.0) {
-                float starty = start.y + playerPos.y * onset - CONWAY_HEIGHT;
-                float stopy = start.y + playerPos.y * offset - CONWAY_HEIGHT;
-                float cylinderFactor = exp(0.2 * max(starty, stopy)) * livelihood;
-                float baseCylinderDensity = cylinderColor.a * cylinderFactor;
-                float cylinderDensity = 1 - exp(-baseCylinderDensity * insideLen * dist1);
-                color += cylinderDensity * vec4(cylinderColor.rgb * cylinderFactor, 1.0) * (1 - color.a);
-                if (color.a > 0.999) {
-                    break;
-                }
-                lastOffset = offset;
-            }
+        if (offset > onset && onset < 1.0) {
+			float starty = start.y + playerPos.y * onset - CONWAY_HEIGHT;
+			float stopy = start.y + playerPos.y * offset - CONWAY_HEIGHT;
+			float cylinderFactor = exp(0.2 * max(starty, stopy)) * livelihood;
+			float baseCylinderDensity = cylinderColor.a * cylinderFactor;
+			float cylinderDensity = 1 - exp(-baseCylinderDensity * insideLen * dist1);
+			color += cylinderDensity * vec4(cylinderColor.rgb * cylinderFactor, 1.0) * (1 - color.a);
+			if (color.a > 0.999) {
+				break;
+			}
         }
     }
     return color;
