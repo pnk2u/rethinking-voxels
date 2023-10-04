@@ -80,7 +80,7 @@ void main() {
 						if (thisVoxel.emissive) {
 							float thisLuminance = max(max(thisVoxel.color.r, thisVoxel.color.g), thisVoxel.color.b);
 							float thisSaturation = getSaturation(thisVoxel.color.rgb) * thisLuminance;
-							if (thisLuminance + thisSaturation > threshold || thisLuminance > 0.3 * meanEmissiveLuminance + 0.7) {
+							if (thisLuminance + thisSaturation > 1.2 * threshold || thisLuminance > 0.3 * meanEmissiveLuminance + 0.7 || thisSaturation > 0.3 * meanEmissiveSaturation + 0.7) {
 								for (int i = 0; i < 3; i++) {
 									atomicAdd(totalEmissiveColor[i], uint(thisVoxel.color[i] * thisVoxel.color[i] * 255 + 0.5));
 								}

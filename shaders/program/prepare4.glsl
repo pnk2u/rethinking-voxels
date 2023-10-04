@@ -83,7 +83,7 @@ void main() {
             length(normalDepthData.rgb) > 0.1
         );
         #ifdef RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
-        float accumulationReset = min(1.0, abs(newColor.a - prevLightCount) / (tex13Data.a * 10 + 0.3 + 0.1 * velocity));
+        float accumulationReset = min(1.0, abs(newColor.a - prevLightCount) / (tex13Data.a * 10 + 0.2 + 0.3 * newColor.a + 0.1 * velocity));
 
         validMult *= 1 - accumulationReset;
         #endif
