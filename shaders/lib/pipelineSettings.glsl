@@ -15,6 +15,7 @@ const int colortex10Format= RGBA16F;		//raw block lighting in bottom left quarte
 const int colortex11Format= RGBA16I;		//valid light sample storage in bottom left quarter
 const int colortex12Format= RGBA32F;		//accumulated block lighting
 const int colortex13Format= RGBA16F;		//denoised block lighting
+const int colortex14Format = R8;            //Conway's game of life
 */
 const bool colortex0Clear = true;
 const bool colortex1Clear = true;
@@ -34,6 +35,7 @@ const bool colortex10Clear = true;
 const bool colortex11Clear = false;
 const bool colortex12Clear = false;
 const bool colortex13Clear = false;
+const bool colortex14Clear = false;
 
 const int noiseTextureResolution = 128;
 

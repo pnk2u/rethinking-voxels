@@ -31,7 +31,7 @@ uniform sampler2D colortex4;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 
-#if defined LIGHTSHAFTS_ACTIVE || WATER_QUALITY >= 3 || defined NETHER_STORM || RAINBOWS > 0
+#if defined LIGHTSHAFTS_ACTIVE || WATER_QUALITY >= 3 || defined NETHER_STORM || defined CONWAY || RAINBOWS > 0
 	uniform float frameTimeCounter;
 
 	uniform mat4 gbufferProjection;
@@ -42,7 +42,7 @@ uniform sampler2D depthtex1;
 	uniform sampler2D noisetex;
 #endif
 
-#if defined LIGHTSHAFTS_ACTIVE || defined NETHER_STORM || RAINBOWS > 0
+#if defined LIGHTSHAFTS_ACTIVE || defined NETHER_STORM || defined CONWAY || RAINBOWS > 0
 	uniform int frameCounter;
 
 	#ifndef LIGHT_COLORING
@@ -117,7 +117,7 @@ vec2 view = vec2(viewWidth, viewHeight);
 	#include "/lib/atmospherics/volumetricLight.glsl"
 #endif
 
-#if WATER_QUALITY >= 3 || defined NETHER_STORM
+#if WATER_QUALITY >= 3 || defined NETHER_STORM || defined CONWAY
 	#include "/lib/util/spaceConversion.glsl"
 #endif
 
@@ -137,6 +137,10 @@ vec2 view = vec2(viewWidth, viewHeight);
 	#include "/lib/atmospherics/rainbow.glsl"
 #endif
 
+#ifdef CONWAY
+	#include "/lib/atmospherics/voidOfLife.glsl"
+#endif
+
 //Program//
 void main() {
 	vec3 color = texelFetch(colortex0, texelCoord, 0).rgb;
@@ -144,7 +148,7 @@ void main() {
 	float z0 = texelFetch(depthtex0, texelCoord, 0).r;
 	float z1 = texelFetch(depthtex1, texelCoord, 0).r;
 
-	#if defined LIGHTSHAFTS_ACTIVE || WATER_QUALITY >= 3 || defined BLOOM_FOG_COMPOSITE || defined NETHER_STORM || RAINBOWS > 0 && defined OVERWORLD
+	#if defined LIGHTSHAFTS_ACTIVE || WATER_QUALITY >= 3 || defined BLOOM_FOG_COMPOSITE || defined NETHER_STORM || defined CONWAY || RAINBOWS > 0 && defined OVERWORLD
 		vec4 screenPos = vec4(texCoord, z0, 1.0);
 		vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
 		viewPos /= viewPos.w;
@@ -157,7 +161,7 @@ void main() {
 
 	vec4 volumetricEffect = vec4(0.0);
 
-	#if defined LIGHTSHAFTS_ACTIVE || defined NETHER_STORM || RAINBOWS > 0 && defined OVERWORLD
+	#if defined LIGHTSHAFTS_ACTIVE || defined NETHER_STORM || defined CONWAY || RAINBOWS > 0 && defined OVERWORLD
 		/* The "1.0 - translucentMult" trick is done because of the default color attachment
 		value being vec3(0.0). This makes it vec3(1.0) to avoid issues especially on improved glass */
 		#ifndef LIGHT_COLORING
@@ -190,12 +194,21 @@ void main() {
 		volumetricEffect = GetVolumetricLight(color, vlFactorM, translucentMult, lViewPos1, nViewPos, VdotL, VdotU, texCoord, z0, z1, dither);
 	#endif
 
-	#ifdef NETHER_STORM
+	#if defined NETHER_STORM || defined CONWAY
 		vec3 playerPos = ViewToPlayer(viewPos.xyz);
+	#endif
 
+	#ifdef NETHER_STORM
 		volumetricEffect = GetNetherStorm(color, translucentMult, playerPos, viewPos.xyz, lViewPos, lViewPos1, dither);
 	#endif
-		
+	
+	#ifdef CONWAY
+		vec4 conway = GetConway(translucentMult, playerPos, lViewPos, lViewPos1, dither);
+		volumetricEffect.rgb += conway.rgb * conway.a;
+		//volumetricEffect.a = conway.a + (1 - conway.a) * volumetricEffect.a;
+		//color *= 1 - conway.a;
+	#endif
+
 	#ifdef ATM_COLOR_MULTS
 		volumetricEffect.rgb *= GetAtmColorMult();
 	#endif
