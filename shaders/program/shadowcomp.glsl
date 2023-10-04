@@ -70,15 +70,17 @@ void main() {
 		barrier();
 		memoryBarrierShared();
 		if (matIsAvailable) {
-			float meanEmissiveLuminance = GetLuminance(meanEmissiveColor);
-			float meanEmissiveSaturation = getSaturation(meanEmissiveColor);
+			float meanEmissiveLuminance = max(max(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
+			float meanEmissiveSaturation = getSaturation(meanEmissiveColor) * meanEmissiveLuminance;
 			float threshold = meanEmissiveLuminance + meanEmissiveSaturation;
 			for (int x = 0; x < responsibleSize; x++) {
 				for (int y = 0; y < responsibleSize; y++) {
 					for (int z = 0; z < responsibleSize; z++) {
 						voxel_t thisVoxel = readGeometry(baseIndex, baseCoord + ivec3(x, y, z));
 						if (thisVoxel.emissive) {
-							if (GetLuminance(thisVoxel.color.rgb) + getSaturation(thisVoxel.color.rgb) > threshold) {
+							float thisLuminance = max(max(thisVoxel.color.r, thisVoxel.color.g), thisVoxel.color.b);
+							float thisSaturation = getSaturation(thisVoxel.color.rgb) * thisLuminance;
+							if (thisLuminance + thisSaturation > threshold || thisLuminance > 0.3 * meanEmissiveLuminance + 0.7) {
 								for (int i = 0; i < 3; i++) {
 									atomicAdd(totalEmissiveColor[i], uint(thisVoxel.color[i] * thisVoxel.color[i] * 255 + 0.5));
 								}
