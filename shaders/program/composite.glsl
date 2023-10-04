@@ -203,10 +203,9 @@ void main() {
 	#endif
 	
 	#if CONWAY > 0
-		vec4 conway = GetConway(translucentMult, playerPos, lViewPos, lViewPos1, dither);
-		volumetricEffect.rgb = mix(volumetricEffect.rgb, conway.rgb, conway.a);
-		//volumetricEffect.a = conway.a + (1 - conway.a) * volumetricEffect.a;
-		//color *= 1 - conway.a;
+		float conwayDepth;
+		vec4 conway = GetConway(translucentMult, playerPos, lViewPos, lViewPos1, conwayDepth);
+		volumetricEffect.rgb = mix(volumetricEffect.rgb, conway.rgb, mix(conway.a, 1 - volumetricEffect.a, min(conwayDepth / far, 1.0)));
 	#endif
 
 	#ifdef ATM_COLOR_MULTS

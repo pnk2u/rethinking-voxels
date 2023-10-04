@@ -78,6 +78,9 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 #if SUN_MOON_STYLE >= 2
 	#include "/lib/util/spaceConversion.glsl"
 #endif
+#ifdef MANDELBROT_GALAXY
+    #include "/lib/atmospherics/mandelbrot.glsl"
+#endif
 
 //Program//
 void main() {
@@ -93,7 +96,9 @@ void main() {
 		float VdotU = dot(nViewPos, upVec);
 		float VdotS = dot(nViewPos, sunVec);
 		float dither = Bayer8(gl_FragCoord.xy);
-
+		#ifdef MANDELBROT_GALAXY
+			mandelbrotSkyColorMod(nightUpSkyColor, mat3(gbufferModelViewInverse) * nViewPos, mat3(gbufferModelViewInverse) * sunVec);
+		#endif
 		color.rgb = GetSky(VdotU, VdotS, dither, true, false);
 		
 		vec2 starCoord = GetStarCoord(viewPos.xyz, 0.5);

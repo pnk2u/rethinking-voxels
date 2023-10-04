@@ -62,6 +62,9 @@
         #define CONWAY 2 //[0 1 2]
         #define CONWAY_HEIGHT 50.1
     #endif
+    #ifdef OVERWORLD
+        //#define MANDELBROT_GALAXY
+    #endif
 
     #define REALTIME_SHADOWS
     #define SHADOW_QUALITY 2 //[0 1 2 3 4 5]

@@ -22,13 +22,11 @@ float hash12(vec2 p)
 	return float(n) * UIF;
 }
 
-vec4 GetConway(vec3 translucentMult, vec3 playerPos, float dist0, float dist1, float dither) {
+vec4 GetConway(vec3 translucentMult, vec3 playerPos, float dist0, float dist1, out float depth) {
+    depth = dist1 * 1.1;
     if (min(cameraPosition.y, playerPos.y + cameraPosition.y) > CONWAY_HEIGHT) {
         return vec4(0);
     }
-    float slopeFactor0 = playerPos.y / length(playerPos.xz);
-
-    float slopeFactor = sqrt(1 + slopeFactor0 * slopeFactor0);
     playerPos = vec3(0.25, 1.0, 0.25) * normalize(playerPos) * dist1;
     playerPos += 0.0002 * vec3(lessThan(abs(playerPos), vec3(0.0001)));
     float lPlayerPos = length(playerPos.xz);
@@ -61,6 +59,7 @@ vec4 GetConway(vec3 translucentMult, vec3 playerPos, float dist0, float dist1, f
         float offset = min(circleW + 0.5 * insideLen, stopInVolume);
         insideLen = offset - onset;
         if (offset > onset && onset < 1.0) {
+            if (depth > dist1) depth = onset * dist1;
 			float starty = start.y + playerPos.y * onset - CONWAY_HEIGHT;
 			float stopy = start.y + playerPos.y * offset - CONWAY_HEIGHT;
 			float cylinderFactor = exp(0.3 * max(starty, stopy)) * livelihood;
