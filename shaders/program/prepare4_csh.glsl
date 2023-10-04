@@ -30,6 +30,7 @@ float infnorm(vec3 x) {
 #define MAX_LIGHT_COUNT 48
 
 shared int lightCount;
+shared int finalLightCount;
 shared ivec4[MAX_LIGHT_COUNT] positions;
 shared int[MAX_LIGHT_COUNT] mergeOffsets;
 
@@ -58,6 +59,24 @@ void main() {
 			if (lightIndex < MAX_LIGHT_COUNT) {
 				positions[lightIndex] = ivec4(rayHit0.pos - 0.05 * rayHit0.normal + 1000, 1) - ivec4(1000, 1000, 1000, 0);
 				mergeOffsets[lightIndex] = 0;
+			} else {
+				atomicMin(lightCount, MAX_LIGHT_COUNT);
+			}
+		}
+	}
+	barrier();
+	memoryBarrierShared();
+	if (index >= MAX_LIGHT_COUNT && index < MAX_LIGHT_COUNT + 4) {
+		ivec2 offset = (ivec2(index - MAX_LIGHT_COUNT) + ivec2(-1, -2)) % 2;// * ((index - MAX_LIGHT_COUNT) / 2 * 2 - 1);
+		int otherLightIndex = frameCounter % min(MAX_LIGHT_COUNT, lightCount * 2 + 2);
+		ivec4 prevFrameLight = imageLoad(colorimg11, ivec2(gl_WorkGroupSize.xy * (gl_WorkGroupID.xy + offset)) + ivec2(otherLightIndex % gl_WorkGroupSize.x, otherLightIndex / gl_WorkGroupSize.x));
+		bool known = (prevFrameLight.xyz == ivec3(0) || prevFrameLight.w == 0);
+		prevFrameLight.xyz += vxPosFrameOffset;
+		if (!known) {
+			int thisLightIndex = atomicAdd(lightCount, 1);
+			if (thisLightIndex < MAX_LIGHT_COUNT) {
+				positions[thisLightIndex] = ivec4(prevFrameLight.xyz, 0);
+				mergeOffsets[thisLightIndex] = 0;
 			} else {
 				atomicMin(lightCount, MAX_LIGHT_COUNT);
 			}
@@ -95,21 +114,23 @@ void main() {
 	oldLightCount = lightCount;
 	barrier();
 	memoryBarrierShared();
-	ivec4 prevFrameLight = imageLoad(colorimg11, writeTexelCoord);
-	bool known = (prevFrameLight.xyz == ivec3(0) || prevFrameLight.w == 0);// || nextUint() % 100 == 0);
-	prevFrameLight.xyz += vxPosFrameOffset;
-	for (int k = 0; k < oldLightCount; k++) {
-		if (prevFrameLight.xyz == positions[k].xyz) {
-			known = true;
-			break;
+	if (index < MAX_LIGHT_COUNT) {
+		ivec4 prevFrameLight = imageLoad(colorimg11, writeTexelCoord);
+		bool known = (prevFrameLight.xyz == ivec3(0) || prevFrameLight.w == 0);// || nextUint() % 100 == 0);
+		prevFrameLight.xyz += vxPosFrameOffset;
+		for (int k = 0; k < oldLightCount; k++) {
+			if (prevFrameLight.xyz == positions[k].xyz) {
+				known = true;
+				break;
+			}
 		}
-	}
-	if (!known) {
-		int thisLightIndex = atomicAdd(lightCount, 1);
-		if (thisLightIndex < MAX_LIGHT_COUNT) {
-			positions[thisLightIndex] = ivec4(prevFrameLight.xyz, 0);
-		} else {
-			atomicMin(lightCount, MAX_LIGHT_COUNT);
+		if (!known) {
+			int thisLightIndex = atomicAdd(lightCount, 1);
+			if (thisLightIndex < MAX_LIGHT_COUNT) {
+				positions[thisLightIndex] = ivec4(prevFrameLight.xyz, 0);
+			} else {
+				atomicMin(lightCount, MAX_LIGHT_COUNT);
+			}
 		}
 	}
 	barrier();
@@ -150,7 +171,18 @@ void main() {
 	#ifndef TRACE_ALL_LIGHTS
 		writeColor *= lightCount;
 	#endif
-	imageStore(colorimg10, writeTexelCoord, vec4(writeColor, lightCount));
+	if (gl_LocalInvocationID == uvec3(0)) {
+		finalLightCount = 0;
+	}
+	barrier();
+	memoryBarrierShared();
+	if (index < lightCount && positions[index].w > 0) {
+		atomicAdd(finalLightCount, 1);
+	}
+	barrier();
+	memoryBarrierShared();
+
+	imageStore(colorimg10, writeTexelCoord, vec4(writeColor, finalLightCount));
 	barrier();
 	memoryBarrierShared();
 	ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
