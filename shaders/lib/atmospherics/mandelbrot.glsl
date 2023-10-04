@@ -27,10 +27,10 @@ void mandelbrotSkyColorMod(inout vec3 skyColor, vec3 dir, vec3 sunDir) {
 	sunRotMat0[2] = cross(sunRotMat0[0], sunRotMat0[1]);
 	mat3 sunRotMat = inverse(sunRotMat0);
 	dir = sunRotMat * dir;
-	if (dir.x < 0) {
+	if (dir.x < -0.9) {
 		return;
 	}
-	vec2 coords = (2 - dir.x) * dir.yz;
+	vec2 coords = 1.3 * dir.yz / (dir.x + 1);
 	int iter_count = mandelbrot(coords);
 	vec4 mandelbrotColor = mandelbrotColorMap(iter_count * 1.0 / MANDELBROT_MAX_ITER);
 	skyColor = mix(skyColor, mandelbrotColor.rgb, mandelbrotColor.a);
