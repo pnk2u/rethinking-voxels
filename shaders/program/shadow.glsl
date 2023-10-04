@@ -255,7 +255,6 @@ uniform int blockEntityId;
 //Attributes//
 in vec4 mc_Entity;
 in vec3 at_midBlock;
-in ivec2 vaUV2;
 
 #if defined PERPENDICULAR_TWEAKS || defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
 	in vec4 mc_midTexCoord;
@@ -282,7 +281,7 @@ in ivec2 vaUV2;
 //Program//
 void main() {
 	texCoordV = gl_MultiTexCoord0.xy;
-	lmCoordV = 0.0625 * vaUV2;
+	lmCoordV = clamp(((gl_TextureMatrix[1] * gl_MultiTexCoord1).xy - 0.03125) * 1.06667, 0.0, 1.0);
 	glColorV = gl_Color;
 
 	sunVecV = GetSunVector();

@@ -51,7 +51,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 		imageAtomicAnd(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), 0xff000000);
 		imageAtomicOr(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), packedGlColor);
 	}
-	int lightLevel = int(lmCoordV[0].x * 20) + 5;
+	int lightLevel = int(lmCoordV[0].x * lmCoordV[0].x * 10) + 2;
 	imageAtomicAnd(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), 0x80ffffff);
 	imageAtomicOr(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), lightLevel << 24);
 	vec3 blockRelPos[3];

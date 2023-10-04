@@ -80,7 +80,7 @@ void main() {
 						if (thisVoxel.emissive) {
 							float thisLuminance = max(max(thisVoxel.color.r, thisVoxel.color.g), thisVoxel.color.b);
 							float thisSaturation = getSaturation(thisVoxel.color.rgb) * thisLuminance;
-							if (thisLuminance + thisSaturation > 1.2 * threshold || thisLuminance > 0.3 * meanEmissiveLuminance + 0.7 || thisSaturation > 0.3 * meanEmissiveSaturation + 0.7) {
+							if (thisLuminance + thisSaturation > 1.2 * threshold || thisLuminance > min(0.3 * meanEmissiveLuminance + 0.7, 0.8) || thisSaturation > min(0.3 * meanEmissiveSaturation + 0.7, 0.8)) {
 								for (int i = 0; i < 3; i++) {
 									atomicAdd(totalEmissiveColor[i], uint(thisVoxel.color[i] * thisVoxel.color[i] * 255 + 0.5));
 								}
@@ -115,10 +115,6 @@ void main() {
 				}
 			}
 		}
-//	}
-//	barrier();
-//	memoryBarrierShared();
-//	if (matIsAvailable) {
 		vec3 emissiveColor = vec3(0);
 		int thisEmissiveCount = 0;
 		vec3 subCoord = vec3(0);
@@ -184,6 +180,15 @@ void main() {
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
+uniform vec3 cameraPosition;
+uniform vec3 previousCameraPosition;
 
+#define WRITE_TO_SSBOS
+#include "/lib/vx/SSBOs.glsl"
 
+#include "/lib/util/random.glsl"
+
+void main() {
+
+}
 #endif

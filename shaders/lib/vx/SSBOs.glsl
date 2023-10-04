@@ -51,4 +51,7 @@
 		// voxel volume
 		#include "/lib/vx/voxelVolume.glsl"
 	#endif
+	#ifdef IRRADIANCECACHE
+		#include "/lib/vx/irradianceCache.glsl"
+	#endif
 #endif
