@@ -22,6 +22,10 @@ uniform vec3 cameraPosition;
 #define WRITE_TO_SSBOS
 #include "/lib/vx/SSBOs.glsl"
 
+float getSaturation(vec3 color) {
+	return 1 - min(min(color.r, color.g), color.b) / max(max(color.r, color.g), max(color.b, 0.0001));
+}
+
 void main() {
 	if (gl_LocalInvocationID == uvec3(0)) {
 		emissiveCount = 0;
@@ -45,9 +49,10 @@ void main() {
 				for (int z = 0; z < responsibleSize; z++) {
 					voxel_t thisVoxel = readGeometry(baseIndex, baseCoord + ivec3(x, y, z));
 					if (thisVoxel.emissive) {
-						for (int i = 0; i < 4; i++) {
+						for (int i = 0; i < 3; i++) {
 							atomicAdd(totalEmissiveColor[i], uint(thisVoxel.color[i] * thisVoxel.color[i] * 255 + 0.5));
 						}
+						atomicAdd(totalEmissiveColor.w, 255);
 					}
 				}
 			}
@@ -55,8 +60,44 @@ void main() {
 	}
 	barrier();
 	memoryBarrierShared();
+	vec3 meanEmissiveColor = sqrt(vec3(totalEmissiveColor.rgb) / max(totalEmissiveColor.a, 1));
+	#if RP_MODE <= 1
+		barrier();
+		memoryBarrierShared();
+		if (gl_LocalInvocationID == uvec3(0)) {
+			totalEmissiveColor = uvec4(0);
+		}
+		barrier();
+		memoryBarrierShared();
+		if (matIsAvailable) {
+			float meanEmissiveLuminance = GetLuminance(meanEmissiveColor);
+			float meanEmissiveSaturation = getSaturation(meanEmissiveColor);
+			float threshold = meanEmissiveLuminance + meanEmissiveSaturation;
+			for (int x = 0; x < responsibleSize; x++) {
+				for (int y = 0; y < responsibleSize; y++) {
+					for (int z = 0; z < responsibleSize; z++) {
+						voxel_t thisVoxel = readGeometry(baseIndex, baseCoord + ivec3(x, y, z));
+						if (thisVoxel.emissive) {
+							if (GetLuminance(thisVoxel.color.rgb) + getSaturation(thisVoxel.color.rgb) > threshold) {
+								for (int i = 0; i < 3; i++) {
+									atomicAdd(totalEmissiveColor[i], uint(thisVoxel.color[i] * thisVoxel.color[i] * 255 + 0.5));
+								}
+								atomicAdd(totalEmissiveColor.w, 255);
+							} else {
+								thisVoxel.emissive = false;
+								writeGeometry(baseIndex, (baseCoord + ivec3(x, y, z)) * (1.0 / (1<<(VOXEL_DETAIL_AMOUNT - 1))), thisVoxel);
+							}
+						}
+					}
+				}
+			}
+		}
+		barrier();
+		memoryBarrierShared();
+		memoryBarrierBuffer();
+	#endif
+	meanEmissiveColor = sqrt(vec3(totalEmissiveColor.rgb) / max(totalEmissiveColor.a, 1));
 	if (matIsAvailable) {
-		vec3 meanEmissiveColor = sqrt(vec3(totalEmissiveColor.rgb) / max(totalEmissiveColor.a, 1));
 		float meanEmissiveColorMax = max(max(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
 		float meanEmissiveColorMin = min(min(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
 		vec3 saturatedMeanEmissiveColor = meanEmissiveColorMax + meanEmissiveColorMax / max(meanEmissiveColorMax - meanEmissiveColorMin, 0.001) * (meanEmissiveColor - meanEmissiveColorMax);
