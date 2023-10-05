@@ -30,6 +30,7 @@ uniform float viewWidth, viewHeight;
 	#include "/lib/antialiasing/fxaa.glsl"
 #endif
 
+uniform sampler2D colortex10;
 //Program//
 void main() {
     #ifndef LIGHT_COLORING

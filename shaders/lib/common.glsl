@@ -39,13 +39,12 @@
     #endif
 
     #define ACCUMULATION
-    #define RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
+  //#define RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
     #define DENOISING_DEFINE 1 //[0 1 2]
-    #define DENOISE_MAX_BLUR 22 //[10 12 14 16 18 20 22 25 28 32 36 40 45 50]
-    #define DENOISE_MIN_BLUR 2 //[1 2 3 4 6 8 10 15 20]
-    #define DENOISE_CONVERGED_MULT 0.2 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0]
-
-	#define BLOCKLIGHT_I 1.0 //[0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.5 10.0]
+    #define DENOISE_MAX_BLUR 16 //[0 10 12 14 16 18 20 22 25 28 32 36 40 45 50]
+    #define DENOISE_MIN_BLUR 1 //[0 1 2 3 4 6 8 10 15 20]
+    #define DENOISE_CONVERGED_MULT 0.3 //[0 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0]
+    #define BLOCKLIGHT_I 1.0 //[0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.5 10.0]
     #define LIGHT_TRACE_LENGTH 30.0 //[10.0 12.0 15.0 18.0 22.0 26.0 30.0 35.0 40.0 57.0 55.0 65.0 76.0 88.0 100.0]
     #define LIGHT_COLOR_SATURATION 0.5 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
   //#define TRACE_ALL_LIGHTS
@@ -53,9 +52,12 @@
     #if DENOISING_DEFINE == 1
         #ifndef TRACE_ALL_LIGHTS
             #define DENOISING
+            #define 
         #endif
     #elif DENOISING_DEFINE == 2
         #define DENOISING
+    #endif
+    #if DENOISING_DEFINE == 2
     #endif
 
     #ifdef END
@@ -663,14 +665,14 @@
 
     const vec3 endSkyColor = vec3(0.095, 0.07, 0.15) * 1.5;
 
-	#if WEATHER_TEX_OPACITY == 100
-		const float rainTexOpacity = 0.35;
-		const float snowTexOpacity = 0.5;
-	#else
-		#define WEATHER_TEX_OPACITY_M 100.0 / WEATHER_TEX_OPACITY
-		const float rainTexOpacity = pow(0.35, WEATHER_TEX_OPACITY_M);
-		const float snowTexOpacity = pow(0.5, WEATHER_TEX_OPACITY_M);
-	#endif
+    #if WEATHER_TEX_OPACITY == 100
+        const float rainTexOpacity = 0.35;
+        const float snowTexOpacity = 0.5;
+    #else
+        #define WEATHER_TEX_OPACITY_M 100.0 / WEATHER_TEX_OPACITY
+        const float rainTexOpacity = pow(0.35, WEATHER_TEX_OPACITY_M);
+        const float snowTexOpacity = pow(0.5, WEATHER_TEX_OPACITY_M);
+    #endif
 
     #ifdef FRAGMENT_SHADER
         ivec2 texelCoord = ivec2(gl_FragCoord.xy);

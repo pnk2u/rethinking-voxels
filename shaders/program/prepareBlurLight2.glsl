@@ -40,30 +40,17 @@ void main() {
 	vec4 thisLightData = texelFetch(LIGHT_SAMPLER, texelCoord, 0);
 	#ifdef FIRST
 		ivec2 preBlurredCoord = texelCoord / 2 + ivec2(view.x / 2, 0);
-		float variance = 0;
-		vec4 thisPreBlurredData = texelFetch(colortex10, preBlurredCoord, 0);
-		float brightness = dot(thisPreBlurredData.xyz, thisPreBlurredData.xyz);
-		vec4[4] preBlurredData;
-		vec4[4] varianceRejectionNormalDepthData;
-		for (int k = 0; k < 4; k++) {
-			ivec2 offset = (2 * (k/2%2) - 1) * ivec2(k%2, (k+1)%2);
-			preBlurredData[k] = texelFetch(colortex10, preBlurredCoord + 2 * offset, 0);
-			varianceRejectionNormalDepthData[k] = texelFetch(colortex8, texelCoord + 4 * offset, 0);
-			varianceRejectionNormalDepthData[k].w = 50.0 * GetLinearDepth(1 - varianceRejectionNormalDepthData[k].w);
-		}
-		for (int k = 0; k < 4; k++) {
-			if (length(varianceRejectionNormalDepthData[k] - normalDepthData) < 0.3) {
-				vec3 diff = thisPreBlurredData.xyz - preBlurredData[k].xyz;
-				brightness = max(brightness, dot(preBlurredData[k].xyz, preBlurredData[k].xyz));
-				variance += dot(diff, diff);
-			}
-		}
-		variance = clamp(sqrt(variance) * 4 / (brightness + 0.05) - 0.2, 0, 1);
+		vec4 thisPreBlurredData0 = texelFetch(colortex10, preBlurredCoord, 0);
+		vec4 thisPreBlurredData1 = texelFetch(colortex10, preBlurredCoord + ivec2(0, view.y / 2.0 + 0.1), 0);
+		float brightness = dot(thisPreBlurredData0.xyz, thisPreBlurredData0.xyz);
+		float variance0 = length(thisLightData.rgb - thisPreBlurredData0.rgb);
+		float variance1 = length(thisPreBlurredData0.rgb - thisPreBlurredData1.rgb);
+		float variance = clamp(variance0 * variance1 * 50 / (brightness + 0.02), 0, 1);
 		float accumulationAmount = fract(thisLightData.a);
 		int blurSize = int((DENOISE_MAX_BLUR - max(DENOISE_MAX_BLUR - DENOISE_MIN_BLUR, 0) * min(variance, accumulationAmount * 2)) * (1.0 + DENOISE_CONVERGED_MULT - accumulationAmount));
 		if (blurSize < 1) blurSize = 1;
 	#else
-		int blurSize = int(thisLightData.w + 0.5);
+		int blurSize = int(thisLightData.w + 0.02);
 	#endif
 	float totalWeight = 0.00001;
 	vec3 totalLight = vec3(0.0);
@@ -82,6 +69,9 @@ void main() {
 	}
 	/*RENDERTARGETS:13*/
 	gl_FragData[0] = vec4(totalLight / totalWeight, blurSize + fract(prevTex13Data.a + 0.05) - 0.05);
+//	#ifdef FIRST
+//	gl_FragData[0] = vec4(vec3(variance), 1);
+//	#endif
 }
 #elif defined FIRST
 void main() {

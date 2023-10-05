@@ -25,12 +25,12 @@ float GetLinearDepth(float depth) {
 	return (2.0 * near) / (farPlusNear - depth * (farMinusNear));
 }
 #ifndef FIRST
-	ivec2[2] readBounds = ivec2[2](ivec2(view.x / 2.0, 0), ivec2(view.x, view.y / 2.0));
+	ivec2[2] readBounds = ivec2[2](ivec2(view.x / 2.0, view.y / 2.0 * floor(gl_FragCoord.y * 2.0 / view.y)), ivec2(view.x, view.y / 2.0 * ceil(gl_FragCoord.y * 2.0 / view.y)));
 #else
 	ivec2[2] readBounds = ivec2[2](ivec2(0), ivec2(view));
 #endif
 void main() {
-	ivec2 screenTexelCoord = (ivec2(gl_FragCoord.xy) - ivec2(view.x / 2, 0)) * 2;
+	ivec2 screenTexelCoord = ivec2(mod(gl_FragCoord.xy, view / 2.0)) * 2;
 
 	#ifdef FIRST
 		ivec2 lightingTexelCoord = screenTexelCoord;
@@ -41,7 +41,7 @@ void main() {
 	normalDepthData.w = 50.0 * GetLinearDepth(1 - normalDepthData.w);
 	vec4 thisLightData = texelFetch(LIGHT_SAMPLER, lightingTexelCoord, 0);
 	#ifdef FIRST
-		int blurSize = 18 - int(8 * thisLightData.a);
+		int blurSize = max(int(DENOISE_MAX_BLUR * (DENOISE_CONVERGED_MULT + 1) * (1 + DENOISE_CONVERGED_MULT - fract(thisLightData.a)) * (2.0 - 0.5 * float(gl_FragCoord.y > view.y / 2.0))) / 2, 1);
 	#else
 		int blurSize = int(thisLightData.a + 0.5);
 	#endif
@@ -76,6 +76,6 @@ void main() {
 void main() {
 	gl_Position = ftransform();
 	gl_Position /= gl_Position.w;
-	gl_Position.xy = 0.5 * gl_Position.xy + vec2(0.5, -0.5);
+	gl_Position.xy = vec2(0.5, 1.0) * gl_Position.xy + vec2(0.5, 0.0);
 }
 #endif

@@ -34,8 +34,8 @@ uniform sampler2D colortex10;
 #define MAX_OLDWEIGHT 0.9
 void main() {
     vec4 newColor = texture(colortex10, lrTexCoord);
-    newColor.a = texelFetch(colortex10, ivec2(lrTexCoord * view), 0).a;
     #ifdef ACCUMULATION
+	    newColor.a = texelFetch(colortex10, ivec2(lrTexCoord * view), 0).a;
         vec4 normalDepthData = texelFetch(colortex8, ivec2(gl_FragCoord.xy), 0);
         vec4 playerPos = unProjectionMatrix * vec4(gl_FragCoord.xy / view * 2 - 1, 1 - 2 * normalDepthData.w, 1);
         vec4 prevPlayerPos = vec4(playerPos.xyz / playerPos.w + cameraPosition - previousCameraPosition, 1);
