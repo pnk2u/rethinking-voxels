@@ -78,8 +78,8 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 #if SUN_MOON_STYLE >= 2
 	#include "/lib/util/spaceConversion.glsl"
 #endif
-#ifdef MANDELBROT_GALAXY
-    #include "/lib/atmospherics/mandelbrot.glsl"
+#if FRACTAL_GALAXY > 0
+    #include "/lib/atmospherics/fractals.glsl"
 #endif
 
 //Program//
@@ -96,8 +96,10 @@ void main() {
 		float VdotU = dot(nViewPos, upVec);
 		float VdotS = dot(nViewPos, sunVec);
 		float dither = Bayer8(gl_FragCoord.xy);
-		#ifdef MANDELBROT_GALAXY
-			mandelbrotSkyColorMod(nightUpSkyColor, mat3(gbufferModelViewInverse) * nViewPos, mat3(gbufferModelViewInverse) * sunVec);
+		#if FRACTAL_GALAXY > 0
+			if (sunFactor < 0.99) {
+				fractalSkyColorMod(nightUpSkyColor, mat3(gbufferModelViewInverse) * nViewPos, mat3(gbufferModelViewInverse) * sunVec);
+			}
 		#endif
 		color.rgb = GetSky(VdotU, VdotS, dither, true, false);
 		

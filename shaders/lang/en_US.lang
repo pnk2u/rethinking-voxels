@@ -933,4 +933,8 @@ value.CONWAY.0=Off
 value.CONWAY.1=Grayscale
 value.CONWAY.2=End-Colors
 
-option.MANDELBROT_GALAXY=Mandelbrot Set in Night Sky
+option.FRACTAL_GALAXY=Fractal Night Sky
+value.FRACTAL_GALAXY.0=Off
+value.FRACTAL_GALAXY.1=Full Mandelbrot Set
+value.FRACTAL_GALAXY.2=Partial Mandelbrot Set
+value.FRACTAL_GALAXY.3=Julia Set

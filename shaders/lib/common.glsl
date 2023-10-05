@@ -63,7 +63,7 @@
         #define CONWAY_HEIGHT 50.1
     #endif
     #ifdef OVERWORLD
-        //#define MANDELBROT_GALAXY
+        #define FRACTAL_GALAXY 0 //[0 1 2 3]
     #endif
 
     #define REALTIME_SHADOWS

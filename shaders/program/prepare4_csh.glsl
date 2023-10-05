@@ -205,7 +205,7 @@ uniform sampler2D colortex8;
 layout(rgba16f) uniform image2D colorimg10;
 
 
-void main() {
+void main() {/*
 	ivec2 readTexelCoord = ivec2(gl_GlobalInvocationID.xy) * 2 + ivec2(frameCounter % 2, frameCounter / 2 % 2);
 	ivec2 writeTexelCoord = ivec2(gl_GlobalInvocationID.xy);
 	vec4 normalDepthData = texelFetch(colortex8, readTexelCoord, 0);
@@ -251,6 +251,6 @@ void main() {
 	}
 	barrier();
 	imageStore(colorimg10, writeTexelCoord, thisLightData);
-}
+*/}
 
 #endif
