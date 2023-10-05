@@ -157,11 +157,11 @@ void main() {
 		#endif
 	}
 	#if VOXEL_DETAIL_AMOUNT > 1
+		barrier();
+		memoryBarrierShared();
 		if (index == 0) {
 			setEmissiveCount(baseIndex, emissiveCount);
 		}
-		barrier();
-		memoryBarrierShared();
 		storeEmissive(baseIndex, index, index < emissiveCount ? emissiveParts[index].xyz : ivec3(-1));
 	#endif
 }
