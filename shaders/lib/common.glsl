@@ -49,13 +49,15 @@
     #define LIGHT_COLOR_SATURATION 0.5 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
   //#define TRACE_ALL_LIGHTS
 
-    #if DENOISING_DEFINE == 1
-        #ifndef TRACE_ALL_LIGHTS
-            #define DENOISING
-            #define 
-        #endif
-    #elif DENOISING_DEFINE == 2
+    #if DENOISING_DEFINE > 0
         #define DENOISING
+        #if DENOISING_DEFINE == 1 && defined TRACE_ALL_LIGHTS
+            #define DENOISE_MAX_BLUR_MOD DENOISE_MAX_BLUR / 2
+            #define DENOISE_MIN_BLUR_MOD DENOISE_MIN_BLUR / 2
+        #else
+            #define DENOISE_MAX_BLUR_MOD DENOISE_MAX_BLUR
+            #define DENOISE_MIN_BLUR_MOD DENOISE_MIN_BLUR
+        #endif
     #endif
     #ifdef END
         #define CONWAY 2 //[0 1 2]

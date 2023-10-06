@@ -17,6 +17,7 @@ shared ivec4 emissiveParts[64];
 shared int sortMap[64];
 shared int emissiveCount;
 shared uvec4 totalEmissiveColor;
+shared uint maxThreshold;
 uniform vec3 cameraPosition;
 
 #define WRITE_TO_SSBOS
@@ -30,6 +31,7 @@ void main() {
 	if (gl_LocalInvocationID == uvec3(0)) {
 		emissiveCount = 0;
 		totalEmissiveColor = uvec4(0);
+		maxThreshold = 0;
 	}
 	barrier();
 	memoryBarrierShared();
@@ -49,6 +51,9 @@ void main() {
 				for (int z = 0; z < responsibleSize; z++) {
 					voxel_t thisVoxel = readGeometry(baseIndex, baseCoord + ivec3(x, y, z));
 					if (thisVoxel.emissive) {
+						float thisLuminance = max(max(thisVoxel.color.r, thisVoxel.color.g), thisVoxel.color.b);
+						float thisSaturation = getSaturation(thisVoxel.color.rgb) * thisLuminance;
+						atomicMax(maxThreshold, uint(512 * (thisLuminance + thisSaturation)));
 						for (int i = 0; i < 3; i++) {
 							atomicAdd(totalEmissiveColor[i], uint(thisVoxel.color[i] * thisVoxel.color[i] * 255 + 0.5));
 						}
@@ -61,7 +66,7 @@ void main() {
 	barrier();
 	memoryBarrierShared();
 	vec3 meanEmissiveColor = sqrt(vec3(totalEmissiveColor.rgb) / max(totalEmissiveColor.a, 1));
-	#if RP_MODE <= 1
+	#if RP_MODE <= 1 && VOXEL_DETAIL_AMOUNT > 2
 		barrier();
 		memoryBarrierShared();
 		if (gl_LocalInvocationID == uvec3(0)) {
@@ -72,7 +77,7 @@ void main() {
 		if (matIsAvailable) {
 			float meanEmissiveLuminance = max(max(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
 			float meanEmissiveSaturation = getSaturation(meanEmissiveColor) * meanEmissiveLuminance;
-			float threshold = meanEmissiveLuminance + meanEmissiveSaturation;
+			float threshold = 0.5 * (meanEmissiveLuminance + meanEmissiveSaturation + maxThreshold / 512.0);
 			for (int x = 0; x < responsibleSize; x++) {
 				for (int y = 0; y < responsibleSize; y++) {
 					for (int z = 0; z < responsibleSize; z++) {
@@ -80,7 +85,7 @@ void main() {
 						if (thisVoxel.emissive) {
 							float thisLuminance = max(max(thisVoxel.color.r, thisVoxel.color.g), thisVoxel.color.b);
 							float thisSaturation = getSaturation(thisVoxel.color.rgb) * thisLuminance;
-							if (thisLuminance + thisSaturation > 1.2 * threshold || thisLuminance > min(0.3 * meanEmissiveLuminance + 0.7, 0.8) || thisSaturation > min(0.3 * meanEmissiveSaturation + 0.7, 0.8)) {
+							if (thisLuminance + thisSaturation > threshold || thisLuminance > min(0.3 * meanEmissiveLuminance + 0.7, 0.8) || thisSaturation > min(0.3 * meanEmissiveSaturation + 0.7, 0.8)) {
 								for (int i = 0; i < 3; i++) {
 									atomicAdd(totalEmissiveColor[i], uint(thisVoxel.color[i] * thisVoxel.color[i] * 255 + 0.5));
 								}

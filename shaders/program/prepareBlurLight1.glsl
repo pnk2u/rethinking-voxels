@@ -41,7 +41,7 @@ void main() {
 	normalDepthData.w = 50.0 * GetLinearDepth(1 - normalDepthData.w);
 	vec4 thisLightData = texelFetch(LIGHT_SAMPLER, lightingTexelCoord, 0);
 	#ifdef FIRST
-		int blurSize = max(int(DENOISE_MAX_BLUR * (DENOISE_CONVERGED_MULT + 1 - fract(thisLightData.a)) * (2.0 - 0.5 * float(gl_FragCoord.y > view.y / 2.0))) / 2, 1);
+		int blurSize = max(int(DENOISE_MAX_BLUR_MOD * (DENOISE_CONVERGED_MULT + 1 - fract(thisLightData.a)) * (2.0 - 0.5 * float(gl_FragCoord.y > view.y / 2.0))) / 2, 1);
 	#else
 		int blurSize = int(thisLightData.a + 0.5);
 	#endif

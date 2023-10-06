@@ -68,8 +68,8 @@ void main() {
     #endif
 
     vec4 accumulatedLight = texelFetch(colortex12, texelCoord, 0);
-    float guessedDepth = texelFetch(colortex8, texelCoord, 0).a;
-    float guessedLinDepth = guessedDepth < 1.0 ? GetLinearDepth(1 - guessedDepth) : 20;
+    float guessedDepth = 1 - texelFetch(colortex8, texelCoord, 0).a;
+    float guessedLinDepth = guessedDepth < 1.0 ? GetLinearDepth(guessedDepth) : 20;
     float actualLinDepth = GetLinearDepth(depth);
     if (abs(guessedLinDepth - actualLinDepth) / (guessedLinDepth + actualLinDepth) > 0.01) {
         accumulatedLight.a = 0;

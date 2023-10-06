@@ -52,7 +52,7 @@ void main() {
 		float variance1 = length(normalize(thisPreBlurredData0.rgb + 0.005) - normalize(thisPreBlurredData1.rgb + 0.005));
 		float variance = clamp(/*variance0 */ variance1 * 0.5 / (brightness + 0.02), 0, 1);
 		float accumulationAmount = fract(thisLightData.a);
-		int blurSize = int((DENOISE_MAX_BLUR - max(DENOISE_MAX_BLUR - DENOISE_MIN_BLUR, 0) * min(variance, accumulationAmount * 2)) * (1.0 + DENOISE_CONVERGED_MULT - accumulationAmount));
+		int blurSize = int((DENOISE_MAX_BLUR_MOD - max(DENOISE_MAX_BLUR_MOD - DENOISE_MIN_BLUR_MOD, 0) * min(variance, accumulationAmount * 2)) * (1.0 + DENOISE_CONVERGED_MULT - accumulationAmount));
 		if (blurSize < 1) blurSize = 1;
 	#else
 		int blurSize = int(thisLightData.w + 0.02);

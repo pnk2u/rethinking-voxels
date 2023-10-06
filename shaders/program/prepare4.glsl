@@ -40,8 +40,8 @@ void main() {
         vec4 playerPos = unProjectionMatrix * vec4(gl_FragCoord.xy / view * 2 - 1, 1 - 2 * normalDepthData.w, 1);
         vec4 prevPlayerPos = vec4(playerPos.xyz / playerPos.w + cameraPosition - previousCameraPosition, 1);
         vec4 prevPos = prevProjectionMatrix * prevPlayerPos;
-        float ndotv = dot(normalize(playerPos.xyz), normalDepthData.xyz);
-        float normalWeight = clamp(dot(normalize(prevPlayerPos.xyz), normalDepthData.xyz) / ndotv, 1 + ndotv, 1);
+        float ndotv = -dot(normalize(playerPos.xyz), normalDepthData.xyz);
+        float normalWeight = clamp(-dot(normalize(prevPlayerPos.xyz), normalDepthData.xyz) / ndotv, 1 - ndotv, 1);
         normalWeight *= normalWeight;
         if (normalDepthData.a < 0.44) {
             prevPos.xyz = 0.5 * prevPos.xyz / prevPos.w + 0.5;
@@ -77,7 +77,7 @@ void main() {
         tex13Data.a = clamp(mix(fract(tex13Data.a), 0.1 * abs(prevLightCount - newColor.a) + 0.05, 0.1), 0.05, 0.95);
         float validMult = float(
             (max(abs(prevDepth - prevPos.z),
-            abs(prevLinDepth - prevCompareDepth) / (prevLinDepth + prevCompareDepth)) < 0.05) &&
+            abs(prevLinDepth - prevCompareDepth) / (prevLinDepth + prevCompareDepth)) * ndotv < 0.01) &&
             normalDepthData.a < 1.5 &&
             length(normalDepthData.rgb) > 0.1
         );
@@ -95,7 +95,7 @@ void main() {
                 ),
             min(prevColor.a + weight, MAX_OLDWEIGHT) + floor(newColor.a + 0.1)
         );
-        //gl_FragData[0].rgb = vec3(prevColor.a);
+        //gl_FragData[0].rgb = vec3(ndotv);
         gl_FragData[1] = tex13Data;
     #else
         /*RENDERTARGETS:12*/

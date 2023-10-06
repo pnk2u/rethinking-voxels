@@ -121,6 +121,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 							[(mostPerpendicularAxis + j + 1) % 3];
 		}
 	}
+	bool smallFace = all(lessThan(projectionBoundCoords[1] - projectionBoundCoords[0], ivec2(2)));
 	float offTriMargin = 0.5 / dot(vec2(1), projectionBoundCoords[1] - projectionBoundCoords[0] + 0.5);
 	int baseIndex = getBaseIndex(matV[0]);
 	for (int x = projectionBoundCoords[0].x;
@@ -129,8 +130,8 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 				y <= projectionBoundCoords[1].y; y++) {
 			vec3 thisProjectedPos = vec3(x + 0.5, y + 0.5, 1) / vec2(1 << (VOXEL_DETAIL_AMOUNT-1), 1).xxy;
 			vec3 localPos = projectedToLocal * thisProjectedPos;
-			if (localPos.x < -offTriMargin || localPos.y < -offTriMargin ||
-				localPos.x + localPos.y > 1.0 + offTriMargin) {
+			if (!smallFace && (localPos.x < -offTriMargin || localPos.y < -offTriMargin ||
+				localPos.x + localPos.y > 1.0 + offTriMargin)) {
 				continue;
 			}
 			localPos = clamp(localPos, 0.0, 1.0);
