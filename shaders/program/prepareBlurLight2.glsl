@@ -44,8 +44,13 @@ void main() {
 		vec4 thisPreBlurredData1 = texelFetch(colortex10, preBlurredCoord + ivec2(0, view.y / 2.0 + 0.1), 0);
 		float brightness = dot(thisPreBlurredData0.xyz, thisPreBlurredData0.xyz);
 		float variance0 = length(thisLightData.rgb - thisPreBlurredData0.rgb);
-		float variance1 = length(thisPreBlurredData0.rgb - thisPreBlurredData1.rgb);
-		float variance = clamp(variance0 * variance1 * 50 / (brightness + 0.02), 0, 1);
+		for (int k = 0; k < 4; k++) {
+			ivec2 offset = ivec2(k-1, k-2) % 2 * 3;
+			vec4 aroundLightData = texelFetch(LIGHT_SAMPLER, texelCoord + offset, 0);
+			variance0 = min(variance0, length(aroundLightData.rgb - thisPreBlurredData0.rgb));
+		}
+		float variance1 = length(normalize(thisPreBlurredData0.rgb + 0.005) - normalize(thisPreBlurredData1.rgb + 0.005));
+		float variance = clamp(/*variance0 */ variance1 * 0.5 / (brightness + 0.02), 0, 1);
 		float accumulationAmount = fract(thisLightData.a);
 		int blurSize = int((DENOISE_MAX_BLUR - max(DENOISE_MAX_BLUR - DENOISE_MIN_BLUR, 0) * min(variance, accumulationAmount * 2)) * (1.0 + DENOISE_CONVERGED_MULT - accumulationAmount));
 		if (blurSize < 1) blurSize = 1;
