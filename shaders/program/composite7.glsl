@@ -30,7 +30,6 @@ uniform float viewWidth, viewHeight;
 	#include "/lib/antialiasing/fxaa.glsl"
 #endif
 
-layout(r32i) uniform iimage3D voxelVolumeI;
 //Program//
 void main() {
     #ifndef LIGHT_COLORING
@@ -42,9 +41,7 @@ void main() {
 	#ifdef FXAA
 		FXAA311(color);
 	#endif
-	if (texCoord.x < 0.5) {
-		color = vec3(imageLoad(voxelVolumeI, ivec3(texelCoord / 5, 48)).rgb);
-	}
+
     #ifndef LIGHT_COLORING
     /* DRAWBUFFERS:3 */
     #else

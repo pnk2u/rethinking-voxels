@@ -5,7 +5,7 @@
 		#define WRITE_TO_SSBOS readonly
 	#endif
 	// constants
-	#ifndef MATERIALMAP_ONLY
+	#if !defined MATERIALMAP_ONLY || defined IRRADIANCECACHE_ONLY
 		#if VX_VOL_SIZE == 0
 			const ivec3 voxelVolumeSize = ivec3(96, 64, 96);
 		#elif VX_VOL_SIZE == 1
@@ -29,19 +29,19 @@
 			#define MATERIALCOUNT 15000
 		#endif
 	#endif
-
-	layout(std430, binding=0) WRITE_TO_SSBOS buffer blockidmap {
-		mat4 gbufferPreviousModelViewInverse;
-		mat4 gbufferPreviousProjectionInverse;
-		mat4 reprojectionMatrix;
-		int blockIdMap[];
-	};
-	int getProcessedBlockId(int mat) {
-		mat = blockIdMap[mat];
-		return mat/10000*10000 + mat/4*4%2000;
-	}
-
-	#ifndef MATERIALMAP_ONLY
+	#if defined MATERIALMAP_ONLY || !defined IRRADIANCECACHE_ONLY
+		layout(std430, binding=0) WRITE_TO_SSBOS buffer blockidmap {
+			mat4 gbufferPreviousModelViewInverse;
+			mat4 gbufferPreviousProjectionInverse;
+			mat4 reprojectionMatrix;
+			int blockIdMap[];
+		};
+		int getProcessedBlockId(int mat) {
+			mat = blockIdMap[mat];
+			return mat/10000*10000 + mat/4*4%2000;
+		}
+	#endif
+	#if !defined MATERIALMAP_ONLY && !defined IRRADIANCECACHE_ONLY
 		layout(std430, binding=1) WRITE_TO_SSBOS buffer geometrydata {
 			uint geometryData[];
 		};
@@ -51,7 +51,7 @@
 		// voxel volume
 		#include "/lib/vx/voxelVolume.glsl"
 	#endif
-	#ifdef IRRADIANCECACHE
+	#if defined IRRADIANCECACHE || defined IRRADIANCECACHE_ONLY
 		#include "/lib/vx/irradianceCache.glsl"
 	#endif
 #endif

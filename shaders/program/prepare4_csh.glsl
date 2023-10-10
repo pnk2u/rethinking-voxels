@@ -66,8 +66,8 @@ void main() {
 	}
 	barrier();
 	memoryBarrierShared();
-	if (index >= MAX_LIGHT_COUNT && index < MAX_LIGHT_COUNT + 4) {
-		ivec2 offset = (ivec2(index - MAX_LIGHT_COUNT) + ivec2(-1, -2)) % 2;// * ((index - MAX_LIGHT_COUNT) / 2 * 2 - 1);
+	if (index < 4) {
+		ivec2 offset = (ivec2(index) + ivec2(-1, -2)) % 2;// * ((index - MAX_LIGHT_COUNT) / 2 * 2 - 1);
 		int otherLightIndex = frameCounter % min(MAX_LIGHT_COUNT, lightCount * 2 + 2);
 		ivec4 prevFrameLight = imageLoad(colorimg11, ivec2(gl_WorkGroupSize.xy * (gl_WorkGroupID.xy + offset)) + ivec2(otherLightIndex % gl_WorkGroupSize.x, otherLightIndex / gl_WorkGroupSize.x));
 		bool known = (prevFrameLight.xyz == ivec3(0) || prevFrameLight.w == 0);
@@ -86,7 +86,7 @@ void main() {
 	memoryBarrierShared();
 	int oldLightCount = lightCount;
 	int mergeOffset = 0;
-	ivec4 thisPos;
+	ivec4 thisPos = ivec4(0);
 	int k = index + 1;
 	if (index < oldLightCount) {
 		thisPos = positions[index];
@@ -144,7 +144,7 @@ void main() {
 		#endif
 		int mat = readBlockVolume(positions[thisLightIndex].xyz + 0.5);
 		int baseIndex = getBaseIndex(mat);
-		int emissiveVoxelCount = getEmissiveCount(baseIndex);
+		int emissiveVoxelCount = readEmissiveCount(baseIndex);
 		vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
 		if (emissiveVoxelCount > 0) {
 			int subEmissiveIndex = int(nextUint() % emissiveVoxelCount);

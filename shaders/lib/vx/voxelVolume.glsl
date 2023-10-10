@@ -61,18 +61,8 @@ vec3 readEmissiveLoc(int baseIndex, int localIndex) {
 	return vec3(int(rawData >> offset) & 7, int(rawData >> (offset + 3)) & 7, int(rawData >> (offset + 6)) & 7) * 0.125 + 0.0625;
 }
 
-int getEmissiveCount(int baseIndex) {
+int readEmissiveCount(int baseIndex) {
 	return int(geometryData[baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3] & uint(0x3f));
-}
-
-int[6] getEmissiveDirectionRanges(int baseIndex) {
-	uint data = geometryData[baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3];
-	int[6] ranges;
-	ranges[0] = 0;
-	for (int i = 0; i < 5; i++) {
-		ranges[i+1] = ranges[i] + int((data >> 6 + 5 * i) & uint(0x1f));
-	}
-	return ranges;
 }
 
 #ifndef READONLY
@@ -105,25 +95,6 @@ int[6] getEmissiveDirectionRanges(int baseIndex) {
 			atomicAnd(geometryData[writeIndex], uint(0xffffffff) ^ uint(0x3f));
 			atomicOr(geometryData[writeIndex], uint(count));
 		}
-	}
-
-	void setEmissiveDirectionRanges(int baseIndex, int ranges[5]) {
-		int writeIndex = baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3;
-		if (ranges[0] > 31) {
-			ranges[1] += ranges[0] - 31;
-			ranges[0] = 31;
-		}
-		uint data = uint(ranges[0]);
-		for (int k = 1; k < 5; k++) {
-			int rangeLen = ranges[k] - ranges[k-1];
-			if (rangeLen > 31) {
-				if (k < 4) ranges[k+1] += rangeLen - 31;
-				rangeLen = 31;
-			}
-			data |= uint(rangeLen) << (k * 5);
-		}
-		atomicAnd(geometryData[writeIndex], uint(0x3f));
-		atomicOr(geometryData[writeIndex], data << 6);
 	}
 
 	void storeEmissive(int baseIndex, int localIndex, ivec3 lightData) {

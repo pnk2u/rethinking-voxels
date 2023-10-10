@@ -1,7 +1,7 @@
 #ifndef INCLUDE_RANDOM
 #define INCLUDE_RANDOM
 
-uint globalSeed = uint((frameCounter * 100 + gl_GlobalInvocationID.x % 100) * 113 + gl_GlobalInvocationID.y % 113);
+uint globalSeed = uint(frameCounter * 382 + gl_GlobalInvocationID.x * 419 + gl_GlobalInvocationID.y * 353 + gl_GlobalInvocationID.z * 383);
 
 uint murmur(uint seed) {
     seed = (seed ^ (seed >> 16)) * 0x85ebca6bu;

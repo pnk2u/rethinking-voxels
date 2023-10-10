@@ -404,20 +404,21 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Combine Lighting
-    vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;
-    float blockLightingLen = max(length(blockLighting), 0.0001);
-    blockLighting = 4 * log(blockLightingLen * 5.0 * BLOCKLIGHT_I + 1.0) * (blockLighting / blockLightingLen);
+	vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;
+	float blockLightingLen = max(length(blockLighting), 0.0001);
+	blockLighting = 4 * log(blockLightingLen * 5.0 * BLOCKLIGHT_I + 1.0) * (blockLighting / blockLightingLen);
 	#if HELD_LIGHTING_MODE >= 1
-        float heldLight = max(heldBlockLightValue, heldBlockLightValue2);
-        float lViewPosL = lViewPos;
-        #if HELD_LIGHTING_MODE == 1
-            heldLight *= 0.75;
-            lViewPosL *= 1.5;
-        #elif HELD_LIGHTING_MODE == 2
-            heldLight *= 0.97;
-        #endif
-        blockLighting = max(blockLighting, blocklightCol * (heldLight - lViewPosL) * 0.066666);
-    #endif
+		float heldLight = max(heldBlockLightValue, heldBlockLightValue2);
+		float lViewPosL = lViewPos;
+		#if HELD_LIGHTING_MODE == 1
+			heldLight *= 0.75;
+			lViewPosL *= 1.5;
+		#elif HELD_LIGHTING_MODE == 2
+			heldLight *= 0.97;
+		#endif
+		blockLighting = max(blockLighting, blocklightCol * (heldLight - lViewPosL) * 0.066666);
+	#endif
+
     vec3 sceneLighting = lightColorM * shadowMult + ambientColorM * ambientMult;
     float dotSceneLighting = dot(sceneLighting, sceneLighting);
 
