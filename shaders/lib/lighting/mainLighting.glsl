@@ -404,10 +404,9 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Combine Lighting
-    vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;//lightmapXM * blocklightCol;
+    vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;
     float blockLightingLen = max(length(blockLighting), 0.0001);
     blockLighting = 4 * log(blockLightingLen * 5.0 * BLOCKLIGHT_I + 1.0) * (blockLighting / blockLightingLen);
-	blockLighting /= blockLightingLen;
 	#if HELD_LIGHTING_MODE >= 1
         float heldLight = max(heldBlockLightValue, heldBlockLightValue2);
         float lViewPosL = lViewPos;

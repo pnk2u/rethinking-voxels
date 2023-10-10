@@ -1,5 +1,10 @@
 #include "/lib/common.glsl"
 //////1st Compute Shader//////1st Compute Shader//////1st Compute Shader//////
+
+/*
+This program creates a list of block-relative emissive locations for all materials.
+it also gives emissive voxels a more saturated colour.
+*/
 #ifdef CSH
 #if VOXEL_DETAIL_AMOUNT <= 5
 	const ivec3 workGroups = ivec3(16384, 1, 1);
@@ -173,6 +178,9 @@ void main() {
 
 #endif
 //////2nd Compute Shader//////2nd Compute Shader//////2nd Compute Shader//////
+/*
+This program offsets irradiance cache data to account for camera movement
+*/
 #ifdef CSH_A
 
 #if VX_VOL_SIZE == 0
@@ -187,15 +195,82 @@ void main() {
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
+uniform int frameCounter;
 uniform vec3 cameraPosition;
 uniform vec3 previousCameraPosition;
 
 #define WRITE_TO_SSBOS
+#define IRRADIANCECACHE
+#include "/lib/vx/SSBOs.glsl"
+
+void main() {
+	ivec3 camOffset = ivec3(1.01 * (floor(cameraPosition) - floor(previousCameraPosition)));
+	// this actually works for having threads be executed in the correct order so that they don't read the output of other previously run threads.
+	ivec3 coords = ivec3(gl_GlobalInvocationID);
+	coords = coords * ivec3(greaterThan(camOffset, ivec3(-1))) +
+		(voxelVolumeSize - coords - 1) * ivec3(lessThan(camOffset, ivec3(0)));
+	ivec3 prevCoords = coords + camOffset;
+	for (int k = 0; k < 2; k++) {
+		vec4 writeColor = (all(lessThan(coords, voxelVolumeSize)) && all(greaterThanEqual(coords, ivec3(0)))) ? imageLoad(irradianceCacheI, prevCoords + ivec3(0, k * voxelVolumeSize.y, 0)) : vec4(0);
+		imageStore(irradianceCacheI, coords + ivec3(0, k * voxelVolumeSize.y, 0), writeColor);
+	}
+}
+#endif
+
+//////3rd Compute Shader//////3rd Compute Shader//////3rd Compute Shader//////
+/*
+this program calculates the irradiance cache.
+*/
+#ifdef CSH_B
+#if VX_VOL_SIZE == 0
+	const ivec3 workGroups = ivec3(12, 8, 12);
+#elif VX_VOL_SIZE == 1
+	const ivec3 workGroups = ivec3(16, 12, 16);
+#elif VX_VOL_SIZE == 2
+	const ivec3 workGroups = ivec3(32, 16, 32);
+#elif VX_VOL_SIZE == 3
+	const ivec3 workGroups = ivec3(64, 16, 64);
+#endif
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+
+uniform int frameCounter;
+uniform vec3 cameraPosition;
+uniform mat4 gbufferProjectionInverse;
+uniform mat4 gbufferModelViewInverse;
+
+#define WRITE_TO_SSBOS
+#define IRRADIANCECACHE
 #include "/lib/vx/SSBOs.glsl"
 
 #include "/lib/util/random.glsl"
 
+shared vec3[5] frustrumSides;
+
 void main() {
+	int index = int(gl_LocalInvocationID.x + gl_WorkGroupSize.x * (gl_LocalInvocationID.y + gl_WorkGroupSize.y * gl_LocalInvocationID.z));
+	if (index < 4) {
+		frustrumSides[index] = (mat3(gbufferModelViewInverse) * (mat3(gbufferProjectionInverse) * (vec3(index%2, index/2%2, 1) * 2 - 1)));
+	} else if (index == 4) {
+		frustrumSides[4] = normalize(gbufferModelViewInverse[2].xyz);
+	}
+	barrier();
+	memoryBarrierShared();
+	vec3 sideNormal = vec3(0);
+	if (index < 4) {
+		sideNormal = normalize(cross(frustrumSides[index], frustrumSides[(index+1)%4]));
+	}
+	barrier();
+	memoryBarrierShared();
+	frustrumSides[index] = sideNormal;
+	barrier();
+	memoryBarrierShared();
+	ivec3 coords = ivec3(gl_GlobalInvocationID);
+	bool insideFrustrum = true;
+	for (int k = 0; k < 5; k++) {
+		insideFrustrum = (insideFrustrum && dot(coords - 0.5 * voxelVolumeSize, frustrumSides[k]) > -10.0);
+	}
+	vec4 prevColor = imageLoad(irradianceCacheI, prevCoords + ivec3(0, voxelVolumeSize.y, 0));
 
 }
 #endif
