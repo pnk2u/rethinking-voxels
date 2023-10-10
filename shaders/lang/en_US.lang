@@ -938,3 +938,5 @@ value.FRACTAL_GALAXY.0=Off
 value.FRACTAL_GALAXY.1=Full Mandelbrot Set
 value.FRACTAL_GALAXY.2=Partial Mandelbrot Set
 value.FRACTAL_GALAXY.3=Julia Set
+option.PER_PIXEL_LIGHT=Per-Pixel Light Calculation
+option.PER_PIXEL_LIGHT.comment=If this is enabled, Light from Block Light sources will be calculated separately for each pixel on the screen. Otherwise, it will be calculated only once per block.

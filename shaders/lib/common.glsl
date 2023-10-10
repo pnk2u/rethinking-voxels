@@ -38,6 +38,11 @@
         const float voxelDistance = 256;
     #endif
 
+	#define PER_PIXEL_LIGHT
+	#ifndef PER_PIXEL_LIGHT
+		#define PER_BLOCK_LIGHT
+	#endif
+
     #define ACCUMULATION
   //#define RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
     #define DENOISING_DEFINE 1 //[0 1 2]
