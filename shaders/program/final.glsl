@@ -146,6 +146,9 @@ void main() {
 
 	/* DRAWBUFFERS:0 */
 	gl_FragData[0] = vec4(color, 1.0);
+	if (ivec2(gl_FragCoord.xy) == ivec2(-1)) {
+		gl_FragData[0] = texelFetch(shadowcolor0, ivec2(gl_FragCoord.xy + 2), 0);
+	}
 }
 
 #endif
