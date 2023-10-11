@@ -28,6 +28,7 @@ vec3 SampleShadow(vec3 shadowPos, float colorMult, float colorPow) {
     return shadowcol * (1.0 - shadow0) + shadow0;
 }
 
+#ifndef NOT_IN_FRAGMENT
 float InterleavedGradientNoise() {
     float n = 52.9829189 * fract(0.06711056 * gl_FragCoord.x + 0.00583715 * gl_FragCoord.y);
     #if !defined GBUFFERS_ENTITIES && !defined GBUFFERS_HAND && !defined GBUFFERS_TEXTURED
@@ -120,3 +121,4 @@ vec3 GetShadow(vec3 shadowPos, float lViewPos, float lightmapY, float offset, bo
 
     return shadow;
 }
+#endif

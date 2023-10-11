@@ -42,6 +42,7 @@
     #ifndef PER_PIXEL_LIGHT
         #define PER_BLOCK_LIGHT
     #endif
+	#define GI
 
     #define ACCUMULATION
   //#define RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE

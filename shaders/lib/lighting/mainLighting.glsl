@@ -10,7 +10,7 @@ uniform float darknessLightFactor;
 #include "/lib/colors/lightAndAmbientColors.glsl"
 #include "/lib/lighting/ggx.glsl"
 
-#ifdef PER_BLOCK_LIGHT
+#if defined PER_BLOCK_LIGHT || defined GI
 	#define MATERIALMAP_ONLY
 	#define IRRADIANCECACHE_ONLY
 	#include "/lib/vx/SSBOs.glsl"
@@ -410,12 +410,17 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Combine Lighting
-	#ifndef PER_BLOCK_LIGHT
-		vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;
-	#else
-		vec3 vxPos = playerPos + fract(cameraPosition);
+	vec3 vxPos = playerPos + fract(cameraPosition);
+	#ifdef PER_BLOCK_LIGHT
 		vec3 blockLighting = readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);
+	#else
+		vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;
 	#endif
+	
+	#ifdef GI
+			blockLighting += readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM);
+	#endif
+	
 	float blockLightingLen = max(length(blockLighting), 0.0001);
 	blockLighting = 4 * log(blockLightingLen * 5.0 * BLOCKLIGHT_I + 1.0) * (blockLighting / blockLightingLen);
 	#if HELD_LIGHTING_MODE >= 1

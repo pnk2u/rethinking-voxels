@@ -1,5 +1,5 @@
 #version 430
 
-#define OVERWORLD
+#define NETHER
 #define CSH_B
 #include "/program/shadowcomp.glsl"
