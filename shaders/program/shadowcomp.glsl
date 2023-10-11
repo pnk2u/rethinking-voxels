@@ -406,7 +406,7 @@ void main() {
 	if (anyInFrustrum && index < 6) {
 		ivec3 offset = ivec3(equal(ivec3(index % 3), ivec3(0, 1, 2))) * (index / 3 * 2 - 1);
 		int otherLightIndex = frameCounter % MAX_LIGHT_COUNT % (lightCount * 2 + 2);
-		ivec3 aroundLight = imageLoad(voxelVolumeI, ivec3(gl_WorkGroupSize * (gl_WorkGroupID + offset)) + ivec3(otherLightIndex % gl_WorkGroupSize.x, otherLightIndex / gl_WorkGroupSize.x % gl_WorkGroupSize.y, otherLightIndex / (gl_WorkGroupSize.x * gl_WorkGroupSize.y) % gl_WorkGroupSize.z) + ivec3(0, 2 * voxelVolumeSize.y, 0)).xyz;
+		ivec3 aroundLight = imageLoad(voxelVolumeI, ivec3(gl_WorkGroupSize * (gl_WorkGroupID + offset)) + ivec3(otherLightIndex % gl_WorkGroupSize.x, otherLightIndex / gl_WorkGroupSize.x % gl_WorkGroupSize.y, otherLightIndex / (gl_WorkGroupSize.x * gl_WorkGroupSize.y) % gl_WorkGroupSize.z) + ivec3(0, 2 * voxelVolumeSize.y, 0)).xxx;
 		bool isCurrentLight = false;
 		if (aroundLight.x != 0) {
 			isCurrentLight = (aroundLight.x / (voxelVolumeSize.x * voxelVolumeSize.y * voxelVolumeSize.z) == frameCounter % 2);
@@ -416,7 +416,7 @@ void main() {
 				aroundLight.x / (voxelVolumeSize.x * voxelVolumeSize.y) % voxelVolumeSize.z
 			) - voxelVolumeSize / 2;
 		}
-		bool known = (aroundLight.x == 0 || readBlockVolume(aroundLight) == 0);
+		bool known = (aroundLight == ivec3(0) || readBlockVolume(aroundLight + 0.5) == 0);
 		if (!isCurrentLight) {
 			aroundLight += vxPosFrameOffset;
 		}
@@ -463,7 +463,7 @@ void main() {
 	barrier();
 	memoryBarrierShared();
 	if (insideFrustrum && index < MAX_LIGHT_COUNT) {
-		ivec3 prevFrameLight = imageLoad(voxelVolumeI, coords + ivec3(0, 2 * voxelVolumeSize.y, 0)).xyz;
+		ivec3 prevFrameLight = imageLoad(voxelVolumeI, coords + ivec3(0, 2 * voxelVolumeSize.y, 0)).xxx;
 		if (prevFrameLight.x != 0) {
 			prevFrameLight = ivec3(
 				prevFrameLight.x % voxelVolumeSize.x,
@@ -472,7 +472,7 @@ void main() {
 			) - voxelVolumeSize / 2;
 			prevFrameLight += vxPosFrameOffset;
 		}
-		bool known = (prevFrameLight.x == 0 || readBlockVolume(prevFrameLight) == 0);
+		bool known = (prevFrameLight == ivec3(0) || readBlockVolume(prevFrameLight + 0.5) == 0);
 		for (int k = 0; k < oldLightCount; k++) {
 			if (prevFrameLight == positions[k].xyz) {
 				known = true;
@@ -518,7 +518,7 @@ void main() {
 			if (dirLen < LIGHT_TRACE_LENGTH) {
 				float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.1;
 				lightBrightness *= lightBrightness;
-				float ndotl = max(0, hasNeighbor ? dot(normalize(dir + normal), normal) : 1.0);
+				float ndotl = max(0, hasNeighbor ? max(0, dot(normalize(dir + normal), normal)) : 1.0);
 				ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / (dirLen + 0.1)) * dir);
 				if (rayHit1.rayColor.a > 0.003 && rayHit1.emissive && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
 					newLightColor += rayHit1.rayColor.rgb * ndotl * lightBrightness * sqrt(1.01 - dirLen / LIGHT_TRACE_LENGTH) / (dirLen + 0.1);
