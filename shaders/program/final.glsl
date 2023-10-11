@@ -19,6 +19,7 @@ uniform float viewWidth, viewHeight;
 	uniform sampler2D colortex3; /*test*//*test*//*test*//*test*/
 	uniform sampler2D colortex8;
 #endif
+uniform sampler2D shadowcolor0;
 
 #ifdef UNDERWATER_DISTORTION
 	uniform int isEyeInWater;
