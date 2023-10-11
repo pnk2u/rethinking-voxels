@@ -213,9 +213,14 @@ void main() {
 	coords = coords * ivec3(greaterThan(camOffset, ivec3(-1))) +
 		(voxelVolumeSize - coords - 1) * ivec3(lessThan(camOffset, ivec3(0)));
 	ivec3 prevCoords = coords + camOffset;
+	vec4[2] writeColors;
 	for (int k = 0; k < 2; k++) {
-		vec4 writeColor = (all(lessThan(prevCoords, voxelVolumeSize)) && all(greaterThanEqual(prevCoords, ivec3(0)))) ? imageLoad(irradianceCacheI, prevCoords + ivec3(0, k * voxelVolumeSize.y, 0)) : vec4(0);
-		imageStore(irradianceCacheI, coords + ivec3(0, k * voxelVolumeSize.y, 0), writeColor);
+		writeColors[k] = (all(lessThan(prevCoords, voxelVolumeSize)) && all(greaterThanEqual(prevCoords, ivec3(0)))) ? imageLoad(irradianceCacheI, prevCoords + ivec3(0, k * voxelVolumeSize.y, 0)) : vec4(0);
+	}
+	barrier();
+	memoryBarrierImage();
+	for (int k = 0; k < 2; k++) {
+		imageStore(irradianceCacheI, coords + ivec3(0, k * voxelVolumeSize.y, 0), writeColors[k]);
 	}
 }
 #endif
@@ -295,7 +300,7 @@ void main() {
 		insideFrustrum = (insideFrustrum && dot(vxPos, frustrumSides[k]) > -10.0);
 	}
 	vec4 writeColor = vec4(0);
-	vec3 normal = vec3(0);
+	vec3 normal = vec3(0.0);
 	bool hasNeighbor = false;
 	if (insideFrustrum) {
 		anyInFrustrum = true;
@@ -303,7 +308,7 @@ void main() {
 		vec3 absNormal = vec3(0);
 		for (int k = 0; k < 27; k++) {
 			ivec3 offset = ivec3(k%3, k/3%3, k/9%3) - 1;
-			if (readBlockVolume(coords + offset) > 0) {
+			if (offset != ivec3(0) && readBlockVolume(coords + offset) > 0) {
 				hasNeighbor = true;
 				normal -= offset;
 				absNormal += abs(offset);
@@ -433,7 +438,7 @@ void main() {
 			if (emissiveVoxelCount > 0) {
 				int subEmissiveIndex = int(nextUint() % emissiveVoxelCount);
 				vec3 localPos = readEmissiveLoc(baseIndex, subEmissiveIndex);
-				localPos += (vec3(nextFloat(), nextFloat(), nextFloat()) - 0.5) / (1<<(min(VOXEL_DETAIL_AMOUNT, 3)-1));
+				localPos += (vec3(nextFloat(), nextFloat(), nextFloat()) - 0.5) / max(1<<(min(VOXEL_DETAIL_AMOUNT, 3)-1), 1);
 				lightPos = floor(lightPos) + localPos;
 			} else {
 				lightPos = vec3(1000);
@@ -443,10 +448,10 @@ void main() {
 			if (dirLen < LIGHT_TRACE_LENGTH) {
 				float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.1;
 				lightBrightness *= lightBrightness;
-				float ndotl = max(0, hasNeighbor ? dot(normalize(dir + normal), normal) : 1.0) * lightBrightness;
-				ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / (length(dir) + 0.1)) * dir);
-				if (length(rayHit1.rayColor.rgb) > 0.003 && rayHit1.emissive && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
-					newLightColor += rayHit1.rayColor.rgb * float(rayHit1.emissive) * ndotl * lightBrightness * (sqrt(1 - dirLen / LIGHT_TRACE_LENGTH)) / (dirLen + 0.1);
+				float ndotl = max(0, hasNeighbor ? dot(normalize(dir + normal), normal) : 1.0);
+				ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / (dirLen + 0.1)) * dir);
+				if (rayHit1.rayColor.a > 0.003 && rayHit1.emissive && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
+					newLightColor += rayHit1.rayColor.rgb * ndotl * lightBrightness * sqrt(1.01 - dirLen / LIGHT_TRACE_LENGTH) / (dirLen + 0.1);
 					positions[thisLightIndex].w = 1;
 				}
 			}
@@ -456,6 +461,9 @@ void main() {
 		#endif
 		writeColor += vec4(newLightColor, 1.0);
 		writeColor *= 1.0 - max(0.1 / (lightCount * lightCount + 1), 0.01);
+		if (any(notEqual(writeColor, writeColor))) {
+			writeColor = vec4(0);
+		}
 		imageStore(irradianceCacheI, coords + ivec3(0, voxelVolumeSize.y, 0), writeColor);
 	}
 	barrier();
