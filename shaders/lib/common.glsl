@@ -42,7 +42,11 @@
     #ifndef PER_PIXEL_LIGHT
         #define PER_BLOCK_LIGHT
     #endif
-	#define GI
+	#define GI_STRENGTH 1 //[0 1 2]
+
+	#if GI_STRENGTH > 0
+		#define GI
+	#endif
 
     #define ACCUMULATION
   //#define RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE

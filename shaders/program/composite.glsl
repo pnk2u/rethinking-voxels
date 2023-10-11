@@ -217,12 +217,12 @@ void main() {
 		volumetricEffect.rgb *= GetAtmColorMult();
 	#endif
 
-	#ifdef NETHER_STORM
-		if (isEyeInWater == 0) color = mix(color, volumetricEffect.rgb, volumetricEffect.a);
-	#endif
-
 	#ifdef VOLUMETRIC_BLOCKLIGHT
 		volumetricBlocklight = GetVolumetricBlocklight(translucentMult, nViewPos, z0, z1, dither) * (1 - 0.5 / 255.0 * eyeBrightness.y * sunFactor);
+	#endif
+
+	#ifdef NETHER_STORM
+		if (isEyeInWater == 0) color = mix(color, volumetricEffect.rgb, volumetricEffect.a);
 	#endif
 
 	#if RAINBOWS > 0 && defined OVERWORLD

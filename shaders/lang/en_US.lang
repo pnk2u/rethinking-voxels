@@ -949,3 +949,8 @@ option.VOLUMETRIC_BLOCKLIGHT=Vol. Blocklight
 option.VBL_STRENGTH=Vol. Blocklight Strength
 option.VBL_NETHER_MULT=Vol. Blocklight Nether Multiplier
 option.VBL_END_MULT=Vol. Blocklight End Multiplier
+
+option.GI_STRENGTH=Global Illumination
+value.GI_STRENGTH.0=Off
+value.GI_STRENGTH.1=Correct
+value.GI_STRENGTH.2=Intense

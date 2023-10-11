@@ -383,7 +383,7 @@ void main() {
 						playerPos += distanceBias * rayHit0.normal;
 						vec3 shadowPos = GetShadowPos(playerPos);
 						vec3 shadow = SampleShadow(shadowPos, 1, 1) * clamp(pow2(pow2(eyeBrightness.y / 60.0)), 0.0, 1.0);
-						vec3 totalLight = shadow * lightColor * max(0, dot(rayHit0.normal, lightVec));
+						vec3 totalLight = GI_STRENGTH * shadow * lightColor * max(0, dot(rayHit0.normal, lightVec));
 					#else
 						vec3 totalLight = vec3(0);
 					#endif
