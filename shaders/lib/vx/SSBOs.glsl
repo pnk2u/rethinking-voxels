@@ -29,24 +29,22 @@
 			#define MATERIALCOUNT 15000
 		#endif
 	#endif
-	#if defined MATERIALMAP_ONLY || !defined IRRADIANCECACHE_ONLY
-		layout(std430, binding=0) WRITE_TO_SSBOS buffer blockidmap {
-			mat4 gbufferPreviousModelViewInverse;
-			mat4 gbufferPreviousProjectionInverse;
-			mat4 reprojectionMatrix;
-			int blockIdMap[];
-		};
-		int getProcessedBlockId(int mat) {
-			mat = blockIdMap[mat];
-			return mat/10000*10000 + mat/4*4%2000;
-		}
-	#endif
-	#if !defined MATERIALMAP_ONLY
+	layout(std430, binding=0) WRITE_TO_SSBOS buffer blockidmap {
+		mat4 gbufferPreviousModelViewInverse;
+		mat4 gbufferPreviousProjectionInverse;
+		mat4 reprojectionMatrix;
+		int blockIdMap[];
+	};
+	int getProcessedBlockId(int mat) {
+		mat = blockIdMap[mat];
+		return mat/10000*10000 + mat/4*4%2000;
+	}
+	#if !defined MATERIALMAP_ONLY || defined IRRADIANCECACHE_ONLY
 		// voxelisation-related mapping functions
 		#include "/lib/vx/mapping.glsl"
 	#endif
 
-	#if !defined MATERIALMAP_ONLY && !defined IRRADIANCECACHE_ONLY
+	#ifndef MATERIALMAP_ONLY
 		layout(std430, binding=1) WRITE_TO_SSBOS buffer geometrydata {
 			uint geometryData[];
 		};
