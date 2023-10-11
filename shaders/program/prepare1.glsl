@@ -12,6 +12,7 @@ uniform sampler2D colortex2;
 layout(r32ui) uniform uimage2D colorimg9;
 
 #define MATERIALMAP_ONLY
+#define WRITE_TO_SSBOS
 #include "/lib/vx/SSBOs.glsl"
 
 void main() {
