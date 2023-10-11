@@ -30,7 +30,6 @@ uniform float viewWidth, viewHeight;
 	#include "/lib/antialiasing/fxaa.glsl"
 #endif
 
-uniform sampler2D colortex8;
 //Program//
 void main() {
     #ifndef LIGHT_COLORING
@@ -42,7 +41,6 @@ void main() {
 	#ifdef FXAA
 		FXAA311(color);
 	#endif
-	color = texelFetch(colortex8, texelCoord, 0).rgb;
     #ifndef LIGHT_COLORING
     /* DRAWBUFFERS:3 */
     #else
