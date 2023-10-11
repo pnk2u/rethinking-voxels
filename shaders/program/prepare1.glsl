@@ -1,7 +1,7 @@
 #include "/lib/common.glsl"
+
 //////Fragment Shader//////Fragment Shader//////
 #ifdef FSH
-flat in mat4 localReprojectionMatrix;
 
 uniform float viewWidth;
 uniform float viewHeight;
@@ -11,12 +11,15 @@ uniform sampler2D colortex2;
 
 layout(r32ui) uniform uimage2D colorimg9;
 
+#define MATERIALMAP_ONLY
+#include "/lib/vx/SSBOs.glsl"
+
 void main() {
 	float prevDepth = 1 - texelFetch(colortex2, ivec2(gl_FragCoord.xy), 0).w;
 	vec4 prevClipPos = vec4(gl_FragCoord.xy / view, prevDepth, 1) * 2 - 1;
 	vec4 newClipPos = prevClipPos;
 	if (prevDepth > 0.56) {
-		newClipPos = localReprojectionMatrix * prevClipPos;
+		newClipPos = reprojectionMatrix * prevClipPos;
 		newClipPos /= newClipPos.w;
 	}
 	newClipPos = 0.5 * newClipPos + 0.5;
@@ -31,6 +34,7 @@ void main() {
 	/*DRAWBUFFERS:3*/
 }
 #endif
+
 //////Vertex Shader//////Vertex Shader//////
 #ifdef VSH
 uniform mat4 gbufferModelView;
@@ -42,11 +46,9 @@ uniform int frameCounter;
 #define WRITE_TO_SSBOS
 #include "/lib/vx/SSBOs.glsl"
 
-flat out mat4 localReprojectionMatrix;
-
 void main() {
 	vec3 dcamPos = previousCameraPosition - cameraPosition;
-	localReprojectionMatrix =
+	mat4 localReprojectionMatrix =
 		gbufferProjection *
 		gbufferModelView *
 		// the vec4s are interpreted as column vectors, not row vectors as suggested by this notation
