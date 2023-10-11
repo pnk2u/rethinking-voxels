@@ -222,7 +222,7 @@ void main() {
 	#endif
 
 	#ifdef VOLUMETRIC_BLOCKLIGHT
-		volumetricBlocklight = GetVolumetricBlocklight(translucentMult, nViewPos, z0, z1, dither);
+		volumetricBlocklight = GetVolumetricBlocklight(translucentMult, nViewPos, z0, z1, dither) * (1 - 0.5 / 255.0 * eyeBrightness.y * sunFactor);
 	#endif
 
 	#if RAINBOWS > 0 && defined OVERWORLD
@@ -242,6 +242,7 @@ void main() {
 			if (z1 == 1.0) color.rgb = fogColor * 5.0;
 			
 			volumetricEffect.rgb *= 0.0;
+			volumetricBlocklight *= 0.0;
 		}
 	}
 	
