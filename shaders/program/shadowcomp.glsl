@@ -418,8 +418,8 @@ void main() {
 	}
 	barrier();
 	memoryBarrierShared();
-	vec3 newLightColor = vec3(0);
 	if (insideFrustrum) {
+		vec3 newLightColor = vec3(0);
 		#ifdef TRACE_ALL_LIGHTS
 			for (uint thisLightIndex = 0; thisLightIndex < lightCount; thisLightIndex++) {
 		#else
@@ -443,7 +443,7 @@ void main() {
 			if (dirLen < LIGHT_TRACE_LENGTH) {
 				float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.1;
 				lightBrightness *= lightBrightness;
-				float ndotl = 1.0;//max(0, hasNeighbor ? dot(normalize(dir + normal), normal) : 1.0) * lightBrightness;
+				float ndotl = max(0, hasNeighbor ? dot(normalize(dir + normal), normal) : 1.0) * lightBrightness;
 				ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / (length(dir) + 0.1)) * dir);
 				if (length(rayHit1.rayColor.rgb) > 0.003 && rayHit1.emissive && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
 					newLightColor += rayHit1.rayColor.rgb * float(rayHit1.emissive) * ndotl * lightBrightness * (sqrt(1 - dirLen / LIGHT_TRACE_LENGTH)) / (dirLen + 0.1);
@@ -454,7 +454,7 @@ void main() {
 		#ifndef TRACE_ALL_LIGHTS
 			newLightColor *= lightCount;
 		#endif
-		writeColor += vec4(newLightColor, 0.1);
+		writeColor += vec4(newLightColor, 1.0);
 		writeColor *= 1.0 - max(0.1 / (lightCount * lightCount + 1), 0.01);
 		imageStore(irradianceCacheI, coords + ivec3(0, voxelVolumeSize.y, 0), writeColor);
 	}

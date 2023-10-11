@@ -167,6 +167,9 @@ screen.VX_SETTINGS=Rethinking Voxels Settings
 screen.VX_SETTINGS.comment=Settings that are introduced by Rethinking Voxels
 screen.DENOISE_SETTINGS=Denoiser-Related Settings
 
+screen.VBL_SETTINGS=Vol. Blocklight Settings
+screen.VBL_SETTINGS.comment=Settings related to volumetric blocklight. This is the effect that makes fog light up around block light sources.
+
 screen.VX_WORLD=Other Effects
 #Settings
 option.RP_MODE=RP Support
@@ -940,3 +943,9 @@ value.FRACTAL_GALAXY.2=Partial Mandelbrot Set
 value.FRACTAL_GALAXY.3=Julia Set
 option.PER_PIXEL_LIGHT=Per-Pixel Light Calculation
 option.PER_PIXEL_LIGHT.comment=If this is enabled, Light from Block Light sources will be calculated separately for each pixel on the screen. Otherwise, it will be calculated only once per block.
+
+
+option.VOLUMETRIC_BLOCKLIGHT=Vol. Blocklight
+option.VBL_STRENGTH=Vol. Blocklight Strength
+option.VBL_NETHER_MULT=Vol. Blocklight Nether Multiplier
+option.VBL_END_MULT=Vol. Blocklight End Multiplier

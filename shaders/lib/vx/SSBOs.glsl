@@ -41,12 +41,15 @@
 			return mat/10000*10000 + mat/4*4%2000;
 		}
 	#endif
+	#if !defined MATERIALMAP_ONLY
+		// voxelisation-related mapping functions
+		#include "/lib/vx/mapping.glsl"
+	#endif
+
 	#if !defined MATERIALMAP_ONLY && !defined IRRADIANCECACHE_ONLY
 		layout(std430, binding=1) WRITE_TO_SSBOS buffer geometrydata {
 			uint geometryData[];
 		};
-		// voxelisation-related mapping functions
-		#include "/lib/vx/mapping.glsl"
 
 		// voxel volume
 		#include "/lib/vx/voxelVolume.glsl"

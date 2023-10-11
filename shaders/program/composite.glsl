@@ -52,7 +52,7 @@ uniform sampler2D depthtex1;
 	#endif
 #endif
 
-#ifdef LIGHTSHAFTS_ACTIVE
+#if defined LIGHTSHAFTS_ACTIVE || defined VOLUMETRIC_BLOCKLIGHT
 	//uniform float viewWidth, viewHeight;
 	uniform float blindness;
 	uniform float darknessFactor;
@@ -141,6 +141,10 @@ vec2 view = vec2(viewWidth, viewHeight);
 	#include "/lib/atmospherics/voidOfLife.glsl"
 #endif
 
+#ifdef VOLUMETRIC_BLOCKLIGHT
+	#include "/lib/atmospherics/volumetricBlocklight.glsl"
+#endif
+
 //Program//
 void main() {
 	vec3 color = texelFetch(colortex0, texelCoord, 0).rgb;
@@ -148,7 +152,7 @@ void main() {
 	float z0 = texelFetch(depthtex0, texelCoord, 0).r;
 	float z1 = texelFetch(depthtex1, texelCoord, 0).r;
 
-	#if defined LIGHTSHAFTS_ACTIVE || WATER_QUALITY >= 3 || defined BLOOM_FOG_COMPOSITE || defined NETHER_STORM || CONWAY > 0 || RAINBOWS > 0 && defined OVERWORLD
+	#if defined LIGHTSHAFTS_ACTIVE || WATER_QUALITY >= 3 || defined BLOOM_FOG_COMPOSITE || defined NETHER_STORM || CONWAY > 0 || RAINBOWS > 0 && defined OVERWORLD || defined VOLUMETRIC_BLOCKLIGHT
 		vec4 screenPos = vec4(texCoord, z0, 1.0);
 		vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
 		viewPos /= viewPos.w;
@@ -160,6 +164,7 @@ void main() {
 	#endif
 
 	vec4 volumetricEffect = vec4(0.0);
+	vec3 volumetricBlocklight = vec3(0.0);
 
 	#if defined LIGHTSHAFTS_ACTIVE || defined NETHER_STORM || CONWAY > 0 || RAINBOWS > 0 && defined OVERWORLD
 		/* The "1.0 - translucentMult" trick is done because of the default color attachment
@@ -181,7 +186,7 @@ void main() {
 		float lViewPos1 = length(viewPos1.xyz);
 	#endif
 
-	#if defined LIGHTSHAFTS_ACTIVE || RAINBOWS > 0 && defined OVERWORLD
+	#if defined LIGHTSHAFTS_ACTIVE || RAINBOWS > 0 && defined OVERWORLD || defined VOLUMETRIC_BLOCKLIGHT
 		vec3 nViewPos = normalize(viewPos.xyz);
 		float VdotL = dot(nViewPos, lightVec);
 	#endif
@@ -194,7 +199,7 @@ void main() {
 		volumetricEffect = GetVolumetricLight(color, vlFactorM, translucentMult, lViewPos1, nViewPos, VdotL, VdotU, texCoord, z0, z1, dither);
 	#endif
 
-	#if defined NETHER_STORM || CONWAY > 0
+	#if defined NETHER_STORM || CONWAY > 0 
 		vec3 playerPos = ViewToPlayer(viewPos.xyz);
 	#endif
 
@@ -216,6 +221,10 @@ void main() {
 		if (isEyeInWater == 0) color = mix(color, volumetricEffect.rgb, volumetricEffect.a);
 	#endif
 
+	#ifdef VOLUMETRIC_BLOCKLIGHT
+		volumetricBlocklight = GetVolumetricBlocklight(translucentMult, nViewPos, z0, z1, dither);
+	#endif
+
 	#if RAINBOWS > 0 && defined OVERWORLD
 		if (isEyeInWater == 0) color += GetRainbow(translucentMult, z0, z1, lViewPos, lViewPos1, VdotL, dither);
 	#endif
@@ -225,7 +234,9 @@ void main() {
 
 		vec3 underwaterMult = vec3(0.80, 0.87, 0.97);
 		color.rgb *= underwaterMult * 0.85;
-		volumetricEffect.rgb *= pow2(underwaterMult * 0.71);
+		underwaterMult = pow2(underwaterMult * 0.71);
+		volumetricEffect.rgb *= underwaterMult;
+		volumetricBlocklight *= underwaterMult;
 	} else {
 		if (isEyeInWater == 2) {
 			if (z1 == 1.0) color.rgb = fogColor * 5.0;
@@ -240,8 +251,12 @@ void main() {
 		#ifdef END
 			volumetricEffect.rgb *= volumetricEffect.rgb;
 		#endif
-		
+
 		color += volumetricEffect.rgb;
+	#endif
+
+	#ifdef VOLUMETRIC_BLOCKLIGHT
+		color += volumetricBlocklight;
 	#endif
 
 	#ifdef BLOOM_FOG_COMPOSITE

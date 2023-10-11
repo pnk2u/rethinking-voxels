@@ -38,10 +38,10 @@
         const float voxelDistance = 256;
     #endif
 
-	#define PER_PIXEL_LIGHT
-	#ifndef PER_PIXEL_LIGHT
-		#define PER_BLOCK_LIGHT
-	#endif
+    #define PER_PIXEL_LIGHT
+    #ifndef PER_PIXEL_LIGHT
+        #define PER_BLOCK_LIGHT
+    #endif
 
     #define ACCUMULATION
   //#define RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
@@ -64,6 +64,12 @@
             #define DENOISE_MIN_BLUR_MOD DENOISE_MIN_BLUR
         #endif
     #endif
+
+    #define VOLUMETRIC_BLOCKLIGHT
+    #define VBL_STRENGTH 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
+    #define VBL_NETHER_MULT 1.8 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
+    #define VBL_END_MULT 1.8 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
+
     #ifdef END
         #define CONWAY 2 //[0 1 2]
         #define CONWAY_HEIGHT 50.1
