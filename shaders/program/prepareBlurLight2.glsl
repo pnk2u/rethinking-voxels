@@ -43,14 +43,25 @@ void main() {
 		vec4 thisPreBlurredData0 = texelFetch(colortex10, preBlurredCoord, 0);
 		vec4 thisPreBlurredData1 = texelFetch(colortex10, preBlurredCoord + ivec2(0, view.y / 2.0 + 0.1), 0);
 		float brightness = dot(thisPreBlurredData0.xyz, thisPreBlurredData0.xyz);
+
 		float variance0 = length(thisLightData.rgb - thisPreBlurredData0.rgb);
+		vec2 gradient = vec2(0);
+
 		for (int k = 0; k < 4; k++) {
 			ivec2 offset = ivec2(k-1, k-2) % 2 * 3;
 			vec4 aroundLightData = texelFetch(LIGHT_SAMPLER, texelCoord + offset, 0);
+			vec4 aroundPreBlurredData0 = texelFetch(colortex10, preBlurredCoord + offset, 0);
+			gradient += offset * (aroundPreBlurredData0.y - thisPreBlurredData0.y);
 			variance0 = min(variance0, length(aroundLightData.rgb - thisPreBlurredData0.rgb));
 		}
+		float gradientLen2 = dot(gradient, gradient);
+		vec2 gradientOffset = min(100 * gradientLen2, 1) * 6 * thisPreBlurredData0.y * gradient / max(gradientLen2, 0.001);
+		vec4 offsetPreBlurredData0 = texelFetch(colortex10, preBlurredCoord - ivec2(gradientOffset), 0);
+		float offsetBrightness = dot(offsetPreBlurredData0.xyz, offsetPreBlurredData0.xyz);
+
 		float variance1 = length(normalize(thisPreBlurredData0.rgb + 0.005) - normalize(thisPreBlurredData1.rgb + 0.005));
-		float variance = clamp(/*variance0 */ variance1 * 0.5 / (brightness + 0.02), 0, 1);
+		float variance = clamp(/*variance0 */ variance1 * 0.5 / (offsetBrightness + 0.02), 0, 1);
+
 		float accumulationAmount = fract(thisLightData.a);
 		int blurSize = int((DENOISE_MAX_BLUR_MOD - max(DENOISE_MAX_BLUR_MOD - DENOISE_MIN_BLUR_MOD, 0) * min(variance, accumulationAmount * 2)) * (1.0 + DENOISE_CONVERGED_MULT - accumulationAmount));
 		if (blurSize < 1) blurSize = 1;
@@ -75,7 +86,7 @@ void main() {
 	/*RENDERTARGETS:13*/
 	gl_FragData[0] = vec4(totalLight / totalWeight, blurSize + fract(prevTex13Data.a + 0.05) - 0.05);
 //	#ifdef FIRST
-//	gl_FragData[0] = vec4(vec3(variance), 1);
+//	gl_FragData[0] = vec4(variance, 0, 0, 1);
 //	#endif
 }
 #elif defined FIRST

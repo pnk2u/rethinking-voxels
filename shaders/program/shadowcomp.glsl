@@ -499,7 +499,7 @@ void main() {
 				}
 		#else
 			if (lightCount > 0) {
-				uint thisLightIndex = nextUint() % lightCount;
+				uint thisLightIndex = nextUint() % min(lightCount, MAX_LIGHT_COUNT);
 			#endif
 			int mat = readBlockVolume(positions[thisLightIndex].xyz + 0.5);
 			int baseIndex = getBaseIndex(mat);
