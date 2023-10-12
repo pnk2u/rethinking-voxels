@@ -418,7 +418,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
 	#endif
 	
 	#ifdef GI
-			blockLighting += readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM);
+			blockLighting += GI_STRENGTH * readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM);
 	#endif
 	
 	float blockLightingLen = max(length(blockLighting), 0.0001);

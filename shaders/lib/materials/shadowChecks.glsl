@@ -2,7 +2,7 @@ bool isEmissive(int mat) {
 	return (
 		mat == 1234  || // generic light source
 		mat == 1235  || // generic light source (fallback colour)
-		mat == 10024 || // brewing stand
+		mat == 10836 || // brewing stand
 		mat == 10056 || // lava cauldron
 		mat == 10068 || // lava
 		mat == 10072 || // fire
@@ -37,7 +37,7 @@ bool isEmissive(int mat) {
 		mat == 10608 || // redstone block
 #endif
 		mat == 10332 || // amethyst buds
-		mat == 10388 || // blue ice
+		//mat == 10388 || // blue ice
 		mat == 10396 || // jack o'lantern
 		mat == 10400 || // 1-2 waterlogged sea pickles
 		mat == 10401 || // 3-4 waterlogged sea pickles
@@ -46,14 +46,10 @@ bool isEmissive(int mat) {
 		mat == 10452 || // magma block
 		mat == 10476 || // crying obsidian
 		mat == 10496 || // torch
-		mat == 10497 ||
 		mat == 10500 || // end rod
-		mat == 10501 ||
-		mat == 10502 ||
 		mat == 10508 || // chorus flower
 		mat == 10516 || // lit furnace
 		mat == 10528 || // soul torch
-		mat == 10529 ||
 		mat == 10544 || // glow lichen
 		mat == 10548 || // enchanting table
 		mat == 10556 || // end portal frame with eye
@@ -76,8 +72,8 @@ bool isEmissive(int mat) {
 		mat == 10688 || // pearlescent froglight
 		mat == 10705 || // active sculk sensor
 		mat == 10708 || // spawner
-		mat == 10999 || // light block
-		mat == 12740 || // lit candle cake
+		mat == 10996 || // light block
+		//mat == 12740 || // lit candle cake
 		mat == 30020 || // nether portal
 		mat == 31016 || // beacon
 		mat == 60000 || // end portal
