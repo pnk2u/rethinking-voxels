@@ -10,11 +10,11 @@ uniform float darknessLightFactor;
 #include "/lib/colors/lightAndAmbientColors.glsl"
 #include "/lib/lighting/ggx.glsl"
 
+#define MATERIALMAP_ONLY
 #if defined PER_BLOCK_LIGHT || defined GI
-	#define MATERIALMAP_ONLY
 	#define IRRADIANCECACHE_ONLY
-	#include "/lib/vx/SSBOs.glsl"
 #endif
+#include "/lib/vx/SSBOs.glsl"
 
 #if defined REALTIME_SHADOWS && (defined OVERWORLD || defined END)
     #include "/lib/lighting/shadowSampling.glsl"
