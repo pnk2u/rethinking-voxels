@@ -234,3 +234,7 @@ vec3 smoothstep1(vec3 x) {
 vec4 smoothstep1(vec4 x) {
     return x * x * (3.0 - 2.0 * x);
 }
+
+float infnorm(vec3 x) {
+	return max(max(abs(x.x), abs(x.y)), abs(x.z));
+}

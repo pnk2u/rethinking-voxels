@@ -416,13 +416,16 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
 	#else
 		vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;
 	#endif
-	
+	float voxelFactor = pow(clamp01(infnorm(vxPos * 2.0 / voxelVolumeSize)), 10);
+	if (voxelFactor < 0.999) {
 	#ifdef GI
 			blockLighting += GI_STRENGTH * readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM);
 	#endif
-	
 	float blockLightingLen = max(length(blockLighting), 0.0001);
 	blockLighting = 4 * log(blockLightingLen * 5.0 * BLOCKLIGHT_I + 1.0) * (blockLighting / blockLightingLen);
+	}
+	blockLighting = mix(blockLighting, lightmapXM * blocklightCol, voxelFactor);
+
 	#if HELD_LIGHTING_MODE >= 1
 		float heldLight = max(heldBlockLightValue, heldBlockLightValue2);
 		float lViewPosL = lViewPos;

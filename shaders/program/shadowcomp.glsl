@@ -274,10 +274,6 @@ uniform mat4 gbufferModelViewInverse;
 #include "/lib/vx/raytrace.glsl"
 #include "/lib/util/random.glsl"
 
-float infnorm(vec3 x) {
-	return max(max(abs(x.x), abs(x.y)), abs(x.z));
-}
-
 #define MAX_LIGHT_COUNT 48
 
 shared int lightCount;
