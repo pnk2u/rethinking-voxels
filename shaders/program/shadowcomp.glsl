@@ -291,9 +291,6 @@ const vec2[4] squareCorners = vec2[4](vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec
 
 void main() {
 	int index = int(gl_LocalInvocationID.x + gl_WorkGroupSize.x * (gl_LocalInvocationID.y + gl_WorkGroupSize.y * gl_LocalInvocationID.z));
-	if (index < MAX_LIGHT_COUNT) {
-		positions[index] = ivec4(1000, 1000, 1000, 0);
-	}
 	if (index < 4) {
 		vec4 pos = vec4(squareCorners[index], 0.9999, 1);
 		pos = gbufferModelViewInverse * (gbufferProjectionInverse * pos);
@@ -325,7 +322,7 @@ void main() {
 		insideFrustrum = (insideFrustrum && dot(vxPos, frustrumSides[k]) > -10.0);
 	}
 	vec4 writeColor = vec4(0);
-	vec3 normal = vec3(0.0);
+	vec3 normal = vec3(0);
 	bool hasNeighbor = false;
 	if (insideFrustrum) {
 		anyInFrustrum = true;
@@ -343,13 +340,14 @@ void main() {
 			}
 		}
 		if (hasNeighbor) {
-			normal = normal == vec3(0) ? absNormal : normal;
+			normal = all(lessThan(abs(normal), vec3(0.01))) ? absNormal : normal;
 			normal = normalize(normal);
 		}
 		if (readEmissiveCount(getBaseIndex(readBlockVolume(coords))) > 0) {
 			int lightIndex = atomicAdd(lightCount, 1);
 			if (lightIndex < MAX_LIGHT_COUNT) {
 				positions[lightIndex] = ivec4(coords - voxelVolumeSize / 2, 0);
+				mergeOffsets[lightIndex] = 0;
 			} else {
 				atomicMin(lightCount, MAX_LIGHT_COUNT);
 			}
@@ -366,6 +364,7 @@ void main() {
 			if (lightIndex < MAX_LIGHT_COUNT) {
 				ivec3 lightPos = ivec3(rayHit0.pos - 0.01 * rayHit0.normal + 256) - 256;
 				positions[lightIndex] = ivec4(lightPos, 0);
+				mergeOffsets[lightIndex] = 0;
 			} else {
 				atomicMin(lightCount, MAX_LIGHT_COUNT);
 			}
@@ -455,6 +454,7 @@ void main() {
 		}
 		if (mergeOffset > 0) {
 			atomicAdd(lightCount, -1);
+			atomicMax(lightCount, 0);
 		}
 	}
 	barrier();
@@ -462,7 +462,7 @@ void main() {
 	oldLightCount = lightCount;
 	barrier();
 	memoryBarrierShared();
-	if (insideFrustrum && index < MAX_LIGHT_COUNT) {
+	if (anyInFrustrum && index < MAX_LIGHT_COUNT) {
 		ivec3 prevFrameLight = imageLoad(voxelVolumeI, coords + ivec3(0, 2 * voxelVolumeSize.y, 0)).xxx;
 		if (prevFrameLight.x != 0) {
 			prevFrameLight = ivec3(
@@ -493,10 +493,7 @@ void main() {
 	if (insideFrustrum) {
 		vec3 newLightColor = vec3(0);
 		#if defined TRACE_ALL_LIGHTS
-			for (uint thisLightIndex = 0; thisLightIndex < MAX_LIGHT_COUNT; thisLightIndex++) {
-				if (thisLightIndex >= lightCount) {
-					break;
-				}
+			for (uint thisLightIndex = 0; thisLightIndex < min(lightCount, MAX_LIGHT_COUNT); thisLightIndex++) {
 		#else
 			if (lightCount > 0) {
 				uint thisLightIndex = nextUint() % min(lightCount, MAX_LIGHT_COUNT);
@@ -504,28 +501,25 @@ void main() {
 			int mat = readBlockVolume(positions[thisLightIndex].xyz + 0.5);
 			int baseIndex = getBaseIndex(mat);
 			int emissiveVoxelCount = readEmissiveCount(baseIndex);
-			vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
+			vec3 lightPos = vec3(positions[thisLightIndex].xyz);
 			if (emissiveVoxelCount > 0) {
 				int subEmissiveIndex = int(nextUint() % emissiveVoxelCount);
 				vec3 localPos = readEmissiveLoc(baseIndex, subEmissiveIndex);
 				localPos += (vec3(nextFloat(), nextFloat(), nextFloat()) - 0.5) / max(1<<(min(VOXEL_DETAIL_AMOUNT, 3)-1), 1);
-				lightPos = floor(lightPos) + localPos;
+				lightPos += localPos;
 			} else {
 				lightPos = vec3(1000);
 			}
 			vec3 dir = lightPos - vxPos;
 			float dirLen = length(dir);
-			if (dirLen < LIGHT_TRACE_LENGTH) {
+			float ndotl = max(0, hasNeighbor ? max(0, dot(normalize(dir + normal), normal)) : 1.0);
+			if (dirLen < LIGHT_TRACE_LENGTH && ndotl > 0.001) {
 				float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.1;
 				lightBrightness *= lightBrightness;
-				float ndotl = max(0, hasNeighbor ? max(0, dot(normalize(dir + normal), normal)) : 1.0);
 				ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / (dirLen + 0.1)) * dir);
 				if (rayHit1.rayColor.a > 0.003 && rayHit1.emissive && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
 					newLightColor += rayHit1.rayColor.rgb * ndotl * lightBrightness * sqrt(1.01 - dirLen / LIGHT_TRACE_LENGTH) / (dirLen + 0.1);
 					atomicAdd(positions[thisLightIndex].w, 1);
-					if (any(notEqual(newLightColor, newLightColor))) {
-						newLightColor = vec3(0, 100000, 0);
-					}
 				}
 			}
 		}

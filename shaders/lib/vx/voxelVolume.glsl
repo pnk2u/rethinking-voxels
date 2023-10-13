@@ -7,7 +7,8 @@ struct voxel_t {
 };
 
 int readBlockVolume(ivec3 coords) {
-	return imageLoad(voxelVolumeI, coords).r;
+	int mat = imageLoad(voxelVolumeI, coords).r;
+	return mat < MATERIALCOUNT ? mat : 0;
 }
 
 int readBlockVolume(vec3 pos) {
