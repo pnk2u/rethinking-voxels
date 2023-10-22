@@ -26,7 +26,7 @@ vec3 GetVolumetricBlocklight(vec3 translucentMult, vec3 nViewPos, float z0, floa
 		int sampleCount = isEyeInWater == 1 ? 23 : 30;
 	#elif LIGHTSHAFT_QUALI == 2
 		int sampleCount = isEyeInWater == 1 ? 15 : 20;
-	#elif LIGHTSHAFT_QUALI == 1
+	#else
 		int sampleCount = isEyeInWater == 1 ? 9 : 12;
 	#endif
 
