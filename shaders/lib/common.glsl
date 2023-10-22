@@ -27,7 +27,7 @@
     #endif
 
     #define VOXEL_DETAIL_AMOUNT 4 //[1 2 3 4 5 6]
-    #define VX_VOL_SIZE 0 //[0 1 2 3]
+    #define VX_VOL_SIZE 1 //[0 1 2 3]
     #if VX_VOL_SIZE == 0
         const float voxelDistance = 48;
     #elif VX_VOL_SIZE == 1
@@ -85,8 +85,8 @@
 
     #define REALTIME_SHADOWS
     #define SHADOW_QUALITY 2 //[0 1 2 3 4 5]
-    const float shadowDistance = 192.0; //[64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0]
-    //#define ENTITY_SHADOWS
+    const float shadowDistance = 128.0; //[64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0]
+    #define ENTITY_SHADOWS
     #define SSAO_QUALI_DEFINE 2 //[0 2 3]
     #define FXAA
     #define DETAIL_QUALITY 2 //[0 2 3]
