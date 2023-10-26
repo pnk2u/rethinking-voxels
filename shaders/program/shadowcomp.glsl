@@ -28,6 +28,8 @@ uniform vec3 cameraPosition;
 #define WRITE_TO_SSBOS
 #include "/lib/vx/SSBOs.glsl"
 
+#include "/lib/materials/shadowChecks.glsl"
+
 float getSaturation(vec3 color) {
 	return 1 - min(min(color.r, color.g), color.b) / max(max(color.r, color.g), max(color.b, 0.0001));
 }
@@ -115,6 +117,8 @@ void main() {
 		float meanEmissiveSaturation = getSaturation(meanEmissiveColor);
 		vec3 saturatedMeanEmissiveColor = meanEmissiveColorMax + meanEmissiveColorMax / max(meanEmissiveColorMax - meanEmissiveColorMin, 0.001) * (meanEmissiveColor - meanEmissiveColorMax);
 		saturatedMeanEmissiveColor = mix(meanEmissiveColor, saturatedMeanEmissiveColor, sqrt(meanEmissiveSaturation) * LIGHT_COLOR_SATURATION);
+		vec3 lightCol = getLightCol(getProcessedBlockId(mat));
+		if (length(lightCol) > 0.01) saturatedMeanEmissiveColor = lightCol;
 		for (int x = 0; x < responsibleSize; x++) {
 			for (int y = 0; y < responsibleSize; y++) {
 				for (int z = 0; z < responsibleSize; z++) {
