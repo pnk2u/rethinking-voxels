@@ -53,4 +53,9 @@
 	#if defined IRRADIANCECACHE || defined IRRADIANCECACHE_ONLY
 		#include "/lib/vx/irradianceCache.glsl"
 	#endif
+	#ifdef DENOISE_DATA
+		layout(std430, binding=2) WRITE_TO_SSBOS buffer denoisedata {
+			float denoiseSecondMoment[];
+		};
+	#endif
 #endif

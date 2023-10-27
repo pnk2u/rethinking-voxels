@@ -14,6 +14,9 @@
 
 	uniform sampler2D colortex8;
 	uniform sampler2D colortex10;
+	uniform vec3 cameraPosition;
+	#define DENOISE_DATA
+	#include "/lib/vx/SSBOs.glsl"
 #endif
 uniform sampler2D colortex13;
 #ifdef FIRST
@@ -44,49 +47,68 @@ void main() {
 		vec4 thisPreBlurredData1 = texelFetch(colortex10, preBlurredCoord + ivec2(0, view.y / 2.0 + 0.1), 0);
 		float brightness = dot(thisPreBlurredData0.xyz, thisPreBlurredData0.xyz);
 
-		float variance0 = length(thisLightData.rgb - thisPreBlurredData0.rgb);
 		vec2 gradient = vec2(0);
 
 		for (int k = 0; k < 4; k++) {
 			ivec2 offset = ivec2(k-1, k-2) % 2 * 3;
-			vec4 aroundLightData = texelFetch(LIGHT_SAMPLER, texelCoord + offset, 0);
+			vec4 aroundNormalDepthData = texelFetch(colortex8, texelCoord + 2 * offset, 0);
+			aroundNormalDepthData.w = 50.0 * GetLinearDepth(1 - aroundNormalDepthData.w);
 			vec4 aroundPreBlurredData0 = texelFetch(colortex10, preBlurredCoord + offset, 0);
-			gradient += offset * (aroundPreBlurredData0.y - thisPreBlurredData0.y);
-			variance0 = min(variance0, length(aroundLightData.rgb - thisPreBlurredData0.rgb));
+			if (length(aroundNormalDepthData - normalDepthData) < 0.1) gradient += offset * (aroundPreBlurredData0.y - thisPreBlurredData0.y);
 		}
 		float gradientLen2 = dot(gradient, gradient);
 		vec2 gradientOffset = min(100 * gradientLen2, 1) * 6 * thisPreBlurredData0.y * gradient / max(gradientLen2, 0.001);
 		vec4 offsetPreBlurredData0 = texelFetch(colortex10, preBlurredCoord - ivec2(gradientOffset), 0);
 		float offsetBrightness = dot(offsetPreBlurredData0.xyz, offsetPreBlurredData0.xyz);
 
-		float variance1 = length(normalize(thisPreBlurredData0.rgb + 0.005) - normalize(thisPreBlurredData1.rgb + 0.005));
-		float variance = clamp(/*variance0 */ variance1 * 0.5 / (offsetBrightness + 0.02), 0, 1);
+		float accumulationAmount = thisLightData.a;
+		float variance = denoiseSecondMoment[
+			texelCoord.x + 
+			int(viewWidth + 0.5) * (
+				texelCoord.y + int(viewHeight + 0.5) * (frameCounter % 2)
+			)
+		] - pow2(dot(thisLightData.rgb, vec3(1)));
 
-		float accumulationAmount = fract(thisLightData.a);
-		int blurSize = int((DENOISE_MAX_BLUR_MOD - max(DENOISE_MAX_BLUR_MOD - DENOISE_MIN_BLUR_MOD, 0) * min(variance, accumulationAmount * 2)) * (1.0 + DENOISE_CONVERGED_MULT - accumulationAmount));
+		variance = clamp(variance, 0.07 - 0.2 * accumulationAmount, 0.9);
+
+		int blurSize = DENOISE_MAX_BLUR_MOD;/*int(
+			(DENOISE_MAX_BLUR_MOD - max(DENOISE_MAX_BLUR_MOD - DENOISE_MIN_BLUR_MOD, 0) * 
+			min(gradientLen2, accumulationAmount * 2)) * 
+			(1.0 + DENOISE_CONVERGED_MULT - accumulationAmount));*/
 		if (blurSize < 1) blurSize = 1;
 	#else
-		int blurSize = int(thisLightData.w + 0.02);
+		int blurSize = int(thisLightData.a + 0.02);
+		float variance = fract(thisLightData.a) - 0.05;
 	#endif
+	variance = max(variance, 0.00001);
 	float totalWeight = 0.00001;
 	vec3 totalLight = vec3(0.0);
-	for (int k = -blurSize; k <= blurSize; k++) {
-		ivec2 offset = ivec2(0);
-		offset.BLUR_AXIS += k;
+	int blurSize1 = int(sqrt(blurSize));
+	#ifndef FIRST
+		blurSize1 = blurSize / blurSize1;
+	#endif
+	blurSize1 *= 2;
+	for (int k = 0; k < blurSize1 * blurSize1; k++) {
+		//ivec2 offset = ivec2(0);
+		//offset.BLUR_AXIS += k;
+		ivec2 offset = 2 * ivec2(k%blurSize1, k/blurSize1) - blurSize1;
+		#ifndef FIRST
+			offset *= blurSize1/2;
+		#endif
 		if (any(lessThan(offset, -texelCoord + readBounds[0])) || any(greaterThan(offset, readBounds[1] - texelCoord))) {
 			continue;
 		};
 		vec4 aroundNormalDepthData = texelFetch(colortex8, texelCoord + offset, 0);
 		aroundNormalDepthData.w = 50.0 * GetLinearDepth(1 - aroundNormalDepthData.w);
 		vec4 aroundLight = texelFetch(LIGHT_SAMPLER, texelCoord + offset, 0);
-		float weight = exp(-k*k * (2.0 / (blurSize * blurSize))) * max0(1 - 7 * length(normalDepthData - aroundNormalDepthData));
+		float weight = exp(-dot(offset, offset) * (2.0 / (blurSize * blurSize)) - pow2(dot(aroundLight.rgb - thisLightData.rgb, vec3(1))) / (4 * variance)) * max0(1 - 7 * length(normalDepthData - aroundNormalDepthData));
 		totalWeight += weight;
 		totalLight += aroundLight.xyz * weight;
 	}
 	/*RENDERTARGETS:13*/
-	gl_FragData[0] = vec4(totalLight / totalWeight, blurSize + fract(prevTex13Data.a + 0.05) - 0.05);
+	gl_FragData[0] = vec4(totalLight / totalWeight, blurSize + variance + 0.05);
 //	#ifdef FIRST
-//	gl_FragData[0] = vec4(variance, 0, 0, 1);
+//	gl_FragData[0] = vec4(0.02 * blurSize, 0, 0, 1);
 //	#endif
 }
 #elif defined FIRST
