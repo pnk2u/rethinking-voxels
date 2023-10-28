@@ -70,7 +70,7 @@ bool isEmissive(int mat) {
 		mat == 10680 || // ochre       froglight
 		mat == 10684 || // verdant     froglight
 		mat == 10688 || // pearlescent froglight
-		mat == 10705 || // active sculk sensor
+		mat == 10704 || // active sculk sensor
 		mat == 10708 || // spawner
 		mat == 10996 || // light block
 		//mat == 12740 || // lit candle cake
@@ -177,17 +177,21 @@ vec3 getLightCol(int mat) {
 		lightcol = vec3(REDSTONE_COL_R, REDSTONE_COL_G, REDSTONE_COL_B);
 		#endif
 		break;
-	#ifdef GLOWING_MINERAL_BLOCKS
+	#ifdef EMISSIVE_EMERALD_BLOCK
 		case 10336: // emerald block
 			#ifdef BLOCK_HARDCODED_EMERALD_COL
 			lightcol = vec3(EMERALD_COL_R, EMERALD_COL_G, EMERALD_COL_B);
 			#endif
 			break;
+	#endif
+	#ifdef EMISSIVE_LAPIS_BLOCK
 		case 10352: // lapis block
 			#ifdef BLOCK_HARDCODED_LAPIS_COL
 			lightcol = vec3(LAPIS_COL_R, LAPIS_COL_G, LAPIS_COL_B);
 			#endif
 			break;
+	#endif
+	#ifdef EMISSIVE_REDSTONE_BLOCK
 		case 10608: // redstone block
 			#ifdef BLOCK_HARDCODED_REDSTONE_COL
 			lightcol = vec3(REDSTONE_COL_R, REDSTONE_COL_G, REDSTONE_COL_B);
@@ -453,4 +457,253 @@ bool badPixel(vec4 color, vec4 glColor, int mat) {
 			break;
 	}
 	return false;
+}
+
+int getLightLevel(int mat) {
+	int lightlevel = 0;
+	switch (mat) {
+		case 1234:
+		case 1235:
+		case 10999:
+			#ifdef LMCOORD_AVAILABLE
+				lightlevel = int(24 * lmCoord.x);
+			#else
+				lightlevel = 20;
+			#endif
+			break;
+		case 10056: // lava cauldron
+			lightlevel = CAULDRON_BRIGHTNESS_LAVA;
+			break;
+		case 10068: // lava
+			lightlevel = BRIGHTNESS_LAVA;
+			break;
+		case 10072: // fire
+			lightlevel = BRIGHTNESS_FIRE;
+			break;
+		case 10076: // soul fire
+			lightlevel = BRIGHTNESS_SOULFIRE;
+			break;
+		case 10216: // crimson wood
+			lightlevel = BRIGHTNESS_CRIMSON;
+			break;
+		case 10224: // warped wood
+			lightlevel = BRIGHTNESS_WARPED;
+			break;
+	#if GLOWING_ORES > 0
+		case 10272: // iron ore
+		case 10276:
+			lightlevel = ORE_BRIGHTNESS_IRON;
+			break;
+		case 10284: // copper ore
+		case 10288:
+			lightlevel = ORE_BRIGHTNESS_COPPER;
+			break;
+		case 10300: // gold ore
+		case 10304:
+			lightlevel = ORE_BRIGHTNESS_GOLD;
+			break;
+		case 10320: // diamond ore
+		case 10324:
+			lightlevel = ORE_BRIGHTNESS_DIAMOND;
+			break;
+		case 10340: // emerald ore
+		case 10344:
+			lightlevel = ORE_BRIGHTNESS_EMERALD;
+			break;
+		case 10356: // lapis ore
+		case 10360:
+			lightlevel = ORE_BRIGHTNESS_LAPIS;
+			break;
+		case 10612: // unlit redstone ore
+		case 10620:
+			lightlevel = OREUNLIT_BRIGHTNESS_REDSTONE;
+			break;
+	#endif
+	case 10616: // lit redstone ore
+	case 10624:
+		lightlevel = ORELIT_BRIGHTNESS_REDSTONE;
+		break;
+	#ifdef EMISSIVE_EMERALD_BLOCK
+		case 10336: // emerald block
+			lightlevel = BLOCK_BRIGHTNESS_EMERALD;
+			break;
+	#endif
+	#ifdef EMISSIVE_LAPIS_BLOCK
+		case 10352: // lapis block
+			lightlevel = BLOCK_BRIGHTNESS_LAPIS;
+			break;
+	#endif
+	#ifdef EMISSIVE_REDSTONE_BLOCK
+		case 10608: // redstone block
+			lightlevel = BLOCK_BRIGHTNESS_REDSTONE;
+			break;
+	#endif
+		case 10332: // amethyst buds
+			lightlevel = BRIGHTNESS_AMETHYST;
+			break;
+		case 10388: // blue ice
+			lightlevel = BRIGHTNESS_ICE;
+			break;
+		case 10396: // jack o'lantern
+			lightlevel = BRIGHTNESS_PUMPKIN;
+			break;
+		case 10400: // 1-2 waterlogged sea pickles
+			lightlevel = LOW_BRIGHTNESS_PICKLE;
+			break;
+		case 10401: // 3-4 waterlogged sea pickles
+			lightlevel = HIGH_BRIGHTNESS_PICKLE;
+			break;
+		case 10412: // glowstone
+			lightlevel = BRIGHTNESS_GLOWSTONE;
+			break;
+		case 10448: // sea lantern
+			lightlevel = BRIGHTNESS_SEALANTERN;
+			break;
+		case 10452: // magma block
+			lightlevel = BLOCK_BRIGHTNESS_MAGMA;
+			break;
+		case 50052: // magma cube
+			lightlevel = CUBE_BRIGHTNESS_MAGMA;
+			break;
+		case 10476: // crying obsidian
+			lightlevel = BRIGHTNESS_CRYING;
+			break;
+		case 10496: // torch
+		case 10497:
+			lightlevel = BRIGHTNESS_TORCH;
+			break;
+		case 10500: // end rod
+		case 10501:
+		case 10502:
+			lightlevel = BRIGHTNESS_ENDROD;
+			break;
+		case 10508: // chorus flower
+			lightlevel = BRIGHTNESS_CHORUS;
+			break;
+		case 10516: // lit furnace
+			lightlevel = BRIGHTNESS_FURNACE;
+			break;
+		case 10528: // soul torch
+		case 10529:
+			lightlevel = BRIGHTNESS_SOULTORCH;
+			break;
+		case 10544: // glow lichen
+			lightlevel = BRIGHTNESS_LICHEN;
+			break;
+		case 10548: // enchanting table
+			lightlevel = BRIGHTNESS_TABLE;
+			break;
+		case 10556: // end portal frame with eye
+			lightlevel = FRAME_BRIGHTNESS_END;
+			break;
+		case 10560: // lantern
+			lightlevel = LANTERN_BRIGHTNESS_TORCH;
+			break;
+		case 10564: // soul lantern
+			lightlevel = LANTERN_BRIGHTNESS_SOULTORCH;
+			break;
+		case 10572: // dragon egg
+			lightlevel = BRIGHTNESS_DRAGON;
+			break;
+		case 10576: // lit smoker
+			lightlevel = BRIGHTNESS_FURNACE;
+			break;
+		case 10580: // lit blast furnace
+			lightlevel = BRIGHTNESS_FURNACE;
+			break;
+		case 10584: // lit candles
+			lightlevel = BRIGHTNESS_CANDLE;
+			break;
+		case 10592: // respawn anchor
+			lightlevel = ANCHOR_BRIGHTNESS_PORTAL;
+			break;
+		case 10596: // redstone wire
+			lightlevel = WIRE0_BRIGHTNESS_REDSTONE;
+			break;
+		case 10597:
+			lightlevel = WIRE1_BRIGHTNESS_REDSTONE;
+			break;
+		case 10598:
+			lightlevel = WIRE2_BRIGHTNESS_REDSTONE;
+			break;
+		case 10599:
+			lightlevel = WIRE3_BRIGHTNESS_REDSTONE;
+			break;
+		case 12604: // lit redstone torch
+		case 12605:
+			lightlevel = TORCH_BRIGHTNESS_REDSTONE;
+			break;
+		case 10632: // glow berries
+			lightlevel = BRIGHTNESS_BERRY;
+			break;
+		case 10640: // lit redstone lamp
+			lightlevel = BRIGHTNESS_REDSTONELAMP;
+			break;
+		case 10648: // shroomlight
+			lightlevel = BRIGHTNESS_SHROOMLIGHT;
+			break;
+		case 10652: // lit campfire
+			lightlevel = CAMPFIRE_BRIGHTNESS_FIRE;
+			break;
+		case 10656: // lit soul campfire
+			lightlevel = CAMPFIRE_BRIGHTNESS_SOULFIRE;
+			break;
+		case 10680: // ochre froglight
+			lightlevel = BRIGHTNESS_YELLOWFROG;
+			break;
+		case 10684: // verdant froglight
+			lightlevel = BRIGHTNESS_GREENFROG;
+			break;
+		case 10688: // pearlescent froglight
+			lightlevel = BRIGHTNESS_PINKFROG;
+			break;
+		case 10704: // active sculk sensor
+			lightlevel = SENSOR_BRIGHTNESS_SCULK;
+			break;
+		case 10708: // spawner
+			lightlevel = BRIGHTNESS_SPAWNER;
+			break;
+		case 12740: // lit candle cake
+			lightlevel = CAKE_BRIGHTNESS_CANDLE;
+			break;
+		case 10836: // brewing stand
+			lightlevel = BRIGHTNESS_BREWINGSTAND;
+			break;
+		case 30020: // nether portal
+			lightlevel = BRIGHTNESS_PORTAL;
+			break;
+		case 31016: // beacon
+			lightlevel = BRIGHTNESS_BEACON;
+			break;
+		case 60000: // end portal
+			lightlevel = PORTAL_BRIGHTNESS_END;
+			break;
+		case 60012: // ender chest
+			lightlevel = CHEST_BRIGHTNESS_END;
+			break;
+		case 60020: // conduit
+			lightlevel = BRIGHTNESS_CONDUIT;
+			break;
+		case 50000: // end crystal
+			lightlevel = BRIGHTNESS_ENDCRYSTAL;
+			break;
+		case 50004: // lightning bolt
+			lightlevel = BRIGHTNESS_LIGHTNING;
+			break;
+		case 50012: // glow item frame
+			lightlevel = BRIGHTNESS_ITEMFRAME;
+			break;
+		case 50020: // blaze
+			lightlevel = BRIGHTNESS_BLAZE;
+			break;
+		case 50048: // glow squid
+			lightlevel = BRIGHTNESS_SQUID;
+			break;
+		case 50080: // allay
+			lightlevel = BRIGHTNESS_ALLAY;
+			break;
+		case 50116: // TNT
+			lightlevel = BRIGHTNESS_TNT;
+	}
+	return lightlevel;
 }

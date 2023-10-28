@@ -514,7 +514,7 @@ void main() {
 			float dirLen = length(dir);
 			float ndotl = max(0, hasNeighbor ? max(0, dot(normalize(dir + normal), normal)) : 1.0);
 			if (dirLen < LIGHT_TRACE_LENGTH && ndotl > 0.001) {
-				float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.1;
+				float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.04;
 				lightBrightness *= lightBrightness;
 				ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / (dirLen + 0.1)) * dir);
 				if (rayHit1.rayColor.a > 0.003 && rayHit1.emissive && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {

@@ -761,6 +761,8 @@ value.GLOWING_LICHEN.0=§cOFF
 value.GLOWING_LICHEN.1=In Closed Areas
 value.GLOWING_LICHEN.2=Always
 
+option.EMISSIVE_EMERALD_BLOCK=Glowing Emerald Block
+
 option.EMISSIVE_REDSTONE_BLOCK=Glowing Redstone Block
 
 option.EMISSIVE_LAPIS_BLOCK=Glowing Lapis Lazuli Block
@@ -814,7 +816,7 @@ value.DIRECTIONAL_BLOCKLIGHT.7=Normal §c[-]
 value.DIRECTIONAL_BLOCKLIGHT.11=Intense §c[-]
 
 option.HELD_LIGHTING_MODE=Dynamic Handheld Lighting
-option.HELD_LIGHTING_MODE.comment=Allows handheld light sources to cast light onto the scene.
+option.HELD_LIGHTING_MODE.comment=Allows handheld light sources to cast light onto the scene. §c[-] Very low quality at the moment.
 value.HELD_LIGHTING_MODE.0=§cOFF
 value.HELD_LIGHTING_MODE.1=Subtle
 value.HELD_LIGHTING_MODE.2=Normal

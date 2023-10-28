@@ -51,7 +51,11 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 		imageAtomicAnd(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), 0xff000000);
 		imageAtomicOr(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), packedGlColor);
 	}
-	int lightLevel = int(lmCoordV[0].x * lmCoordV[0].x * 8) + 3;
+	int processedMat = blockIdMap[matV[0]];
+	bool matIsEmissive = isEmissive(processedMat);
+	int lightLevel = matIsEmissive ? getLightLevel(processedMat) : 0;
+	if (lightLevel == 0 && matIsEmissive) lightLevel = int(lmCoordV[0].x * lmCoordV[0].x * 18) + 7;
+
 	imageAtomicAnd(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), 0x80ffffff);
 	imageAtomicOr(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), lightLevel << 24);
 	vec3 blockRelPos[3];
@@ -154,7 +158,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 			voxelData.color = vec4(color.rgb, color.a);
 			voxelData.glColored = hasGlColor;
 			#if RP_MODE <= 1
-				voxelData.emissive = isEmissive(blockIdMap[matV[0]]);
+				voxelData.emissive = matIsEmissive;
 			#else
 				voxelData.emissive = s.a > 0.1;
 			#endif

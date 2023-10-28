@@ -157,7 +157,7 @@ void main() {
 		vec3 dir = lightPos - vxPos;
 		float dirLen = length(dir);
 		if (dirLen < LIGHT_TRACE_LENGTH) {
-			float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.1;
+			float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.04;
 			lightBrightness *= lightBrightness;
 			float ndotl = max(0, dot(normalize(dir), normalDepthData.xyz)) * lightBrightness;
 			ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / (length(dir) + 0.1)) * dir);
