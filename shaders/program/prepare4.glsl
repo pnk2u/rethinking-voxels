@@ -33,7 +33,6 @@ flat in mat4 prevProjectionMatrix;
 #endif
 uniform sampler2D colortex10;
 
-#define FALLOFF_SPEED 0.1
 #define MAX_OLDWEIGHT 0.9
 void main() {
     vec4 newColor = texture(colortex10, lrTexCoord);
@@ -56,7 +55,7 @@ void main() {
 		float prevMoment = 0;
         float prevLightCount = 0;
         vec4 tex13Data = vec4(0);
-        float weight = FALLOFF_SPEED * max(0, 1 - 1.5 * length(fract(view * lrTexCoord) - 0.5));
+        float weight = ACCUM_FALLOFF_SPEED * max(0, 1 - 1.5 * length(fract(view * lrTexCoord) - 0.5));
         float prevCompareDepth = GetLinearDepth(prevPos.z);
         if (prevPos.xy == clamp(prevPos.xy, vec2(1), view - 1)) {
             ivec2 prevCoords = ivec2(prevPos.xy);
@@ -86,10 +85,12 @@ void main() {
 				length(normalDepthData.rgb) > 0.1
 			);
 
-			prevColor.a *= validMult;
+			prevColor.a *= validMult * (1 - ACCUM_FALLOFF_SPEED * float(newColor.a < 0.5));
         }
 
-		if (prevColor.a < 5.1 * FALLOFF_SPEED && prevMoment == 0) {
+		float newMoment = pow2(dot(newColor.rgb, vec3(1)));
+
+		if (prevColor.a < 2.1 * ACCUM_FALLOFF_SPEED) {
 			for (int k = 0; k < 9; k++) {
 				if (k == 4) continue;
 				ivec2 offset = ivec2(k%3, k/3);
@@ -106,13 +107,12 @@ void main() {
 		}
 
 		float mixFactor = prevColor.a / max(prevColor.a + weight, 0.001);
-		float momentMixAddition = 0;// (1 - mixFactor) * (1 - prevColor.a / (5.1 * FALLOFF_SPEED));
 
 		denoiseSecondMoment[
 			int(gl_FragCoord.x) + 
 			int(view.x + 0.5) * (int(gl_FragCoord.y) + 
 			(frameCounter) % 2 * int(view.y + 0.5))
-		] = mix(pow2(dot(newColor.rgb, vec3(1))), prevMoment, mixFactor + momentMixAddition);
+		] = mix(newMoment, prevMoment, mixFactor);
 
         /*RENDERTARGETS:12,13*/
         gl_FragData[0] = vec4(
