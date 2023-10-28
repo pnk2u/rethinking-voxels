@@ -59,7 +59,7 @@ void main() {
 	float totalWeight = 0.00001;
 	vec3 totalLight = vec3(0.0);
 	int blurSize1 = int(sqrt(DENOISE_MAX_BLUR_MOD));
-	#ifndef FIRST
+	#ifdef FIRST
 		blurSize1 = DENOISE_MAX_BLUR_MOD / blurSize1;
 	#endif
 	blurSize1 *= 2;
