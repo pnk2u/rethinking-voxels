@@ -171,6 +171,77 @@ screen.VBL_SETTINGS=Vol. Blocklight Settings
 screen.VBL_SETTINGS.comment=Settings related to volumetric blocklight. This is the effect that makes fog light up around block light sources.
 
 screen.VX_WORLD=Other Effects
+
+screen.BLOCKCOLS=Block Lights
+screen.BLOCKCOLS.comment=Settings that are related to block lights.
+
+screen.ENTITYCOLS=Entity Lights
+screen.ENTITYCOLS.comment=Settings that are related to entity lights.
+
+screen.ORECOLS=Ore Emissives
+screen.ORECOLS.comment=Settings that are related to ore emissives.
+
+screen.OTHER_COL=Other (Brightness Only)
+screen.OTHER_COL.comment=Settings that don't fit into any other category.
+
+screen.FIRECOLS=Fires & Camp Fires
+screen.FIRECOLS.comment=Settings that are related to fires, and camp fires.
+
+screen.FROGCOLS=Froglights
+screen.FROGCOLS.comment=Settings that are related to froglights.
+
+screen.TORCHCOLS=Torches
+screen.TORCHCOLS.comment=Settings that are related to torches.
+
+screen.ALLAY_COL=Allay
+screen.AMETHYST_COL=Amethyst Cluster
+screen.BEACON_COL=Beacon
+screen.BERRY_COL=Glow Berries
+screen.BLAZE_COL=Blaze
+screen.BREWINGSTAND_COL=Brewing Stand
+screen.CANDLE_COL=Candles
+screen.CHORUS_COL=Chorus Flower
+screen.CONDUIT_COL=Conduit
+screen.COPPER_COL=Copper Ore
+screen.CRYING_COL=Crying Obsidian
+screen.DIAMOND_COL=Diamond Ore
+screen.DRAGON_COL=Dragon Egg
+screen.EMERALD_COL=Emerald Ore
+screen.END_COL=End Related Blocks
+screen.ENDCRYSTAL_COL=End Crystal
+screen.ENDROD_COL=End Rod
+screen.FIRE_COL=Fires & Camp Fires
+screen.FURNACE_COL=Furnace
+screen.GLOWSTONE_COL=Glowstone
+screen.GOLD_COL=Gold Ore
+screen.GREENFROG_COL=Verdant Froglight
+screen.ICE_COL=Blue Ice
+screen.IRON_COL=Iron Ore
+screen.ITEMFRAME_COL=Glow Item Frame
+screen.LAPIS_COL=Lapis Ore
+screen.LAVA_COL=Lava
+screen.LICHEN_COL=Glow Lichen
+screen.LIGHTNING_COL=Lightning Bolt
+screen.MAGMA_COL=Magma Block / Cube
+screen.PICKLE_COL=Sea Pickle
+screen.PINKFROG_COL=Pearlescent Froglight
+screen.PORTAL_COL=Nether Portal
+screen.PUMPKIN_COL=Jack o'Lantern
+screen.REDSTONE_COL=Redstone Ore
+screen.REDSTONELAMP_COL=Redstone Lamp
+screen.SCULK_COL=Sculk Sensor
+screen.SEALANTERN_COL=Sea Lantern
+screen.SHROOMLIGHT_COL=Shroomlight
+screen.SOULFIRE_COL=Soul Fires & Camp Fires
+screen.SOULTORCH_COL=Soul Torch
+screen.SPAWNER_COL=Spawner
+screen.SQUID_COL=Glow Squid
+screen.TABLE_COL=Enchanting Table
+screen.TNT_COL=TNT
+screen.TORCH_COL=Torch
+screen.YELLOWFROG_COL=Ochre Froglight
+
+
 #Settings
 option.RP_MODE=RP Support
 option.RP_MODE.comment=Changes many internal calculations to determine how different blocks and materials will be rendered. §bIntegrated PBR+§r: Calculated PBR and extra effects, highly recommended for most use cases. §aBasic§r: No PBR or extra effects. §elabPBR/seuspbr§r: Materials using the required PBR resource packs.
