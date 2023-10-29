@@ -449,8 +449,8 @@ vec3 getLightCol(int mat) {
 
 bool badPixel(vec4 color, vec4 glColor, int mat) {
 	switch(mat) {
-		case 4431:
-		case 4432:
+		case 10124:
+		case 10132:
 			if (color.g > max(color.r, color.b) + 0.05 && length(glColor.rgb - vec3(1)) < 0.1) {
 				return true;
 			}

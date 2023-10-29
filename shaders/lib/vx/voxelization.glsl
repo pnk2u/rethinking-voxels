@@ -7,7 +7,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 		bounds[1] = max(bounds[1], vxPos[i]);
 	}
 
-	if (matV[0] == 0 || matV[0] / 10000 == 5 || !isInRange(bounds[0]) || !isInRange(bounds[1])) break;
+	if (|| !isInRange(bounds[0]) || !isInRange(bounds[1])) break;
 	vec3 normal = cross(vxPos[1] - vxPos[0], vxPos[2] - vxPos[0]);
 	float area = max(length(normal), 1e-10);
 	normal /= area;
@@ -15,7 +15,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 	vec3 center = 0.5 * (bounds[1] + bounds[0]);
 	vec3 size = bounds[1] - bounds[0];
 	for (int i = 0; i < 3; i++) {
-		vxPos[i] = mix(vxPos[i], center, 0.01);
+		vxPos[i] = mix(vxPos[i], center, 0.01) - 0.01 * normal;
 	}
 
 	// center cross-model blocks
@@ -38,6 +38,48 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 	}
 
 	ivec3 blockCoords = vxPosToVxCoords(correspondingBlock + 0.5);
+
+	int processedMat = matV[0] < MATERIALCOUNT ? blockIdMap[matV[0]] : matV[0];
+	bool matIsEmissive = isEmissive(processedMat);
+	int lightLevel = matIsEmissive ? getLightLevel(processedMat) : 0;
+	if (lightLevel == 0) lightLevel = int(lmCoordV[0].x * lmCoordV[0].x * 18) + 7;
+
+	if (matV[0] == 0 || matV[0] / 10000 == 5) {// unknown blocks and entities
+		float shortestEdge = min(min(
+			length(vxPos[1] - vxPos[0]),
+			length(vxPos[2] - vxPos[1])),
+			length(vxPos[0] - vxPos[2])
+		);
+		if (shortestEdge < 0.1) {
+			break;
+		}
+		vec4 color = textureLod(tex, 0.5 * (max(max(texCoordV[0], texCoordV[1]), texCoordV[2]) + min(min(texCoordV[0], texCoordV[1]), texCoordV[2])), spriteSizeLog, 2);
+		if (color.a < 0.4) {
+			break;
+		}
+		for (int k = 0; k < 3; k++) {
+			ivec3 thisVxCoord = vxPosToVxCoords(vxPos[k]);
+			thisVxCoord = ivec3(2, 1, 2) * thisVxCoord - ivec3(voxelVolumeSize.xz, 0).xzy / 2;
+			ivec3 subBlockCoord = ivec3(1.9999 * fract(vxPos[k]));
+			int index = subBlockCoord.x + 2 * subBlockCoord.y + 4 * subBlockCoord.z;
+			ivec3 imageCoord = thisVxCoord + ivec3(0, 3 * voxelVolumeSize.y, 0);
+			imageAtomicOr(
+				voxelVolumeI,
+				imageCoord,
+				(1<<index) + int(matIsEmissive) * (1 << (index +  16))
+			);
+			imageAtomicAdd(voxelVolumeI, imageCoord, 1<<16);
+			for (int k = 1; k < 4; k++) {
+				imageAtomicAdd(
+					voxelVolumeI,
+					imageCoord + ivec3(k/2, 0, k%2),
+					int(63 * color[k-1] + 0.5) * (1 + int(matIsEmissive) << 15)
+				);
+			}
+		}
+		break;
+	}
+
 	uint prevMat = imageAtomicCompSwap(voxelVolumeI, blockCoords, 0, matV[0]);
 	if (prevMat != 0 && prevMat != uint(matV[0])) break;
 
@@ -51,10 +93,6 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 		imageAtomicAnd(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), 0xff000000);
 		imageAtomicOr(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), packedGlColor);
 	}
-	int processedMat = blockIdMap[matV[0]];
-	bool matIsEmissive = isEmissive(processedMat);
-	int lightLevel = matIsEmissive ? getLightLevel(processedMat) : 0;
-	if (lightLevel == 0 && matIsEmissive) lightLevel = int(lmCoordV[0].x * lmCoordV[0].x * 18) + 7;
 
 	imageAtomicAnd(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), 0x80ffffff);
 	imageAtomicOr(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), lightLevel << 24);
@@ -62,8 +100,6 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 	float sizeHeuristic = sqrt(area);
 	int mostPerpendicularAxis = 0;
 	for (int i = 0; i < 3; i++) {
-		// get faces away from integer coordinates prone to precision issues
-		vxPos[i] -= 0.01 * sizeHeuristic * normal;
 		// figure out position relative to the block origin
 		blockRelPos[i] = vxPos[i] - correspondingBlock;
 		// figure out where the face is facing
@@ -150,7 +186,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 				color.rgb *= s.a;
 			}
 			vec3 thisPos = projectedToBlockRel * thisProjectedPos;
-			if (color.a < 0.1 || thisPos != clamp(thisPos, 0, 1) || badPixel(color, meanGlColor, matV[0])) {
+			if (color.a < 0.1 || thisPos != clamp(thisPos, 0, 1) || badPixel(color, meanGlColor, processedMat)) {
 				continue;
 			}
 
