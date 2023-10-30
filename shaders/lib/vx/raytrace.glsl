@@ -33,7 +33,46 @@ void handleVoxel(inout raytrace_state_t state,
 	vec3 normalOffsets = state.eyeOffsets * state.normal;
 	ivec3 globalCoord = vxPosToVxCoords(pos + normalOffsets);
 	int thisVoxelMat = globalCoord != ivec3(-1) ? int(readBlockVolume(globalCoord)) : 0;
-	if (thisVoxelMat == 0) {
+	float entityW = 2;
+	int entityOccupancy = readEntityOccupancy(globalCoord);
+
+	vec3 entityNormal = vec3(0);
+	vec3 entityCol = vec3(0);
+	bool entityEmissive = false;
+	for (int _safdghlknef = 0; _safdghlknef == 0 && entityOccupancy != 0; _safdghlknef++) {
+		int index = int(
+			dot(floor(fract(pos + normalOffsets) + 0.5), vec3(1.01, 2.01, 4.01)));
+		if (((entityOccupancy >> index) & 1) != 0) {
+			entityW = state.w;
+			entityNormal = state.normal;
+			break;
+		}
+		vec3 entityIsctWs = (floor(pos + normalOffsets) + 0.5 - state.start) / state.dir;
+
+		for (int k = 0; k < 3; k++) {
+			if (entityIsctWs[k] > 1 || entityIsctWs[k] < state.w - state.rayOffset) continue;
+			vec3 thisNormal = vec3(k == 0, k == 1, k == 2);
+			vec3 isctPos = state.start + entityIsctWs[k] * state.dir +
+			state.eyeOffsets * thisNormal;
+			index = int(dot(floor(1.99 * fract(isctPos) + 0.005), vec3(1.01, 2.01, 4.01)));
+			if (length(floor(isctPos) - floor(pos + normalOffsets)) > 0.5 || ((entityOccupancy >> index) & 1) == 0) {
+				continue;
+			}
+			entityW = min(entityW, entityIsctWs[k]);
+			entityNormal = thisNormal;
+			entityEmissive = bool(entityOccupancy >> (index + 8) & 1);
+		}
+	}
+	if (entityW < 1.0) {
+		entityCol = readEntityColor(globalCoord);
+		if (thisVoxelMat == 0) {
+			state.w = entityW;
+			returnVal.rayColor = vec4(entityCol, 1);
+			returnVal.emissive = entityEmissive;
+			returnVal.normal = state.dirSgn * entityNormal;
+			return;
+		}
+	} else if (thisVoxelMat == 0) {
 		return;
 	}
 	vec3 baseBlock = floor(pos + normalOffsets);
@@ -46,7 +85,7 @@ void handleVoxel(inout raytrace_state_t state,
 	vec3 overshoot = max(floor((localProgress - state.w - state.rayOffset) / abs(localStepSize)), 0);
 	localProgress -= overshoot * localStepSize;
 	vec3 exitWs = state.progress + localNormal * state.stepSize;
-	float exitW = min(min(exitWs[0], exitWs[1]), exitWs[2]);
+	float exitW = min(min(exitWs[0], exitWs[1]), min(exitWs[2], entityW + 2 * state.rayOffset));
 	exitW -= state.rayOffset;
 	for (int k = 0; state.w < exitW && k < 3 * (1 << VOXEL_DETAIL_AMOUNT-1); k++) {
 		vec3 innerPos = state.start + state.w * state.dir - baseBlock;
@@ -76,6 +115,12 @@ void handleVoxel(inout raytrace_state_t state,
 		localProgress += localStepSize * localNormal;
 		state.w = min(min(localProgress[0], localProgress[1]), localProgress[2]);
 		localNormal = vec3(lessThanEqual(localProgress, vec3(state.w)));
+	}
+	if (entityW < state.w - state.rayOffset) {
+		state.w = entityW;
+		returnVal.rayColor = vec4(entityCol, 1);
+		returnVal.emissive = entityEmissive;
+		returnVal.normal = state.dirSgn * entityNormal;
 	}
 }
 

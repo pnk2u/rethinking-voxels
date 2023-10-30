@@ -63,5 +63,6 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 void main() {
 	imageStore(voxelVolumeI, ivec3(gl_GlobalInvocationID), ivec4(0));
 	imageStore(voxelVolumeI, ivec3(gl_GlobalInvocationID) + ivec3(0, voxelVolumeSize.y, 0), ivec4(0));
+	imageStore(voxelVolumeI, ivec3(gl_GlobalInvocationID) + ivec3(0, 3 * voxelVolumeSize.y, 0), ivec4(0));
 }
 #endif

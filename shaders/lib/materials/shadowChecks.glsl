@@ -707,3 +707,9 @@ int getLightLevel(int mat) {
 	}
 	return lightlevel;
 }
+
+bool ignoreMat(int mat) {
+	return (
+		mat == 50016
+	);
+}

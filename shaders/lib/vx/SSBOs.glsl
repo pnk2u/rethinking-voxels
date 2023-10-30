@@ -34,6 +34,7 @@
 		int blockIdMap[];
 	};
 	int getProcessedBlockId(int mat) {
+		if (mat >= MATERIALCOUNT) return mat;
 		mat = blockIdMap[mat];
 		return mat/10000*10000 + mat/4*4%2000;
 	}

@@ -30,21 +30,18 @@ int readEntityOccupancy(ivec3 coords) {
 	return imageLoad(voxelVolumeI, coords + ivec3(0, 3 * voxelVolumeSize.y, 0)).r & 0xffff;
 }
 
-vec3[2] readEntityColor(ivec3 coords) {
+vec3 readEntityColor(ivec3 coords) {
 	coords = ivec3(2, 1, 2) * coords - ivec3(voxelVolumeSize.xz, 0).xzy / 2;
 	if (any(lessThan(coords, ivec3(0))) || any(greaterThanEqual(coords, voxelVolumeSize))) {
-		return vec3[2](vec3(0), vec3(0));
+		return vec3(0);
 	}
 	ivec3 imageCoords = coords + ivec3(0, 3 * voxelVolumeSize.y, 0);
-	ivec3 packedColor = ivec3(
+	int weight = imageLoad(voxelVolumeI, coords + ivec3(0, 3 * voxelVolumeSize.y, 0)).r >> 16;
+	return vec3(
 		imageLoad(voxelVolumeI, imageCoords + ivec3(0, 0, 1)).r,
 		imageLoad(voxelVolumeI, imageCoords + ivec3(1, 0, 0)).r,
 		imageLoad(voxelVolumeI, imageCoords + ivec3(1, 0, 1)).r
-	);
-	return vec3[2](
-		vec3(packedColor & 0x7fff),
-		vec3(packedColor >> 15)
-	);
+	) / (64 * weight);
 }
 
 int getBaseIndex(int mat) {

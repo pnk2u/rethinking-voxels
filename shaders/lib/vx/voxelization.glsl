@@ -7,7 +7,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 		bounds[1] = max(bounds[1], vxPos[i]);
 	}
 
-	if (|| !isInRange(bounds[0]) || !isInRange(bounds[1])) break;
+	if (!isInRange(bounds[0]) || !isInRange(bounds[1])) break;
 	vec3 normal = cross(vxPos[1] - vxPos[0], vxPos[2] - vxPos[0]);
 	float area = max(length(normal), 1e-10);
 	normal /= area;
@@ -39,12 +39,17 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 
 	ivec3 blockCoords = vxPosToVxCoords(correspondingBlock + 0.5);
 
-	int processedMat = matV[0] < MATERIALCOUNT ? blockIdMap[matV[0]] : matV[0];
+	int processedMat = getProcessedBlockId(matV[0]);
+
+	if (ignoreMat(processedMat)) {
+		break;
+	}
+
 	bool matIsEmissive = isEmissive(processedMat);
 	int lightLevel = matIsEmissive ? getLightLevel(processedMat) : 0;
 	if (lightLevel == 0) lightLevel = int(lmCoordV[0].x * lmCoordV[0].x * 18) + 7;
 
-	if (matV[0] == 0 || matV[0] / 10000 == 5) {// unknown blocks and entities
+	if (matV[0] == 0 || matV[0] > MATERIALCOUNT) {// unknown blocks and entities
 		float shortestEdge = min(min(
 			length(vxPos[1] - vxPos[0]),
 			length(vxPos[2] - vxPos[1])),
@@ -53,29 +58,31 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 		if (shortestEdge < 0.1) {
 			break;
 		}
-		vec4 color = textureLod(tex, 0.5 * (max(max(texCoordV[0], texCoordV[1]), texCoordV[2]) + min(min(texCoordV[0], texCoordV[1]), texCoordV[2])), spriteSizeLog, 2);
+		vec4 color = textureLod(tex, 0.5 * (max(max(texCoordV[0], texCoordV[1]), texCoordV[2]) + min(min(texCoordV[0], texCoordV[1]), texCoordV[2])), 2);
 		if (color.a < 0.4) {
 			break;
 		}
-		for (int k = 0; k < 3; k++) {
-			ivec3 thisVxCoord = vxPosToVxCoords(vxPos[k]);
-			thisVxCoord = ivec3(2, 1, 2) * thisVxCoord - ivec3(voxelVolumeSize.xz, 0).xzy / 2;
-			ivec3 subBlockCoord = ivec3(1.9999 * fract(vxPos[k]));
-			int index = subBlockCoord.x + 2 * subBlockCoord.y + 4 * subBlockCoord.z;
-			ivec3 imageCoord = thisVxCoord + ivec3(0, 3 * voxelVolumeSize.y, 0);
-			imageAtomicOr(
+		vec3 faceCenterPosM = center - 0.3 * sqrt(area) * normal;
+		ivec3 vxCoordM = vxPosToVxCoords(faceCenterPosM);
+		vxCoordM = ivec3(2, 1, 2) * vxCoordM - ivec3(voxelVolumeSize.xz, 0).xzy / 2;
+		if (any(lessThan(vxCoordM, ivec3(0))) || any(greaterThanEqual(vxCoordM, voxelVolumeSize))) {
+			continue;
+		}
+		ivec3 subBlockCoord = ivec3(0.2 * fract(faceCenterPosM) + 0.9);
+		int index = subBlockCoord.x + 2 * subBlockCoord.y + 4 * subBlockCoord.z;
+		ivec3 imageCoord = vxCoordM + ivec3(0, 3 * voxelVolumeSize.y, 0);
+		imageAtomicOr(
+			voxelVolumeI,
+			imageCoord,
+			(1<<index) + (int(matIsEmissive) << (index + 8))
+		);
+		imageAtomicAdd(voxelVolumeI, imageCoord, 1<<16);
+		for (int k = 1; k < 4; k++) {
+			imageAtomicAdd(
 				voxelVolumeI,
-				imageCoord,
-				(1<<index) + int(matIsEmissive) * (1 << (index +  16))
+				imageCoord + ivec3(k/2, 0, k%2),
+				int(63 * color[k-1] + 0.5)
 			);
-			imageAtomicAdd(voxelVolumeI, imageCoord, 1<<16);
-			for (int k = 1; k < 4; k++) {
-				imageAtomicAdd(
-					voxelVolumeI,
-					imageCoord + ivec3(k/2, 0, k%2),
-					int(63 * color[k-1] + 0.5) * (1 + int(matIsEmissive) << 15)
-				);
-			}
 		}
 		break;
 	}

@@ -288,11 +288,8 @@ void main() {
 	upVecV = normalize(gbufferModelView[1].xyz);
 
 	matV = int(mc_Entity.x + 0.5);
-	if (blockEntityId > 0) {
-		matV = blockEntityId;
-	}
-	if (renderStage == MC_RENDER_STAGE_ENTITIES) {
-		matV = 0;
+	if (blockEntityId > 0 || renderStage == MC_RENDER_STAGE_ENTITIES) {
+		matV = max(blockEntityId, entityId);
 	}
 	int mat = getProcessedBlockId(matV);
 	positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
@@ -302,11 +299,11 @@ void main() {
 			lmCoord = GetLightMapCoordinates();
 		#endif
 
-		DoWave(positionV.xyz, matV);
+		DoWave(positionV.xyz, mat);
 	#endif
 
 	#ifdef PERPENDICULAR_TWEAKS
-		if (matV == 10004 || matV == 10016) { // Foliage
+		if (mat == 10004 || mat == 10016) { // Foliage
 			vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
 			vec2 texMinMidCoord = texCoordV - midCoord;
 			if (texMinMidCoord.y < 0.0) {

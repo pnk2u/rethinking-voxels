@@ -41,7 +41,7 @@ const int noiseTextureResolution = 128;
 
 const bool shadowHardwareFiltering = true;
 const float shadowDistanceRenderMul = 1.0;
-const float entityShadowDistanceMul = 0.125; // Iris feature
+const float entityShadowDistanceMul = 0.5; // Iris feature
 
 const float drynessHalflife = 300.0;
 const float wetnessHalflife = 300.0;
