@@ -30,12 +30,12 @@ uniform float viewWidth, viewHeight;
 	#include "/lib/antialiasing/fxaa.glsl"
 #endif
 
-
+/*
 uniform vec3 cameraPosition;
 uniform mat4 gbufferProjectionInverse, gbufferModelViewInverse;
 #include "/lib/vx/SSBOs.glsl"
 #include "/lib/vx/raytrace.glsl"
-
+*/
 
 //Program//
 void main() {
@@ -48,12 +48,12 @@ void main() {
 	#ifdef FXAA
 		FXAA311(color);
 	#endif
-	if (true || texCoord.x > 0.5) {
+/*	if (true || texCoord.x > 0.5) {
 		vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1.0));
 		dir /= dir.w;
 		ray_hit_t rayHit = raytrace(fract(cameraPosition), dir.xyz);
-		color = mix(color, rayHit.rayColor.rgb, 0.5);
-	}
+		color = mix(color, rayHit.rayColor.rgb * float(rayHit.emissive), 0.5);
+	}*/
     #ifndef LIGHT_COLORING
     /* DRAWBUFFERS:3 */
     #else

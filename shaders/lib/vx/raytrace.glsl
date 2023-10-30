@@ -45,20 +45,21 @@ void handleVoxel(inout raytrace_state_t state,
 		if (((entityOccupancy >> index) & 1) != 0) {
 			entityW = state.w;
 			entityNormal = state.normal;
+			entityEmissive = bool(entityOccupancy >> (index + 8) & 1);
 			break;
 		}
 		vec3 entityIsctWs = (floor(pos + normalOffsets) + 0.5 - state.start) / state.dir;
 
 		for (int k = 0; k < 3; k++) {
-			if (entityIsctWs[k] > 1 || entityIsctWs[k] < state.w - state.rayOffset) continue;
+			if (entityIsctWs[k] > min(entityW, 1) || entityIsctWs[k] < state.w - state.rayOffset) continue;
 			vec3 thisNormal = vec3(k == 0, k == 1, k == 2);
 			vec3 isctPos = state.start + entityIsctWs[k] * state.dir +
 			state.eyeOffsets * thisNormal;
-			index = int(dot(floor(1.99 * fract(isctPos) + 0.005), vec3(1.01, 2.01, 4.01)));
+			index = int(dot(floor(fract(isctPos) + 0.5), vec3(1.01, 2.01, 4.01)));
 			if (length(floor(isctPos) - floor(pos + normalOffsets)) > 0.5 || ((entityOccupancy >> index) & 1) == 0) {
 				continue;
 			}
-			entityW = min(entityW, entityIsctWs[k]);
+			entityW = entityIsctWs[k];
 			entityNormal = thisNormal;
 			entityEmissive = bool(entityOccupancy >> (index + 8) & 1);
 		}

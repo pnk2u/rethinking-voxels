@@ -138,26 +138,47 @@ void main() {
 		if (lightCount > 0 && validData) {
 			uint thisLightIndex = nextUint() % lightCount;
 		#endif
-		int mat = readBlockVolume(positions[thisLightIndex].xyz + 0.5);
-		int baseIndex = getBaseIndex(mat);
-		int emissiveVoxelCount = readEmissiveCount(baseIndex);
 		vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
+		ivec3 lightCoords = vxPosToVxCoords(lightPos);
+		int mat = readBlockVolume(lightCoords);
+		int baseIndex = getBaseIndex(mat);
+		int emissiveVoxelCount = mat < MATERIALCOUNT ? readEmissiveCount(baseIndex) : 0;
+		bool entity = false;
+		int entityOccupancy = readEntityOccupancy(lightCoords);
 		if (emissiveVoxelCount > 0) {
 			int subEmissiveIndex = int(nextUint() % emissiveVoxelCount);
 			vec3 localPos = readEmissiveLoc(baseIndex, subEmissiveIndex);
 			if (any(lessThan(localPos, vec3(-0.5)))) {
-				imageStore(colorimg10, writeTexelCoord, vec4(1, 0, 0, 1));
 				lightPos = vec3(-10000);
 			}
 			localPos += (vec3(nextFloat(), nextFloat(), nextFloat()) - 0.5) / (1<<(min(VOXEL_DETAIL_AMOUNT, 3)-1));
 			lightPos = floor(lightPos) + localPos;
+		} else if (entityOccupancy != 0) {
+			vec3 emissiveLocs[8];
+			for (int k = 0; k < 8; k++) {
+				ivec3 offset = ivec3(k%2, k/2%2, k/4%2);
+				if ((entityOccupancy >> (k) & 1) != 0) {
+					entity = true;
+					emissiveLocs[emissiveVoxelCount++] = (offset + vec3(nextFloat(), nextFloat(), nextFloat())) * 0.5 - 0.5;
+				}
+			}
+			if (entity) {
+				int subEmissiveIndex = int(nextUint() % emissiveVoxelCount);
+				lightPos += emissiveLocs[subEmissiveIndex];
+				imageStore(colorimg10, writeTexelCoord, vec4(1, 0, 0, 1));
+			} else {
+				lightPos = vec3(-10000);
+			}
 		} else {
-			lightPos = vec3(1000);
+			lightPos = vec3(-10000);
 		}
 		vec3 dir = lightPos - vxPos;
 		float dirLen = length(dir);
 		if (dirLen < LIGHT_TRACE_LENGTH) {
 			float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.04;
+			if (entity) {
+				lightBrightness = 0.5;
+			}
 			lightBrightness *= lightBrightness;
 			float ndotl = max(0, dot(normalize(dir), normalDepthData.xyz)) * lightBrightness;
 			ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / (length(dir) + 0.1)) * dir);
