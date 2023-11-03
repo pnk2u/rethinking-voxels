@@ -26,51 +26,55 @@ struct raytrace_state_t {
 	float w;
 	bool insideVolume;
 };
+
 #define MAX_RAY_ALPHA 0.999
+
+mat3x4 floorMat(mat3x4 mat) {
+	return mat3x4(floor(mat[0]), floor(mat[1]), floor(mat[2]));
+}
+
 void handleVoxel(inout raytrace_state_t state,
                  inout ray_hit_t returnVal) {
 	vec3 pos = state.start + state.w * state.dir;
 	vec3 normalOffsets = state.eyeOffsets * state.normal;
 	ivec3 globalCoord = vxPosToVxCoords(pos + normalOffsets);
 	int thisVoxelMat = globalCoord != ivec3(-1) ? int(readBlockVolume(globalCoord)) : 0;
-	float entityW = 2;
 	int entityOccupancy = readEntityOccupancy(globalCoord);
+
+	if (entityOccupancy == 0 && thisVoxelMat == 0) {
+		return;
+	}
+
+	float entityW = 2;
 
 	vec3 entityNormal = vec3(0);
 	vec3 entityCol = vec3(0);
 	bool entityEmissive = false;
-	for (int _safdghlknef = 0; _safdghlknef == 0 && entityOccupancy != 0; _safdghlknef++) {
-		int index = int(
-			dot(floor(fract(pos + normalOffsets) + 0.5), vec3(1.01, 2.01, 4.01)));
-		if (((entityOccupancy >> index) & 1) != 0) {
-			entityW = state.w;
-			entityNormal = state.normal;
-			entityEmissive = bool(entityOccupancy >> (index + 8) & 1);
-			break;
-		}
-		vec3 entityIsctWs = (floor(pos + normalOffsets) + 0.5 - state.start) / state.dir;
 
-		for (int k = 0; k < 3; k++) {
-			if (entityIsctWs[k] > min(entityW, 1) || entityIsctWs[k] < state.w - state.rayOffset) continue;
-			vec3 thisNormal = vec3(k == 0, k == 1, k == 2);
-			vec3 isctPos = state.start + entityIsctWs[k] * state.dir +
-			state.eyeOffsets * thisNormal;
-			index = int(dot(floor(fract(isctPos) + 0.5), vec3(1.01, 2.01, 4.01)));
-			if (length(floor(isctPos) - floor(pos + normalOffsets)) > 0.5 || ((entityOccupancy >> index) & 1) == 0) {
-				continue;
-			}
-			entityW = entityIsctWs[k];
-			entityNormal = thisNormal;
-			entityEmissive = bool(entityOccupancy >> (index + 8) & 1);
-		}
-	}
+	vec3 exitWs = state.progress + state.normal * state.stepSize;
+	float exitW = min(min(exitWs[0], exitWs[1]), exitWs[2]);
+	exitW -= state.rayOffset;
+
+	vec3 correspondingBlock = floor(pos + normalOffsets);
+	vec4 entityIsctWs = vec4(state.w, (correspondingBlock + 0.5 - state.start) / state.dir);
+	ivec4 valids = ivec4(greaterThan(entityIsctWs, vec4(state.w - state.rayOffset))) * ivec4(lessThan(entityIsctWs, vec4(exitW)));
+	ivec4 indices = 1 - valids + valids *
+		ivec4(floorMat(outerProduct(vec4(1), state.start - correspondingBlock + state.eyeOffsets + 0.5) +
+		outerProduct(entityIsctWs, state.dir)) * vec3(1.01, 2.01, 4.01));
+	valids *= ivec4(entityOccupancy) >> indices & 1;
+	entityIsctWs += 2 * (1 - valids);
+	entityW = min(min(min(entityIsctWs.x, entityIsctWs.y), min(entityIsctWs.z, entityIsctWs.w)), 1.5);
+	vec4 successMask = 1.01 * vec4(lessThanEqual(entityIsctWs, vec4(entityW)));
 	if (entityW < 1.0) {
+		int index = int(dot(indices, successMask));
+		entityNormal = successMask.x > 0.5 ? state.normal : successMask.yzw;
+		entityEmissive = bool(entityOccupancy >> (index + 8) & 1);
 		entityCol = readEntityColor(globalCoord);
 		if (thisVoxelMat == 0) {
 			state.w = entityW;
 			returnVal.rayColor = vec4(entityCol, 1);
 			returnVal.emissive = entityEmissive;
-			returnVal.normal = state.dirSgn * entityNormal;
+			returnVal.normal = -state.dirSgn * entityNormal;
 			return;
 		}
 	} else if (thisVoxelMat == 0) {
@@ -85,9 +89,6 @@ void handleVoxel(inout raytrace_state_t state,
 	vec3 localNormal = state.normal;
 	vec3 overshoot = max(floor((localProgress - state.w - state.rayOffset) / abs(localStepSize)), 0);
 	localProgress -= overshoot * localStepSize;
-	vec3 exitWs = state.progress + localNormal * state.stepSize;
-	float exitW = min(min(exitWs[0], exitWs[1]), min(exitWs[2], entityW + 2 * state.rayOffset));
-	exitW -= state.rayOffset;
 	for (int k = 0; state.w < exitW && k < 3 * (1 << VOXEL_DETAIL_AMOUNT-1); k++) {
 		vec3 innerPos = state.start + state.w * state.dir - baseBlock;
 		ivec3 coords = ivec3(lodResolution * innerPos + state.eyeOffsets * localNormal);
@@ -121,7 +122,7 @@ void handleVoxel(inout raytrace_state_t state,
 		state.w = entityW;
 		returnVal.rayColor = vec4(entityCol, 1);
 		returnVal.emissive = entityEmissive;
-		returnVal.normal = state.dirSgn * entityNormal;
+		returnVal.normal = -state.dirSgn * entityNormal;
 	}
 }
 
