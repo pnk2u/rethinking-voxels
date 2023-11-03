@@ -55,7 +55,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 			length(vxPos[2] - vxPos[1])),
 			length(vxPos[0] - vxPos[2])
 		);
-		if (shortestEdge < 0.1) {
+		if (shortestEdge < 0.1 || area < 0.05) {
 			break;
 		}
 		vec4 color = textureLod(tex, 0.5 * (max(max(texCoordV[0], texCoordV[1]), texCoordV[2]) + min(min(texCoordV[0], texCoordV[1]), texCoordV[2])), 2);
@@ -63,8 +63,8 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 			break;
 		}
 		vec3 faceCenterPosM = center - 0.3 * sqrt(area) * normal;
-		ivec3 vxCoordM = vxPosToVxCoords(faceCenterPosM);
-		vxCoordM = ivec3(2, 1, 2) * vxCoordM - ivec3(voxelVolumeSize.xz, 0).xzy / 2;
+		ivec3 vxCoordM0 = vxPosToVxCoords(faceCenterPosM);
+		ivec3 vxCoordM = ivec3(2, 1, 2) * vxCoordM0 - ivec3(voxelVolumeSize.xz, 0).xzy / 2;
 		if (any(lessThan(vxCoordM, ivec3(0))) || any(greaterThanEqual(vxCoordM, voxelVolumeSize))) {
 			continue;
 		}
@@ -83,6 +83,10 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 				imageCoord + ivec3(k/2, 0, k%2),
 				int(63 * color[k-1] + 0.5)
 			);
+		}
+		if (matIsEmissive) {
+			imageAtomicAnd(voxelVolumeI, vxCoordM0 + ivec3(0, voxelVolumeSize.y, 0), 0x80ffffff);
+			imageAtomicOr(voxelVolumeI, vxCoordM0 + ivec3(0, voxelVolumeSize.y, 0), lightLevel << 24);
 		}
 		break;
 	}
@@ -103,6 +107,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 
 	imageAtomicAnd(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), 0x80ffffff);
 	imageAtomicOr(voxelVolumeI, blockCoords + ivec3(0, voxelVolumeSize.y, 0), lightLevel << 24);
+
 	vec3 blockRelPos[3];
 	float sizeHeuristic = sqrt(area);
 	int mostPerpendicularAxis = 0;
