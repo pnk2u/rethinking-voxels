@@ -157,15 +157,14 @@ void main() {
 			vec3 emissiveLocs[8];
 			for (int k = 0; k < 8; k++) {
 				ivec3 offset = ivec3(k%2, k/2%2, k/4%2);
-				if ((entityOccupancy >> (k) & 1) != 0) {
+				if ((entityOccupancy >> (k + 8) & 1) != 0) {
 					entity = true;
-					emissiveLocs[emissiveVoxelCount++] = (offset + vec3(nextFloat(), nextFloat(), nextFloat())) * 0.5 - 0.5;
+					emissiveLocs[emissiveVoxelCount++] = (offset + vec3(nextFloat(), nextFloat(), nextFloat()) - 1.0) * 0.5;
 				}
 			}
 			if (entity) {
 				int subEmissiveIndex = int(nextUint() % emissiveVoxelCount);
 				lightPos += emissiveLocs[subEmissiveIndex];
-				imageStore(colorimg10, writeTexelCoord, vec4(1, 0, 0, 1));
 			} else {
 				lightPos = vec3(-10000);
 			}
@@ -176,13 +175,11 @@ void main() {
 		float dirLen = length(dir);
 		if (dirLen < LIGHT_TRACE_LENGTH) {
 			float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.04;
-			if (entity) {
-				lightBrightness = 0.5;
-			}
+			//if (entity) lightBrightness = 0.5;
 			lightBrightness *= lightBrightness;
 			float ndotl = max(0, dot(normalize(dir), normalDepthData.xyz)) * lightBrightness;
 			ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / (length(dir) + 0.1)) * dir);
-			if (length(rayHit1.rayColor.rgb) > 0.003 && rayHit1.emissive && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51) {
+			if (length(rayHit1.rayColor.rgb) > 0.003 && rayHit1.emissive && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51 + float(entity)) {
 				writeColor += rayHit1.rayColor.rgb * float(rayHit1.emissive) * ndotl * (sqrt(1 - dirLen / LIGHT_TRACE_LENGTH)) / (dirLen + 0.1);
 				positions[thisLightIndex].w = 1;
 			}
