@@ -50,7 +50,7 @@ void main() {
 			)
 		] - pow2(dot(thisLightData.rgb, vec3(1)));
 		variance /= max(0.01, accumulationAmount / ACCUM_FALLOFF_SPEED);
-		variance = max(variance, 0.07 - 0.2 * accumulationAmount);
+		variance = max(variance, 0.14 - 0.2 * accumulationAmount);
 
 	#else
 		float variance = thisLightData.a;
@@ -75,7 +75,7 @@ void main() {
 		vec4 aroundNormalDepthData = texelFetch(colortex8, texelCoord + offset, 0);
 		aroundNormalDepthData.w = 50.0 * GetLinearDepth(1 - aroundNormalDepthData.w);
 		vec4 aroundLight = texelFetch(LIGHT_SAMPLER, texelCoord + offset, 0);
-		float weight = exp(-dot(offset, offset) * (2.0 / (DENOISE_MAX_BLUR_MOD * DENOISE_MAX_BLUR_MOD)) - pow2(dot(aroundLight.rgb - thisLightData.rgb, vec3(1))) / (4 * variance)) * max0(1 - 7 * length(normalDepthData - aroundNormalDepthData));
+		float weight = exp(-dot(offset, offset) * (2.0 / (DENOISE_MAX_BLUR_MOD * DENOISE_MAX_BLUR_MOD)) - pow2(dot(aroundLight.rgb - thisLightData.rgb, vec3(1))) / (DENOISE_LENIENCE * DENOISE_LENIENCE * variance)) * max0(1 - 7 * length(normalDepthData - aroundNormalDepthData));
 		totalWeight += weight;
 		totalLight += aroundLight.xyz * weight;
 	}
