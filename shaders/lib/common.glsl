@@ -54,8 +54,7 @@
   //#define RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
     #define DENOISING_DEFINE 1 //[0 1 2]
     #define DENOISE_MAX_BLUR 16 //[10 12 14 16 18 20 22 25 28 32 36 40 45 50]
-    #define DENOISE_MIN_BLUR 1 //[1 2 3 4 6 8 10 15 20]
-    #define DENOISE_CONVERGED_MULT 0.5 //[0 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0]
+    #define DENOISE_LENIENCE 1 //[0 1 2]
     #define BLOCKLIGHT_I 1.0 //[0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.5 10.0]
     #define LIGHT_TRACE_LENGTH 30.0 //[10.0 12.0 15.0 18.0 22.0 26.0 30.0 35.0 40.0 57.0 55.0 65.0 76.0 88.0 100.0]
     #define LIGHT_COLOR_SATURATION 0.5 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
@@ -79,7 +78,7 @@
 
     #ifdef END
         #define CONWAY 2 //[0 1 2]
-        #define CONWAY_HEIGHT 50.1
+        #define CONWAY_HEIGHT 10.1
     #endif
     #ifdef OVERWORLD
         #define FRACTAL_GALAXY 0 //[0 1 2 3]

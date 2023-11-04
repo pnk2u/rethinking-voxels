@@ -18,7 +18,7 @@ const int colortex13Format= RGBA16F;		//denoised block lighting
 const int colortex14Format = R8;            //Conway's game of life
 */
 const bool colortex0Clear = true;
-const bool colortex1Clear = true;
+const bool colortex1Clear = false;
 const bool colortex2Clear = false;
 
 const bool colortex3Clear = true;
@@ -31,7 +31,7 @@ const bool colortex7Clear = false;
 
 const bool colortex8Clear = false;
 const bool colortex9Clear = false;
-const bool colortex10Clear = true;
+const bool colortex10Clear = false;
 const bool colortex11Clear = false;
 const bool colortex12Clear = false;
 const bool colortex13Clear = false;

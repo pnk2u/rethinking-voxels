@@ -13,6 +13,7 @@ in vec2 lmCoord;
 
 flat in vec3 upVec, sunVec, northVec, eastVec;
 in vec3 normal;
+in vec3 velocity;
 
 in vec4 glColor;
 
@@ -196,10 +197,11 @@ void main() {
 		ColorCodeProgram(color);
 	#endif
 
-	/* DRAWBUFFERS:015 */
+	/* RENDERTARGETS:0,1,5,10 */
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
 	gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
+	gl_FragData[3] = vec4(velocity, 1.0);
 }
 
 #endif
@@ -212,6 +214,7 @@ out vec2 lmCoord;
 
 flat out vec3 upVec, sunVec, northVec, eastVec;
 out vec3 normal;
+out vec3 velocity;
 
 out vec4 glColor;
 
@@ -235,10 +238,12 @@ out vec4 glColor;
 #ifdef FLICKERING_FIX
 	uniform int entityId;
 
-	uniform vec3 cameraPosition;
-
-	uniform mat4 gbufferModelViewInverse;
 #endif
+uniform vec3 cameraPosition;
+uniform vec3 previousCameraPosition;
+
+uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferProjectionInverse;
 
 //Attributes//
 #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined IPBR && defined IS_IRIS
@@ -249,12 +254,15 @@ out vec4 glColor;
 	attribute vec4 at_tangent;
 #endif
 
+in vec3 at_velocity;
+
 //Common Variables//
 
 //Common Functions//
 
 //Includes//
-
+#define MATERIALMAP_ONLY
+#include "/lib/vx/SSBOs.glsl"
 //Program//
 void main() {
 	gl_Position = ftransform();
@@ -268,6 +276,18 @@ void main() {
 	glColor = gl_Color;
 
 	normal = normalize(gl_NormalMatrix * gl_Normal);
+
+	vec4 viewPos = gl_ModelViewMatrix * gl_Vertex;
+
+	vec4 prevViewPos = viewPos - vec4(at_velocity, 0); 
+
+	vec3 prevPosition = (gbufferPreviousModelViewInverse * prevViewPos).xyz + previousCameraPosition - cameraPosition;
+
+	vec4 position = gbufferModelViewInverse * viewPos;
+
+	velocity = position.xyz - prevPosition.xyz;
+
+	if (at_velocity == vec3(0)) velocity = vec3(0, 1, 0);
 
 	upVec = normalize(gbufferModelView[1].xyz);
 	eastVec = normalize(gbufferModelView[0].xyz);
@@ -306,7 +326,6 @@ void main() {
 	#ifdef FLICKERING_FIX
 		if (entityId == 50008 || entityId == 50012) { // Item Frame, Glow Item Frame
 			if (dot(normal, upVec) > 0.99) {
-				vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
 				vec3 comPos = fract(position.xyz + cameraPosition);
 				comPos = abs(comPos - vec3(0.5));
 				if ((comPos.y > 0.437 && comPos.y < 0.438) || (comPos.y > 0.468 && comPos.y < 0.469)) {

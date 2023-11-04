@@ -41,7 +41,7 @@ void handleVoxel(inout raytrace_state_t state,
 	int thisVoxelMat = globalCoord != ivec3(-1) ? int(readBlockVolume(globalCoord)) : 0;
 	int entityOccupancy = readEntityOccupancy(globalCoord);
 
-	if (entityOccupancy == 0 && thisVoxelMat == 0) {
+	if ((entityOccupancy == 0 || state.w < state.rayOffset * 4) && thisVoxelMat == 0) {
 		return;
 	}
 
