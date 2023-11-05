@@ -6,59 +6,74 @@ flat in mat4 prevProjectionMatrix;
 #ifdef ACCUMULATION
 	uniform int frameCounter;
 
-    uniform float viewWidth;
-    uniform float viewHeight;
-    vec2 view = vec2(viewWidth, viewHeight);
+	uniform float near;
+	uniform float far;
+	float farPlusNear = far + near;
+	float farMinusNear = far - near;
 
-    uniform float near;
-    uniform float far;
-    float farPlusNear = far + near;
-    float farMinusNear = far - near;
+	uniform vec3 cameraPosition;
+	uniform vec3 previousCameraPosition;
 
-    uniform vec3 cameraPosition;
-    uniform vec3 previousCameraPosition;
-
-    uniform sampler2D colortex2;
+	uniform sampler2D colortex2;
 	uniform sampler2D colortex4;
-    uniform sampler2D colortex8;
-    const bool colortex10MipmapEnabled = true;
-    uniform sampler2D colortex12;
-    uniform sampler2D colortex13;
-    float GetLinearDepth(float depth) {
-        return (2.0 * near) / (farPlusNear - depth * (farMinusNear));
-    }
+	uniform sampler2D colortex8;
+	const bool colortex10MipmapEnabled = true;
+	uniform sampler2D colortex12;
+	uniform sampler2D colortex13;
+	float GetLinearDepth(float depth) {
+		return (2.0 * near) / (farPlusNear - depth * (farMinusNear));
+	}
 	#define DENOISE_DATA
 	#define WRITE_TO_SSBOS
 	#include "/lib/vx/SSBOs.glsl"
+
 #endif
+
+uniform float viewWidth;
+uniform float viewHeight;
+vec2 view = vec2(viewWidth, viewHeight);
+
 uniform sampler2D colortex10;
 
 #define MAX_OLDWEIGHT 0.9
 void main() {
-    vec4 newColor = texture(colortex10, lrTexCoord);
-    #ifdef ACCUMULATION
-	    newColor.a = texelFetch(colortex10, ivec2(lrTexCoord * view), 0).a;
-        vec4 normalDepthData = texelFetch(colortex8, ivec2(gl_FragCoord.xy), 0);
-        vec4 playerPos = unProjectionMatrix * vec4(gl_FragCoord.xy / view * 2 - 1, 1 - 2 * normalDepthData.w, 1);
-        vec4 prevPlayerPos = vec4(playerPos.xyz / playerPos.w + cameraPosition - previousCameraPosition, 1);
-        vec4 prevPos = prevProjectionMatrix * prevPlayerPos;
-        float ndotv = -dot(normalize(playerPos.xyz), normalDepthData.xyz);
-        float normalWeight = clamp(-dot(normalize(prevPlayerPos.xyz), normalDepthData.xyz) / ndotv, 1 - ndotv, 1);
-        normalWeight *= normalWeight;
-        if (normalDepthData.a < 0.44) {
-            prevPos.xyz = 0.5 * prevPos.xyz / prevPos.w + 0.5;
-            prevPos.xy *= view;
-        } else {
-            prevPos = vec4(gl_FragCoord.xy, 1 - normalDepthData.a, 1);
-        }
-        vec4 prevColor = vec4(0);
+	vec4 newColor = texture(colortex10, lrTexCoord);
+	vec3 minColor = vec3(100000);
+	vec3 secondMinColor = vec3(0);
+	for (int k = 0; k < 4; k++) {
+		vec2 offset = vec2(ivec2(k-1, k-2) % 2) / view;
+		vec3 aroundCol = texture(colortex10, lrTexCoord + offset).rgb;
+		if (dot(aroundCol, vec3(1)) < dot(minColor, vec3(1))) {
+			secondMinColor = minColor;
+			minColor = aroundCol;
+		} else if (dot(aroundCol, vec3(1)) < dot(secondMinColor, vec3(1))) {
+			secondMinColor = aroundCol;
+		}
+	}
+	newColor.rgb = max(secondMinColor, newColor.rgb);
+	#ifdef ACCUMULATION
+		newColor.a = texelFetch(colortex10, ivec2(lrTexCoord * view), 0).a;
+		vec4 normalDepthData = texelFetch(colortex8, ivec2(gl_FragCoord.xy), 0);
+		vec4 playerPos = unProjectionMatrix * vec4(gl_FragCoord.xy / view * 2 - 1, 1 - 2 * normalDepthData.w, 1);
+		vec4 prevPlayerPos = vec4(playerPos.xyz / playerPos.w + cameraPosition - previousCameraPosition, 1);
+		vec4 prevPos = prevProjectionMatrix * prevPlayerPos;
+		float ndotv = -dot(normalize(playerPos.xyz), normalDepthData.xyz);
+		float normalWeight = clamp(-dot(normalize(prevPlayerPos.xyz), normalDepthData.xyz) / ndotv, 1 - ndotv, 1);
+		normalWeight *= normalWeight;
+		if (normalDepthData.a < 0.44) {
+			prevPos.xyz = 0.5 * prevPos.xyz / prevPos.w + 0.5;
+			prevPos.xy *= view;
+		} else {
+			prevPos = vec4(gl_FragCoord.xy, 1 - normalDepthData.a, 1);
+		}
+		vec4 prevColor = vec4(0);
 		float prevMoment = 0;
-        float prevLightCount = 0;
-        vec4 tex13Data = vec4(0);
-        float weight = ACCUM_FALLOFF_SPEED * max(0, 1 - 1.5 * length(fract(view * lrTexCoord) - 0.5));
-        float prevCompareDepth = GetLinearDepth(prevPos.z);
-        if (prevPos.xy == clamp(prevPos.xy, vec2(1), view - 1)) {
-            ivec2 prevCoords = ivec2(prevPos.xy);
+		float prevLightCount = 0;
+		vec4 tex13Data = vec4(0);
+		float weight = ACCUM_FALLOFF_SPEED * max(0, 1 - 1.5 * length(fract(view * lrTexCoord) - 0.5));
+		float prevCompareDepth = GetLinearDepth(prevPos.z);
+		if (prevPos.xy == clamp(prevPos.xy, vec2(1), view - 1)) {
+			ivec2 prevCoords = ivec2(prevPos.xy);
 			ivec2 lowLeftCornerPrevCoords = ivec2(prevPos.xy - 0.5);
 			float totalWeight = 0;
 			prevColor = texture(colortex12, prevPos.xy / view);
@@ -86,7 +101,7 @@ void main() {
 			);
 
 			prevColor.a *= validMult * (1 - ACCUM_FALLOFF_SPEED * float(newColor.a < 0.5));
-        }
+		}
 
 		float newMoment = pow2(dot(newColor.rgb, vec3(1)));
 
@@ -114,17 +129,18 @@ void main() {
 			(frameCounter) % 2 * int(view.y + 0.5))
 		] = mix(newMoment, prevMoment, mixFactor);
 
-        /*RENDERTARGETS:12,13*/
-        gl_FragData[0] = vec4(
-            mix(newColor.rgb, prevColor.rgb, mixFactor),
-            min(prevColor.a + weight, MAX_OLDWEIGHT)
-        );
-        //gl_FragData[0].rgb = vec3(ndotv);
-        gl_FragData[1] = tex13Data;
-    #else
-        /*RENDERTARGETS:12*/
-        gl_FragData[0] = vec4(newColor.rgb, 0);
-    #endif
+		/*RENDERTARGETS:12,13*/
+		gl_FragData[0] = vec4(
+			mix(newColor.rgb, prevColor.rgb, mixFactor),
+			min(prevColor.a + weight, MAX_OLDWEIGHT)
+		);
+		//gl_FragData[0].rgb = vec3(ndotv);
+		gl_FragData[1] = tex13Data;
+	#else;
+
+		/*RENDERTARGETS:12*/
+		gl_FragData[0] = vec4(newColor.rgb, 0);
+	#endif
 }
 #endif
 #ifdef VSH
@@ -144,12 +160,12 @@ uniform mat4 gbufferPreviousModelView;
 uniform mat4 gbufferPreviousProjection;
 
 void main() {
-    unProjectionMatrix = gbufferModelViewInverse
-                       * gbufferProjectionInverse;
-    prevProjectionMatrix = gbufferPreviousProjection
-                         * gbufferPreviousModelView;
-    gl_Position = ftransform();
-    lrTexCoord = gl_Position.xy / gl_Position.w * 0.5 + 0.5;
-    lrTexCoord = 0.5 * (lrTexCoord - vec2(frameCounter % 2, frameCounter / 2 % 2) / view);
+	unProjectionMatrix = gbufferModelViewInverse
+					   * gbufferProjectionInverse;
+	prevProjectionMatrix = gbufferPreviousProjection
+						 * gbufferPreviousModelView;
+	gl_Position = ftransform();
+	lrTexCoord = gl_Position.xy / gl_Position.w * 0.5 + 0.5;
+	lrTexCoord = 0.5 * (lrTexCoord - vec2(frameCounter % 2, frameCounter / 2 % 2) / view);
 }
 #endif

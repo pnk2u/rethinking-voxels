@@ -42,15 +42,43 @@ void main() {
 	normalDepthData.w = 50.0 * GetLinearDepth(1 - normalDepthData.w);
 	vec4 thisLightData = texelFetch(LIGHT_SAMPLER, texelCoord, 0);
 	#ifdef FIRST
-		float accumulationAmount = thisLightData.a;
+		float accumulationAmount = 2 * thisLightData.a / ACCUM_FALLOFF_SPEED;
 		float variance = denoiseSecondMoment[
 			texelCoord.x + 
 			int(viewWidth + 0.5) * (
 				texelCoord.y + int(viewHeight + 0.5) * (frameCounter % 2)
 			)
 		] - pow2(dot(thisLightData.rgb, vec3(1)));
-		variance /= max(0.01, accumulationAmount / ACCUM_FALLOFF_SPEED);
-		variance = max(variance, 0.14 - 0.2 * accumulationAmount);
+		variance /= max(0.01, 2 * accumulationAmount);
+		#if DENOISE_LENIENCE > 0
+			float spatialFactor = 1 - (accumulationAmount - 1);
+			if (spatialFactor > 0) {
+			#endif
+			float spatialMean = 0;
+			float spatialMoment = 0;
+			vec3 maxAroundCol = vec3(0);
+			{
+				float totalWeight = 0;
+				for (int k = 0; k < 25; k++) {
+					ivec2 offset = 3 * (ivec2(k%5, k/5) - 2);
+					float weight = 1.0 / (1 + length(offset));
+					vec3 thisCol = texelFetch(LIGHT_SAMPLER, texelCoord + offset, 0).rgb;
+					if (offset != ivec2(0) && length(offset) < 5) {
+						maxAroundCol = max(maxAroundCol, thisCol);
+					}
+					float thisVal = dot(thisCol, vec3(1));
+					spatialMean += thisVal * weight;
+					spatialMoment += thisVal * thisVal * weight;
+					totalWeight += weight;
+				}
+				thisLightData.xyz = min(maxAroundCol, thisLightData.xyz);
+				spatialMoment /= totalWeight;
+				spatialMean /= totalWeight;
+				variance = 2 * (spatialMoment - spatialMean * spatialMean);
+			}
+			#if DENOISE_LENIENCE > 0
+			}
+		#endif
 
 	#else
 		float variance = thisLightData.a;
@@ -75,14 +103,14 @@ void main() {
 		vec4 aroundNormalDepthData = texelFetch(colortex8, texelCoord + offset, 0);
 		aroundNormalDepthData.w = 50.0 * GetLinearDepth(1 - aroundNormalDepthData.w);
 		vec4 aroundLight = texelFetch(LIGHT_SAMPLER, texelCoord + offset, 0);
-		float weight = exp(-dot(offset, offset) * (2.0 / (DENOISE_MAX_BLUR_MOD * DENOISE_MAX_BLUR_MOD)) - pow2(dot(aroundLight.rgb - thisLightData.rgb, vec3(1))) / (DENOISE_LENIENCE * DENOISE_LENIENCE * variance)) * max0(1 - 7 * length(normalDepthData - aroundNormalDepthData));
+		float weight = exp(-dot(offset, offset) * (2.0 / (DENOISE_MAX_BLUR_MOD * DENOISE_MAX_BLUR_MOD)) - pow2(dot(aroundLight.rgb - thisLightData.rgb, vec3(1))) / (max(DENOISE_LENIENCE * DENOISE_LENIENCE, 1) * variance)) * max0(1 - 7 * length(normalDepthData - aroundNormalDepthData));
 		totalWeight += weight;
 		totalLight += aroundLight.xyz * weight;
 	}
 	/*RENDERTARGETS:13*/
 	gl_FragData[0] = vec4(totalLight / totalWeight, variance);
 //	#ifdef FIRST
-//	gl_FragData[0] = vec4(0.02 * blurSize, 0, 0, 1);
+//	gl_FragData[0] = vec4(accumulationAmount * 0.01, 0, 0, 1);
 //	#endif
 }
 #elif defined FIRST

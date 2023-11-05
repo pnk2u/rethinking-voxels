@@ -983,11 +983,13 @@ option.LIGHT_TRACE_LENGTH=Light Spread Distance
 option.LIGHT_TRACE_LENGTH.comment=Controls the maximum distance at which a light source can still illuminate its surroundings.
 
 option.DENOISE_MAX_BLUR=Maximum Blur Amount
-option.DENOISE_MIN_BLUR=Minimum Blur Amount
-option.DENOISE_CONVERGED_MULT=Accumulated Relax Factor
-
-option.RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE=Fast Light-Removal Reaction
-option.RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE.comment=Enabling this will cause temporal blocklight data to be reset when the light source count at a location decreases between frames. This means that breaking a light source will cause the light emitted by it to turn off instantly.
+option.ACCUM_FALLOFF_SPEED=Accumulation Discard Speed
+option.ACCUM_FALLOFF_SPEED.comment=This changes how fast old lighting data is discarded and replaced by new data. High values cause more responsive, but also more flickery lighting, while lower values cause more stable and less noisy lighting, which is also slow to update.
+option.DENOISE_LENIENCE=Denoiser Mode
+value.DENOISE_LENIENCE.0=Sharpest
+value.DENOISE_LENIENCE.1=Sharp
+value.DENOISE_LENIENCE.2=Cleaner
+option.DENOISE_LENIENCE.comment=Changes how much the denoiser blurs over details. Sharpest keeps the most noise, but is fairly good at retaining sharp edges. Sharp is a middle ground between Sharpest and Cleaner. Cleaner creates more blurry edges.
 
 option.DENOISING_DEFINE=Denoising
 value.DENOISING_DEFINE.0=Off
