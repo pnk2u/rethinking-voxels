@@ -41,7 +41,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 
 	int processedMat = getProcessedBlockId(matV[0]);
 
-	if (ignoreMat(processedMat)) {
+	if (currentRenderedItemId * HELD_LIGHTING_MODE == 0 && ignoreMat(processedMat)) {
 		break;
 	}
 
@@ -50,6 +50,14 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 	if (lightLevel == 0) lightLevel = int(lmCoordV[0].x * lmCoordV[0].x * 18) + 7;
 
 	if (matV[0] == 0 || matV[0] > MATERIALCOUNT) {// unknown blocks and entities
+		#if HELD_LIGHTING_MODE > 0
+			if (processedMat == 50016) {
+				if (lightLevel == 0) break;
+				#if HELD_LIGHTING_MODE == 1
+				lightLevel = lightLevel * 2 / 3;
+				#endif
+			}
+		#endif
 		int processedItemId = 0;
 		if (!matIsEmissive && currentRenderedItemId > 0) {
 			processedItemId = getProcessedBlockId(currentRenderedItemId);
