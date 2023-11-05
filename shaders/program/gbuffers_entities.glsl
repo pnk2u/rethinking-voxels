@@ -287,7 +287,7 @@ void main() {
 
 	velocity = position.xyz - prevPosition.xyz;
 
-	if (at_velocity == vec3(0)) velocity = vec3(0, 1, 0);
+	if (at_velocity == vec3(0)) velocity = vec3(0);
 
 	upVec = normalize(gbufferModelView[1].xyz);
 	eastVec = normalize(gbufferModelView[0].xyz);
