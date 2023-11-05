@@ -816,7 +816,7 @@ value.DIRECTIONAL_BLOCKLIGHT.7=Normal §c[-]
 value.DIRECTIONAL_BLOCKLIGHT.11=Intense §c[-]
 
 option.HELD_LIGHTING_MODE=Dynamic Handheld Lighting
-option.HELD_LIGHTING_MODE.comment=Allows handheld light sources to cast light onto the scene. §c[-] Very low quality at the moment.
+option.HELD_LIGHTING_MODE.comment=Allows handheld light sources to cast light onto the scene.
 value.HELD_LIGHTING_MODE.0=§cOFF
 value.HELD_LIGHTING_MODE.1=Subtle
 value.HELD_LIGHTING_MODE.2=Normal
