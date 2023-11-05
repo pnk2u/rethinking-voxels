@@ -196,6 +196,8 @@ out vec4 position;
 flat out vec4 glColor;
 
 //Uniforms//
+
+uniform int currentRenderedItemId;
 uniform vec3 cameraPosition;
 uniform sampler2D tex;
 uniform sampler2D specular;

@@ -50,6 +50,12 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 	if (lightLevel == 0) lightLevel = int(lmCoordV[0].x * lmCoordV[0].x * 18) + 7;
 
 	if (matV[0] == 0 || matV[0] > MATERIALCOUNT) {// unknown blocks and entities
+		int processedItemId = 0;
+		if (!matIsEmissive && currentRenderedItemId > 0) {
+			processedItemId = getProcessedBlockId(currentRenderedItemId);
+			matIsEmissive = isEmissive(processedItemId);
+			if (matIsEmissive) lightLevel = getLightLevel(processedItemId);
+		}
 		float shortestEdge = min(min(
 			length(vxPos[1] - vxPos[0]),
 			length(vxPos[2] - vxPos[1])),
@@ -61,6 +67,10 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 		vec4 color = textureLod(tex, 0.5 * (max(max(texCoordV[0], texCoordV[1]), texCoordV[2]) + min(min(texCoordV[0], texCoordV[1]), texCoordV[2])), 2);
 		if (color.a < 0.4) {
 			break;
+		}
+		if (matIsEmissive) {
+			vec3 HCLightCol = getLightCol(processedItemId > 0 ? processedItemId : processedMat);
+			color.rgb = mix(color.rgb, HCLightCol, min(1, length(HCLightCol)));
 		}
 		vec3 faceCenterPosM = center - 0.3 * sqrt(area) * normal;
 		ivec3 vxCoordM0 = vxPosToVxCoords(faceCenterPosM);
