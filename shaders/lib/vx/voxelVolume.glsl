@@ -41,7 +41,7 @@ vec3 readEntityColor(ivec3 coords) {
 		imageLoad(voxelVolumeI, imageCoords + ivec3(0, 0, 1)).r,
 		imageLoad(voxelVolumeI, imageCoords + ivec3(1, 0, 0)).r,
 		imageLoad(voxelVolumeI, imageCoords + ivec3(1, 0, 1)).r
-	) / (64 * weight);
+	) / (64 * max(weight, 1));
 }
 
 int getBaseIndex(int mat) {

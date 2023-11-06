@@ -207,6 +207,8 @@ uniform vec3 previousCameraPosition;
 #define IRRADIANCECACHE
 #include "/lib/vx/SSBOs.glsl"
 
+#define IRRADIANCECACHE_FALLOFF 0.99
+
 void main() {
 	ivec3 camOffset = ivec3(1.01 * (floor(cameraPosition) - floor(previousCameraPosition)));
 	if (camOffset == ivec3(0)) {
@@ -224,7 +226,7 @@ void main() {
 	barrier();
 	memoryBarrierImage();
 	for (int k = 0; k < 2; k++) {
-		imageStore(irradianceCacheI, coords + ivec3(0, k * voxelVolumeSize.y, 0), writeColors[k]);
+		imageStore(irradianceCacheI, coords + ivec3(0, k * voxelVolumeSize.y, 0), writeColors[k] * IRRADIANCECACHE_FALLOFF);
 	}
 }
 #endif
@@ -359,7 +361,7 @@ void main() {
 			ndotl *= -1;
 		}
 		ray_hit_t rayHit0 = raytrace(vxPos, dir);
-		if (rayHit0.emissive) {
+		if (rayHit0.emissive && rayHit0.mat > 0) {
 			int lightIndex = atomicAdd(lightCount, 1);
 			if (lightIndex < MAX_LIGHT_COUNT) {
 				ivec3 lightPos = ivec3(rayHit0.pos - 0.01 * rayHit0.normal + 256) - 256;
@@ -371,7 +373,7 @@ void main() {
 		}
 		#ifdef GI
 			else if (hasNeighbor) {
-				if (rayHit0.mat > 0) {
+				if (rayHit0.rayColor.a > 0.999999) {
 					ivec3 hitCoords = ivec3(rayHit0.pos + 0.1 * rayHit0.normal + 0.5 * voxelVolumeSize);
 					vec4 blocklightHere = imageLoad(irradianceCacheI, hitCoords + ivec3(0, voxelVolumeSize.y, 0));
 					vec4 bouncedLightHere = imageLoad(irradianceCacheI, hitCoords);
@@ -387,16 +389,12 @@ void main() {
 						vec3 totalLight = vec3(0);
 					#endif
 					totalLight += blocklightHere.xyz / max(blocklightHere.a, 0.0001) + bouncedLightHere.xyz / max(bouncedLightHere.a, 0.0001);
-					
-					GILight += vec4(totalLight * pow2(rayHit0.rayColor.rgb) / max(max(rayHit0.rayColor.r, rayHit0.rayColor.g), max(rayHit0.rayColor.b, 0.001)) * ndotl, 1);
-					GILight *= 0.99;
+					vec3 lightMult = pow2(rayHit0.rayColor.rgb) / max(max(max(rayHit0.rayColor.r, rayHit0.rayColor.g), rayHit0.rayColor.b), 0.01) * ndotl;
+					GILight += vec4(totalLight * lightMult, 1);
 				} else {
 					GILight.a += 1;
-					GILight *= 0.99;
 				}
 			}
-		#endif
-		#ifdef GI
 			imageStore(irradianceCacheI, coords, GILight);
 		#endif
 	}
@@ -527,7 +525,7 @@ void main() {
 			newLightColor *= lightCount;
 		#endif
 		writeColor += vec4(newLightColor, 1.0);
-		writeColor *= 1.0 - max(0.1 / (lightCount * lightCount + 1), 0.01);
+		writeColor *= 1.0 - max(0.1 / (lightCount * lightCount + 1) - 0.01, 0.0);
 		imageStore(irradianceCacheI, coords + ivec3(0, voxelVolumeSize.y, 0), writeColor);
 	}
 	barrier();
