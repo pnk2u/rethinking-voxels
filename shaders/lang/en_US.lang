@@ -816,7 +816,7 @@ value.DIRECTIONAL_BLOCKLIGHT.7=Normal §c[-]
 value.DIRECTIONAL_BLOCKLIGHT.11=Intense §c[-]
 
 option.HELD_LIGHTING_MODE=Dynamic Handheld Lighting
-option.HELD_LIGHTING_MODE.comment=Allows handheld light sources to cast light onto the scene.
+option.HELD_LIGHTING_MODE.comment=Allows handheld light sources to cast light onto the scene. §e[*]§rOnly works with per-pixel light calculations enabled.
 value.HELD_LIGHTING_MODE.0=§cOFF
 value.HELD_LIGHTING_MODE.1=Subtle
 value.HELD_LIGHTING_MODE.2=Normal
@@ -989,7 +989,8 @@ option.DENOISE_LENIENCE=Denoiser Mode
 value.DENOISE_LENIENCE.0=Sharpest
 value.DENOISE_LENIENCE.1=Sharp
 value.DENOISE_LENIENCE.2=Cleaner
-option.DENOISE_LENIENCE.comment=Changes how much the denoiser blurs over details. Sharpest keeps the most noise, but is fairly good at retaining sharp edges. Sharp is a middle ground between Sharpest and Cleaner. Cleaner creates more blurry edges.
+value.DENOISE_LENIENCE.3=Blurry
+option.DENOISE_LENIENCE.comment=Changes how much the denoiser blurs over details. Sharpest keeps the most noise, but is fairly good at retaining sharp edges. Sharp is a middle ground between Sharpest and Cleaner. Cleaner creates more blurry edges. Blurry barely preserves any sharp edges.
 
 option.DENOISING_DEFINE=Denoising
 value.DENOISING_DEFINE.0=Off
