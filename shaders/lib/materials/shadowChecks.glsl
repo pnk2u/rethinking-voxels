@@ -1,7 +1,5 @@
 bool isEmissive(int mat) {
 	return (
-		mat == 1234  || // generic light source
-		mat == 1235  || // generic light source (fallback colour)
 		mat == 10836 || // brewing stand
 		mat == 10056 || // lava cauldron
 		mat == 10068 || // lava
@@ -86,7 +84,8 @@ bool isEmissive(int mat) {
 		mat == 50048 || // glow squid
 		mat == 50052 || // magma cube
 		mat == 50080 || // allay
-		mat == 50116    // TNT and TNT minecart
+		mat == 50116 || // TNT and TNT minecart
+		mat == 35917    // everything else
 	);
 }
 
@@ -327,8 +326,7 @@ vec3 getLightCol(int mat) {
 			lightcol = vec3(REDSTONE_COL_R, REDSTONE_COL_G, REDSTONE_COL_B);
 			#endif
 			break;
-		case 12604: // lit redstone torch
-		case 12605:
+		case 10604: // lit redstone torch
 			#ifdef TORCH_HARDCODED_REDSTONE_COL
 			lightcol = vec3(REDSTONE_COL_R, REDSTONE_COL_G, REDSTONE_COL_B);
 			#endif
