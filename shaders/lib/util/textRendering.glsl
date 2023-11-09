@@ -120,6 +120,7 @@ const uint _colon = 0x02000020u;
 // Additional characters added by WoMspace <3
 const uint _under = 0x000007Cu;  // _
 const uint _quote = 0x52800000u; // "
+const uint _sglqt = 0x42000000u; // '
 const uint _exclm = 0x21084010u; // !
 const uint _gt    = 0x02082220u; // >
 const uint _lt    = 0x00888208u; // <
@@ -129,7 +130,8 @@ const uint _opprn = 0x11084208u; // (
 const uint _clprn = 0x41084220u; // )
 const uint _block = 0xFFFFFFFCu; // █
 const uint _copyr = 0x03AB9AB8u; // ©️
- 
+const uint _slash = 0x08844221u; // /
+
 const int charWidth   = 5;
 const int charHeight  = 6;
 const int charSpacing = 1;

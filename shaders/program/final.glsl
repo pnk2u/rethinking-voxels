@@ -21,10 +21,10 @@ uniform float viewWidth, viewHeight;
 #endif
 uniform sampler2D shadowcolor0;
 
+uniform float frameTimeCounter;
+
 #ifdef UNDERWATER_DISTORTION
 	uniform int isEyeInWater;
-
-	uniform float frameTimeCounter;
 #endif
 
 //Pipeline Constants//
@@ -58,13 +58,16 @@ uniform sampler2D shadowcolor0;
 #endif
 
 //Includes//
-#ifdef MC_ANISOTROPIC_FILTERING
-	#include "/lib/util/textRendering.glsl"
+#include "/lib/util/textRendering.glsl"
 
-	void beginTextM(int textSize, vec2 offset) {
-		beginText(ivec2(vec2(viewWidth, viewHeight) * texCoord) / textSize, ivec2(0 + offset.x, viewHeight / textSize - offset.y));
-		text.bgCol = vec4(0.0);
-	}
+void beginTextM(int textSize, vec2 offset) {
+	beginText(ivec2(vec2(viewWidth, viewHeight) * texCoord) / textSize, ivec2(0 + offset.x, viewHeight / textSize - offset.y));
+	text.bgCol = vec4(0.0);
+}
+
+#undef IS_IRIS
+#ifndef IS_IRIS
+	#include "/lib/misc/irisRequired.glsl"
 #endif
 
 //Program//
@@ -139,6 +142,32 @@ void main() {
 		printString((
 			_a, _n, _d, _space, _d, _i, _s, _a, _b, _l, _e, _space,
 			_A, _n, _i, _s, _o, _t, _r, _o, _p, _i, _c, _space, _F, _i, _l, _t, _e, _r, _i, _n, _g, _dot
+		));
+		endText(color.rgb);
+	#endif
+
+	#ifndef IS_IRIS
+		color = drawBackground();
+
+		beginTextM(4, vec2((viewWidth - 720)/8, (viewHeight - 200)/8));
+		printLine();
+		text.fgCol = vec4(0.0, 0.0, 0.0, 1.0);
+		printString((
+			_T, _h, _i, _s, _space, _s, _h, _a, _d, _e, _r, _p, _a, _c, _k, _space,
+			_r, _e, _q, _u, _i, _r, _e, _s, _space , _I, _r, _i, _s, _dot
+		));
+		printLine();
+		printString((
+			_I, _t, _space, _d, _o, _e, _s, _space, _N, _O, _T, _space, _w, _o, _r, _k, _space,
+			_w, _i, _t, _h, _space, _O, _p, _t, _i, _F, _i, _n, _e, _dot
+		));
+		printLine();
+		printString((
+			_D, _o, _w, _n, _l, _o, _a, _d, _space , _I, _r, _i, _s, _space , _a, _t
+		));
+		printLine();
+		printString((
+			_h, _t, _t, _p, _s, _colon, _slash, _slash, _i, _r, _i, _s, _s, _h, _a, _d, _e, _r, _s, _dot, _d, _e, _v
 		));
 		endText(color.rgb);
 	#endif
