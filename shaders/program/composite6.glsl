@@ -19,8 +19,11 @@ uniform vec3 cameraPosition, previousCameraPosition;
 uniform mat4 gbufferPreviousProjection, gbufferProjectionInverse;
 uniform mat4 gbufferPreviousModelView, gbufferModelViewInverse;
 
+uniform mat4 gbufferModelView;
+
 uniform sampler2D colortex12;
 uniform sampler2D colortex8;
+uniform sampler2D colortex4;
 uniform sampler2D colortex2;
 uniform sampler2D colortex1;
 uniform sampler2D depthtex1;
@@ -68,10 +71,14 @@ void main() {
     #endif
 
     vec4 accumulatedLight = texelFetch(colortex12, texelCoord, 0);
-    float guessedDepth = 1 - texelFetch(colortex8, texelCoord, 0).a;
+    vec4 normalDepthData = texelFetch(colortex8, texelCoord, 0);
+    vec3 newNormalData = texelFetch(colortex4, texelCoord, 0).gba * 2 - 1;
+    float guessedDepth = 1 - normalDepthData.a;
     float guessedLinDepth = guessedDepth < 1.0 ? GetLinearDepth(guessedDepth) : 20;
     float actualLinDepth = GetLinearDepth(depth);
-    if (abs(guessedLinDepth - actualLinDepth) / (guessedLinDepth + actualLinDepth) > 0.01) {
+    vec4 viewPos = gbufferProjectionInverse * vec4(2 * texCoord - 1, depth, 1);
+    float vdotn = -dot(normalize(viewPos.xyz), mat3(gbufferModelView) * newNormalData);
+    if (abs(guessedLinDepth - actualLinDepth) / (guessedLinDepth + actualLinDepth) * vdotn > 0.01) {
         accumulatedLight.a = 0;
     }
     #ifndef LIGHT_COLORING

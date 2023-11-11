@@ -58,7 +58,7 @@ void main() {
 		vec4 prevPlayerPos = vec4(playerPos.xyz / playerPos.w + cameraPosition - previousCameraPosition, 1);
 		vec4 prevPos = prevProjectionMatrix * prevPlayerPos;
 		float ndotv = -dot(normalize(playerPos.xyz), normalDepthData.xyz);
-		float normalWeight = clamp(-dot(normalize(prevPlayerPos.xyz), normalDepthData.xyz) / ndotv, 1 - ndotv, 1);
+		float normalWeight = clamp(-dot(normalize(prevPlayerPos.xyz), normalDepthData.xyz) / max(0.000001, ndotv), 1 - ndotv, 1);
 		normalWeight *= normalWeight;
 		if (normalDepthData.a < 0.44) {
 			prevPos.xyz = 0.5 * prevPos.xyz / prevPos.w + 0.5;
@@ -74,8 +74,6 @@ void main() {
 		float prevCompareDepth = GetLinearDepth(prevPos.z);
 		if (prevPos.xy == clamp(prevPos.xy, vec2(1), view - 1)) {
 			ivec2 prevCoords = ivec2(prevPos.xy);
-			ivec2 lowLeftCornerPrevCoords = ivec2(prevPos.xy - 0.5);
-			float totalWeight = 0;
 			prevColor = texture(colortex12, prevPos.xy / view);
 			prevMoment = denoiseSecondMoment[
 				prevCoords.x + 
@@ -90,7 +88,7 @@ void main() {
 				), 0.8 * prevColor.a, prevColor.a
 			);
 
-			float prevDepth = 1 - texelFetch(colortex2, prevCoords, 0).a;
+			float prevDepth = 1 - texture(colortex2, prevPos.xy / view, 0).a;
 
 			float prevLinDepth = prevDepth < 0.99999 && prevDepth > 0 ? GetLinearDepth(prevDepth) : 20;
 			float validMult = float(

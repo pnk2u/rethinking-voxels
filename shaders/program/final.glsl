@@ -65,7 +65,6 @@ void beginTextM(int textSize, vec2 offset) {
 	text.bgCol = vec4(0.0);
 }
 
-#undef IS_IRIS
 #ifndef IS_IRIS
 	#include "/lib/misc/irisRequired.glsl"
 #endif
