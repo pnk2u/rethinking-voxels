@@ -45,7 +45,7 @@ vec3 readEntityColor(ivec3 coords) {
 }
 
 int getBaseIndex(int mat) {
-	return (modelMemorySize + (maxEmissiveVoxels + 2) / 3 + 1) * mat;
+	return (modelMemorySize + (maxEmissiveVoxels + 3) / 3 + 1) * mat;
 }
 
 voxel_t readGeometry(int index, ivec3 coord) {
@@ -81,11 +81,11 @@ vec3 readEmissiveLoc(int baseIndex, int localIndex) {
 	if ((rawData & (uint(1)<<(offset + 9))) == 0) {
 		return vec3(-1);
 	}
-	return vec3(int(rawData >> offset) & 7, int(rawData >> (offset + 3)) & 7, int(rawData >> (offset + 6)) & 7) * 0.125 + 0.0625;
+	return vec3(int(rawData >> offset) & 7, int(rawData >> (offset + 3)) & 7, int(rawData >> (offset + 6)) & 7) / 7.0 + 1.0/14.0;
 }
 
 int readEmissiveCount(int baseIndex) {
-	return int(geometryData[baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3] & uint(0x3f));
+	return int(geometryData[baseIndex + modelMemorySize + (maxEmissiveVoxels + 3) / 3] & uint(0x3f));
 }
 
 #ifndef READONLY
@@ -113,8 +113,8 @@ int readEmissiveCount(int baseIndex) {
 	}
 
 	void setEmissiveCount(int baseIndex, int count) {
-		if (count < 64) {
-			int writeIndex = baseIndex + modelMemorySize + (maxEmissiveVoxels + 2) / 3;
+		if (count < maxEmissiveVoxels) {
+			int writeIndex = baseIndex + modelMemorySize + (maxEmissiveVoxels + 3) / 3;
 			atomicAnd(geometryData[writeIndex], uint(0xffffffff) ^ uint(0x3f));
 			atomicOr(geometryData[writeIndex], uint(count));
 		}

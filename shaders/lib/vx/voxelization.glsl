@@ -59,13 +59,15 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 			#if HELD_LIGHTING_MODE > 0
 				if (lightLevel == 0) break;
 				#if HELD_LIGHTING_MODE == 1
-					lightLevel = lightLevel * 2 / 3;
+					lightLevel = lightLevel / 3;
 				#endif
 			#else
 				break;
 			#endif
-			}
-
+		}
+		if (!matIsEmissive && (processedItemId > 0 || processedMat > MATERIALCOUNT)) {
+			break;
+		}
 		float shortestEdge = min(min(
 			length(vxPos[1] - vxPos[0]),
 			length(vxPos[2] - vxPos[1])),

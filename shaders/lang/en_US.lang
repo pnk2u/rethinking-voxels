@@ -1004,6 +1004,9 @@ option.TRACE_ALL_LIGHTS.comment=If enabled, block light calculation will happen 
 
 option.LIGHT_COLOR_SATURATION=Light Color Saturation
 
+option.LIGHTSOURCE_SIZE_MULT=Light Source Size
+option.LIGHTSOURCE_SIZE_MULT.comment=Lower values increase sharpness of shadows cast by light sources by treating them as smaller than they actually are. §c[-]§rMay cause some light sources to cast weird shadows or stop working altogether at low values.
+
 option.CONWAY=End Game of Life
 option.CONWAY.comment=Simulates Conway's game of life at the bottom of the end. Cells that are close to the player revive.
 value.CONWAY.0=Off

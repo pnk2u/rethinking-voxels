@@ -22,6 +22,7 @@ shared ivec4 emissiveParts[64];
 shared int sortMap[64];
 shared int emissiveCount;
 shared uvec4 totalEmissiveColor;
+shared ivec4 meanEmissivePos;
 shared uint maxThreshold;
 uniform vec3 cameraPosition;
 
@@ -35,16 +36,17 @@ float getSaturation(vec3 color) {
 }
 
 void main() {
-	if (gl_LocalInvocationID == uvec3(0)) {
+	int index = int(gl_LocalInvocationID.x + gl_LocalInvocationID.y * gl_WorkGroupSize.x + gl_LocalInvocationID.z * gl_WorkGroupSize.y * gl_WorkGroupSize.x);
+	if (index == 0) {
 		emissiveCount = 0;
 		totalEmissiveColor = uvec4(0);
+		meanEmissivePos = ivec4(0);
 		maxThreshold = 0;
 	}
 	barrier();
 	memoryBarrierShared();
 	int mat = int(gl_WorkGroupID.x);
 	bool matIsAvailable = getMaterialAvailability(mat);
-	int index = int(gl_LocalInvocationID.x + gl_LocalInvocationID.y * gl_WorkGroupSize.x + gl_LocalInvocationID.z * gl_WorkGroupSize.y * gl_WorkGroupSize.x);
 	ivec4 currentVal;
 	int baseIndex = getBaseIndex(mat);
 	int responsibleSize = 1;
@@ -84,7 +86,7 @@ void main() {
 		if (matIsAvailable) {
 			float meanEmissiveLuminance = max(max(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
 			float meanEmissiveSaturation = getSaturation(meanEmissiveColor) * meanEmissiveLuminance;
-			float threshold = 0.5 * (meanEmissiveLuminance + meanEmissiveSaturation + maxThreshold / 512.0);
+			float threshold = 0.5 * (meanEmissiveLuminance + meanEmissiveSaturation + maxThreshold / 512.0) * sqrt(sqrt(sqrt(LIGHTSOURCE_SIZE_MULT)));
 			for (int x = 0; x < responsibleSize; x++) {
 				for (int y = 0; y < responsibleSize; y++) {
 					for (int z = 0; z < responsibleSize; z++) {
@@ -155,7 +157,7 @@ void main() {
 			}
 		#else
 			if (thisEmissiveCount > 0) {
-				vec3 blockRelCoord = (baseCoord + subCoord / thisEmissiveCount) * (8.0 / (1<<(VOXEL_DETAIL_AMOUNT-1)));
+				vec3 blockRelCoord = (baseCoord + subCoord / thisEmissiveCount) * (7.0 / (1<<(VOXEL_DETAIL_AMOUNT-1)));
 				int sortVal = 0;
 				float maxRelDist = 0;
 				for (int k = 0; k < 3; k++) {
@@ -165,25 +167,30 @@ void main() {
 						maxRelDist = thisRelDist;
 					}
 				}
-				int index = atomicAdd(emissiveCount, 1);
-				emissiveParts[index] = ivec4(blockRelCoord, sortVal);
+				int emissiveIndex = atomicAdd(emissiveCount, 1);
+				emissiveParts[emissiveIndex] = ivec4(blockRelCoord, sortVal);
+				for (int k = 0; k < 4; k++) {
+					atomicAdd(meanEmissivePos[k], ivec4(blockRelCoord, 1)[k]);
+				}
 			}
 		#endif
 	}
 	#if VOXEL_DETAIL_AMOUNT > 1
 		barrier();
 		memoryBarrierShared();
+		storeEmissive(baseIndex, index, index < emissiveCount ? emissiveParts[index].xyz : ivec3(-1));
 		if (index == 0) {
 			setEmissiveCount(baseIndex, emissiveCount);
+			ivec3 meanEmissivePosToStore = meanEmissivePos.w > 0 ? meanEmissivePos.xyz / meanEmissivePos.w : ivec3(4);
+			storeEmissive(baseIndex, emissiveCount, meanEmissivePosToStore);
 		}
-		storeEmissive(baseIndex, index, index < emissiveCount ? emissiveParts[index].xyz : ivec3(-1));
 	#endif
 }
 
 #endif
 //////2nd Compute Shader//////2nd Compute Shader//////2nd Compute Shader//////
 /*
-This program offsets irradiance cache data to account for camera movement
+This program offsets irradiance cache data to account for camera movement, and handles its temporal accumulation falloff
 */
 #ifdef CSH_A
 
