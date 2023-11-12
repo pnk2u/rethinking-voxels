@@ -517,10 +517,10 @@ int getLightLevel(int mat) {
 			lightlevel = OREUNLIT_BRIGHTNESS_REDSTONE;
 			break;
 	#endif
-	case 10616: // lit redstone ore
-	case 10624:
-		lightlevel = ORELIT_BRIGHTNESS_REDSTONE;
-		break;
+		case 10616: // lit redstone ore
+		case 10624:
+			lightlevel = ORELIT_BRIGHTNESS_REDSTONE;
+			break;
 	#ifdef EMISSIVE_EMERALD_BLOCK
 		case 10336: // emerald block
 			lightlevel = BLOCK_BRIGHTNESS_EMERALD;
@@ -627,8 +627,7 @@ int getLightLevel(int mat) {
 		case 10599:
 			lightlevel = WIRE3_BRIGHTNESS_REDSTONE;
 			break;
-		case 12604: // lit redstone torch
-		case 12605:
+		case 10604: // lit redstone torch
 			lightlevel = TORCH_BRIGHTNESS_REDSTONE;
 			break;
 		case 10632: // glow berries

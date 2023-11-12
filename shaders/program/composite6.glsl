@@ -76,9 +76,11 @@ void main() {
     float guessedDepth = 1 - normalDepthData.a;
     float guessedLinDepth = guessedDepth < 1.0 ? GetLinearDepth(guessedDepth) : 20;
     float actualLinDepth = GetLinearDepth(depth);
-    vec4 viewPos = gbufferProjectionInverse * vec4(2 * texCoord - 1, depth, 1);
-    float vdotn = -dot(normalize(viewPos.xyz), mat3(gbufferModelView) * newNormalData);
-    if (abs(guessedLinDepth - actualLinDepth) / (guessedLinDepth + actualLinDepth) * vdotn > 0.01) {
+    vec3 viewPos = mat3(gbufferProjectionInverse) * vec3(2 * texCoord - 1, depth);
+    float vdotn = -dot(normalize(viewPos), mat3(gbufferModelView) * newNormalData);
+    if (abs(guessedLinDepth - actualLinDepth) /
+        (guessedLinDepth + actualLinDepth) * vdotn > 0.01 ||
+        length(newNormalData - normalDepthData.rgb) > 0.1) {
         accumulatedLight.a = 0;
     }
     #ifndef LIGHT_COLORING

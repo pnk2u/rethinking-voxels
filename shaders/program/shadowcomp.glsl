@@ -211,9 +211,6 @@ uniform vec3 previousCameraPosition;
 
 void main() {
 	ivec3 camOffset = ivec3(1.01 * (floor(cameraPosition) - floor(previousCameraPosition)));
-	if (camOffset == ivec3(0)) {
-		return;
-	}
 	// this actually works for having threads be executed in the correct order so that they don't read the output of other previously run threads.
 	ivec3 coords = ivec3(gl_GlobalInvocationID);
 	coords = coords * ivec3(greaterThan(camOffset, ivec3(-1))) +

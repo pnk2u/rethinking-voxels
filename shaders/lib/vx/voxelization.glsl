@@ -48,22 +48,24 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 	bool matIsEmissive = isEmissive(processedMat);
 	int lightLevel = matIsEmissive ? getLightLevel(processedMat) : 0;
 	if (lightLevel == 0) lightLevel = int(lmCoordV[0].x * lmCoordV[0].x * 18) + 7;
-
 	if (matV[0] == 0 || matV[0] > MATERIALCOUNT) {// unknown blocks and entities
-		#if HELD_LIGHTING_MODE > 0
-			if (processedMat == 50016) {
-				if (lightLevel == 0) break;
-				#if HELD_LIGHTING_MODE == 1
-				lightLevel = lightLevel * 2 / 3;
-				#endif
-			}
-		#endif
 		int processedItemId = 0;
 		if (!matIsEmissive && currentRenderedItemId > 0) {
 			processedItemId = getProcessedBlockId(currentRenderedItemId);
 			matIsEmissive = isEmissive(processedItemId);
 			if (matIsEmissive) lightLevel = getLightLevel(processedItemId);
 		}
+		if (processedMat == 50016) {
+			#if HELD_LIGHTING_MODE > 0
+				if (lightLevel == 0) break;
+				#if HELD_LIGHTING_MODE == 1
+					lightLevel = lightLevel * 2 / 3;
+				#endif
+			#else
+				break;
+			#endif
+			}
+
 		float shortestEdge = min(min(
 			length(vxPos[1] - vxPos[0]),
 			length(vxPos[2] - vxPos[1])),
