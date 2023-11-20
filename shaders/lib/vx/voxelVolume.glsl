@@ -97,7 +97,7 @@ int readEmissiveCount(int baseIndex) {
 	}
 
 	void writeGeometry(int index, vec3 pos, voxel_t data) {
-		int lodSubdivisions = 1<<(VOXEL_DETAIL_AMOUNT-1);
+		const int lodSubdivisions = 1<<(VOXEL_DETAIL_AMOUNT-1);
 		ivec3 coord = ivec3(pos * lodSubdivisions);
 		index += coord.x * lodSubdivisions * lodSubdivisions + coord.y * lodSubdivisions + coord.z;
 

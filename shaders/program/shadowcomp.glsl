@@ -20,6 +20,7 @@ it also gives emissive voxels a more saturated colour.
 #endif
 shared ivec4 emissiveParts[64];
 shared int sortMap[64];
+shared int heightMap[1<<(VOXEL_DETAIL_AMOUNT-1)][1<<(VOXEL_DETAIL_AMOUNT-1)];
 shared int emissiveCount;
 shared uvec4 totalEmissiveColor;
 shared ivec4 meanEmissivePos;
@@ -47,6 +48,7 @@ void main() {
 	memoryBarrierShared();
 	int mat = int(gl_WorkGroupID.x);
 	bool matIsAvailable = getMaterialAvailability(mat);
+	int processedMat = getProcessedBlockId(mat);
 	ivec4 currentVal;
 	int baseIndex = getBaseIndex(mat);
 	int responsibleSize = 1;
@@ -55,6 +57,17 @@ void main() {
 		responsibleSize = (1<<(VOXEL_DETAIL_AMOUNT-1)) / int(gl_WorkGroupSize.x);
 		if (responsibleSize == 0) responsibleSize = 1;
 		baseCoord = ivec3(gl_LocalInvocationID) * responsibleSize;
+		if (baseCoord.y == 0) {
+			for (int x = 0; x < responsibleSize; x++) {
+				for (int z = 0; z < responsibleSize; z++) {
+					heightMap[baseCoord.x + x][baseCoord.z + z] = 0;
+				}
+			}
+		}
+	}
+	barrier();
+	memoryBarrierShared();
+	if (matIsAvailable) {
 		for (int x = 0; x < responsibleSize; x++) {
 			for (int y = 0; y < responsibleSize; y++) {
 				for (int z = 0; z < responsibleSize; z++) {
@@ -67,6 +80,9 @@ void main() {
 							atomicAdd(totalEmissiveColor[i], uint(thisVoxel.color[i] * thisVoxel.color[i] * 255 + 0.5));
 						}
 						atomicAdd(totalEmissiveColor.w, 255);
+					}
+					if (thisVoxel.color.a > 0.1) {
+						atomicMax(heightMap[baseCoord.x + x][baseCoord.z + z], baseCoord.y + y);
 					}
 				}
 			}
@@ -94,7 +110,10 @@ void main() {
 						if (thisVoxel.emissive) {
 							float thisLuminance = max(max(thisVoxel.color.r, thisVoxel.color.g), thisVoxel.color.b);
 							float thisSaturation = getSaturation(thisVoxel.color.rgb) * thisLuminance;
-							if (thisLuminance + thisSaturation > threshold || thisLuminance > min(0.3 * meanEmissiveLuminance + 0.7, 0.8) || thisSaturation > min(0.3 * meanEmissiveSaturation + 0.7, 0.8)) {
+							if (thisLuminance + thisSaturation > threshold ||
+								thisLuminance > min(0.3 * meanEmissiveLuminance + 0.7, 0.8) ||
+								thisSaturation > min(0.3 * meanEmissiveSaturation + 0.7, 0.8)
+							) {
 								for (int i = 0; i < 3; i++) {
 									atomicAdd(totalEmissiveColor[i], uint(thisVoxel.color[i] * thisVoxel.color[i] * 255 + 0.5));
 								}
@@ -128,6 +147,14 @@ void main() {
 					if (thisVoxel.emissive) {
 						thisVoxel.color.rgb = mix(thisVoxel.color.rgb, saturatedMeanEmissiveColor, 0.5);
 						thisVoxel.color.a = 1.0;
+						writeGeometry(baseIndex, (baseCoord + ivec3(x, y, z)) * (1.0 / (1<<(VOXEL_DETAIL_AMOUNT - 1))), thisVoxel);
+					}
+					if (processedMat == 31000 &&
+						baseCoord.y + y < heightMap[baseCoord.x + x][baseCoord.z + z]
+					) {
+						thisVoxel.color     = vec4(0);
+						thisVoxel.emissive  = false;
+						thisVoxel.glColored = false;
 						writeGeometry(baseIndex, (baseCoord + ivec3(x, y, z)) * (1.0 / (1<<(VOXEL_DETAIL_AMOUNT - 1))), thisVoxel);
 					}
 				}
