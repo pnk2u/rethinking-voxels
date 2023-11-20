@@ -15,7 +15,7 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 	vec3 center = 0.5 * (bounds[1] + bounds[0]);
 	vec3 size = bounds[1] - bounds[0];
 	for (int i = 0; i < 3; i++) {
-		vxPos[i] = mix(vxPos[i], center, 0.01) - 0.01 * normal;
+		vxPos[i] = mix(vxPos[i], center, 0.01) - 0.03 * normal;
 	}
 
 	// center cross-model blocks
@@ -27,9 +27,9 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 
 	ivec3 correspondingBlock = ivec3(vxPos[0] + midBlock[0] + vec3(1024)) - ivec3(1024);
 
-	if (all(lessThan(abs(midBlock[0]), vec3(0.05))) &&
-		all(lessThan(abs(midBlock[1]), vec3(0.05))) &&
-		all(lessThan(abs(midBlock[2]), vec3(0.05)))
+	if (length(max(max(abs(fract(vxPos[0] + midBlock[0]) - 0.5),
+		abs(fract(vxPos[1] + midBlock[1]) - 0.5)),
+		abs(fract(vxPos[2] + midBlock[2]) - 0.5))) > 0.1
 	) {
 		correspondingBlock = ivec3(center - 0.05 * normal + vec3(1024)) - ivec3(1024);
 		if (correspondingBlock != ivec3(center - 0.01 * normal + vec3(1024)) - ivec3(1024) && area < 0.1) {
@@ -195,8 +195,8 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 							[(mostPerpendicularAxis + j + 1) % 3];
 		}
 	}
-	bool smallFace = all(lessThan(projectionBoundCoords[1] - projectionBoundCoords[0], ivec2(2)));
-	float offTriMargin = 0.5 / dot(vec2(1), projectionBoundCoords[1] - projectionBoundCoords[0] + 0.5);
+	bool smallFace = any(lessThan(projectionBoundCoords[1] - projectionBoundCoords[0], ivec2(2)));
+	float offTriMargin = 0.1 / dot(vec2(1), projectionBoundCoords[1] - projectionBoundCoords[0] + 0.5);
 	int baseIndex = getBaseIndex(matV[0]);
 	for (int x = projectionBoundCoords[0].x;
 			x <= projectionBoundCoords[1].x; x++) {
@@ -208,9 +208,9 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 				localPos.x + localPos.y > 1.0 + offTriMargin)) {
 				continue;
 			}
-			localPos = clamp(localPos, 0.0001, 0.9999);
+			localPos.xy = clamp(localPos.xy, 0.01, 0.99);
 			if (localPos.x + localPos.y > 1.0 / 1.001) {
-				localPos /= (localPos.x + localPos.y) * 1.001;
+				localPos.xy /= (localPos.x + localPos.y) * 1.001;
 			}
 			vec2 thisTexCoord = (textureMatrix * localPos).xy;
 			vec4 color = textureLod(tex, thisTexCoord, 0);
