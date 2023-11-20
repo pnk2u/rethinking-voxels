@@ -22,6 +22,7 @@ const ivec2 offsets[8] = ivec2[8](
 	ivec2( 0,-1),
 	ivec2( 1,-1));
 
+#undef RT_ENTITIES
 #include "/lib/vx/SSBOs.glsl"
 #include "/lib/vx/raytrace.glsl"
 
