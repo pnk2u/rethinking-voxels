@@ -50,10 +50,16 @@ for (int _lkakmdffonef = 0; _lkakmdffonef < 1; _lkakmdffonef++) {
 	if (lightLevel == 0) lightLevel = int(lmCoordV[0].x * lmCoordV[0].x * 18) + 7;
 	if (matV[0] == 0 || matV[0] > MATERIALCOUNT) {// unknown blocks and entities
 		int processedItemId = 0;
-		if (!matIsEmissive && currentRenderedItemId > 0) {
+		bool itemIsEmissive = false;
+		if (currentRenderedItemId > 0) {
 			processedItemId = getProcessedBlockId(currentRenderedItemId);
 			matIsEmissive = isEmissive(processedItemId);
-			if (matIsEmissive) lightLevel = getLightLevel(processedItemId);
+			if (matIsEmissive) {
+				lightLevel = getLightLevel(processedItemId);
+				#if HELD_LIGHTING_MODE < 2
+					lightLevel = lightLevel / 3;
+				#endif
+			}
 		}
 		if (processedMat == 50016) {
 			#if HELD_LIGHTING_MODE > 0
