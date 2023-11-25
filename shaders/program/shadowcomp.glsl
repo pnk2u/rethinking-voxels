@@ -208,7 +208,7 @@ void main() {
 		storeEmissive(baseIndex, index, index < emissiveCount ? emissiveParts[index].xyz : ivec3(-1));
 		if (index == 0) {
 			setEmissiveCount(baseIndex, emissiveCount);
-			ivec3 meanEmissivePosToStore = meanEmissivePos.w > 0 ? meanEmissivePos.xyz / meanEmissivePos.w : ivec3(4);
+			ivec3 meanEmissivePosToStore = meanEmissivePos.w > 0 ? (meanEmissivePos.xyz * 2 + 1) / (2 * meanEmissivePos.w) : ivec3(4);
 			storeEmissive(baseIndex, emissiveCount, meanEmissivePosToStore);
 		}
 	#endif

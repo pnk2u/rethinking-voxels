@@ -13,7 +13,6 @@
 	float farMinusNear = far - near;
 
 	uniform sampler2D colortex8;
-	uniform sampler2D colortex10;
 	uniform vec3 cameraPosition;
 	#define DENOISE_DATA
 	#include "/lib/vx/SSBOs.glsl"

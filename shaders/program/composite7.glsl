@@ -37,7 +37,7 @@ uniform mat4 gbufferProjectionInverse, gbufferModelViewInverse;
 #include "/lib/vx/raytrace.glsl"
 */
 
-uniform sampler2D colortex13;
+uniform sampler2D colortex8;
 
 //Program//
 void main() {
@@ -51,7 +51,7 @@ void main() {
 		FXAA311(color);
 	#endif
 
-    //color = 3 * texelFetch(colortex13, texelCoord, 0).rgb;
+    //color = texelFetch(colortex8, texelCoord, 0).rgb;
 /*	if (true || texCoord.x > 0.5) {
 		vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1.0));
 		dir /= dir.w;

@@ -110,9 +110,10 @@ void main() {
 		ColorCodeProgram(color);
 	#endif
 
-	/* DRAWBUFFERS:01 */
+	/* DRAWBUFFERS:015 */
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(0.0, materialMask, 0.0, 1.0);
+	gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normal, 1);
 }
 
 #endif

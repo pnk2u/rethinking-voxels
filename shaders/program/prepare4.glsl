@@ -17,7 +17,6 @@ flat in mat4 prevProjectionMatrix;
 	uniform sampler2D colortex2;
 	uniform sampler2D colortex4;
 	uniform sampler2D colortex8;
-	const bool colortex10MipmapEnabled = true;
 	uniform sampler2D colortex12;
 	uniform sampler2D colortex13;
 	float GetLinearDepth(float depth) {
@@ -106,7 +105,7 @@ void main() {
 		if (prevColor.a < 2.1 * ACCUM_FALLOFF_SPEED) {
 			for (int k = 0; k < 9; k++) {
 				if (k == 4) continue;
-				ivec2 offset = ivec2(k%3, k/3);
+				ivec2 offset = ivec2(k%3, k/3) - 1;
 				ivec2 offsetCoord = ivec2(gl_FragCoord.xy) + offset * 2;
 				vec4 aroundLight = texelFetch(colortex10, ivec2(lrTexCoord * view + offset), 0);
 
@@ -127,17 +126,19 @@ void main() {
 			(frameCounter) % 2 * int(view.y + 0.5))
 		] = mix(newMoment, prevMoment, mixFactor);
 
-		/*RENDERTARGETS:12,13*/
+		/*RENDERTARGETS:12,13,10*/
 		gl_FragData[0] = vec4(
 			mix(newColor.rgb, prevColor.rgb, mixFactor),
 			min(prevColor.a + weight, MAX_OLDWEIGHT)
 		);
 		//gl_FragData[0].rgb = vec3(ndotv);
 		gl_FragData[1] = tex13Data;
+		gl_FragData[2] = vec4(0);
 	#else;
 
-		/*RENDERTARGETS:12*/
+		/*RENDERTARGETS:12,10*/
 		gl_FragData[0] = vec4(newColor.rgb, 0);
+		gl_FragData[1] = vec4(0);
 	#endif
 }
 #endif
