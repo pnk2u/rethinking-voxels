@@ -67,7 +67,6 @@ void main() {
 		}
 		vec4 prevColor = vec4(0);
 		float prevMoment = 0;
-		float prevLightCount = 0;
 		vec4 tex13Data = vec4(0);
 		float weight = ACCUM_FALLOFF_SPEED * max(0, 1 - 1.5 * length(fract(view * lrTexCoord) - 0.5));
 		float prevCompareDepth = GetLinearDepth(prevPos.z);
@@ -79,6 +78,11 @@ void main() {
 				int(view.x + 0.5) * (prevCoords.y + 
 				(frameCounter-1) % 2 * int(view.y + 0.5))
 			];
+
+			if (prevColor.a > MAX_OLDWEIGHT) {
+				newColor = vec4(1, 0, 0, 1);
+				prevColor.a = 0;
+			}
 			prevColor.a *= normalWeight;
 			prevColor.a = clamp(
 				MAX_OLDWEIGHT * (
@@ -134,7 +138,7 @@ void main() {
 		//gl_FragData[0].rgb = vec3(ndotv);
 		gl_FragData[1] = tex13Data;
 		gl_FragData[2] = vec4(0);
-	#else;
+	#else
 
 		/*RENDERTARGETS:12,10*/
 		gl_FragData[0] = vec4(newColor.rgb, 0);

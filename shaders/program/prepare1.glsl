@@ -17,7 +17,7 @@ uniform sampler2D colortex1;
 uniform sampler2D colortex2;
 uniform sampler2D colortex10;
 
-layout(rgba32f) uniform image2D colorimg12;
+layout(rgba32f) uniform image2D colorimg10;
 layout(r32ui) uniform uimage2D colorimg9;
 
 #define MATERIALMAP_ONLY
@@ -34,7 +34,6 @@ void main() {
 		if (abs(texelFetch(colortex1, texelCoord, 0).y - OSIEBCA * 254.0) < 0.5 * OSIEBCA) {
 			vec3 velocity = texelFetch(colortex10, texelCoord, 0).rgb;
 			newClipPos.xyz += newClipPos.w * velocity;
-			imageStore(colorimg12, texelCoord, vec4(velocity, 1));
 		}
 		newClipPos = projectionMatrix * newClipPos;
 		newClipPos /= newClipPos.w;
