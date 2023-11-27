@@ -241,7 +241,7 @@ uniform vec3 previousCameraPosition;
 #define IRRADIANCECACHE
 #include "/lib/vx/SSBOs.glsl"
 
-#define IRRADIANCECACHE_FALLOFF 0.99
+#define IRRADIANCECACHE_FALLOFF (1.0 - 0.1 * ACCUM_FALLOFF_SPEED)
 
 void main() {
 	ivec3 camOffset = ivec3(1.01 * (floor(cameraPosition) - floor(previousCameraPosition)));
