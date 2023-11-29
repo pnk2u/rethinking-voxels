@@ -162,7 +162,7 @@ void main() {
             if (glColor.r + glColor.g + glColor.b <= 2.99 || lmCoord.x > 0.999) { // Sign Text
                 #include "/lib/materials/specificMaterials/others/signText.glsl"
             }
-        } else {	
+        } else {
             noSmoothLighting = true;
         }
     #endif

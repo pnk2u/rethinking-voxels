@@ -108,9 +108,9 @@ void main() {
     }
     /*RENDERTARGETS:13*/
     gl_FragData[0] = vec4(totalLight / totalWeight, variance);
-//	#ifdef FIRST
-//	gl_FragData[0] = vec4(accumulationAmount * 0.01, 0, 0, 1);
-//	#endif
+//  #ifdef FIRST
+//  gl_FragData[0] = vec4(accumulationAmount * 0.01, 0, 0, 1);
+//  #endif
 }
 #elif defined FIRST
 void main() {

@@ -86,10 +86,10 @@ do
                                     echo "${blockname}:${basestate0}=${basestate0type}:${basestate1}=${basestate1type}:${basestate2}=${basestate2type}:${basestate3}=${basestate3type}:${basestate4}=${basestate4type}:${basestate5}=${basestate5type}:${basestate6}=${basestate6type}" | sed 's/:[a-z0-9_]*=NONE//g' >> blockstatelist.txt
                                     wrotesomething="yes"
                                 done
-                            done	
+                            done
                         done
-                    done	
-                done	
+                    done
+                done
             done
         done
         if [ $wrotesomething == "no" ]
