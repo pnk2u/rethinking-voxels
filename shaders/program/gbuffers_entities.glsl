@@ -240,10 +240,6 @@ out vec4 glColor;
 //Uniforms//
 #ifdef FLICKERING_FIX
     uniform int entityId;
-
-    uniform vec3 cameraPosition;
-
-    uniform mat4 gbufferModelViewInverse;
 #endif
 uniform vec3 cameraPosition;
 uniform vec3 previousCameraPosition;

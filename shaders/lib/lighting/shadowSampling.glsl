@@ -120,4 +120,3 @@ vec3 GetShadow(vec3 shadowPos, float lViewPos, float lightmapY, float offset, bo
 
     return shadow;
 }
-#endif
