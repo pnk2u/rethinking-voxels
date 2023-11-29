@@ -18,6 +18,8 @@ flat in vec4 glColor;
 //Uniforms//
 uniform int isEyeInWater;
 uniform int frameCounter;
+uniform int heldItemId;
+uniform int heldItemId2;
 
 uniform float viewWidth;
 uniform float viewHeight;
@@ -48,9 +50,9 @@ float shadowTimeVar2 = shadowTimeVar1 * shadowTimeVar1;
 float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 
 #ifdef OVERWORLD
-	vec3 lightVec = sunVec * ((timeAngle < 0.5325 || timeAngle > 0.9675) ? 1.0 : -1.0);
+    vec3 lightVec = sunVec * ((timeAngle < 0.5325 || timeAngle > 0.9675) ? 1.0 : -1.0);
 #else
-	vec3 lightVec = sunVec;
+    vec3 lightVec = sunVec;
 #endif
 
 //Common Functions//
@@ -60,22 +62,22 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 #include "/lib/lighting/mainLighting.glsl"
 
 #ifdef TAA
-	#include "/lib/util/jitter.glsl"
+    #include "/lib/antialiasing/jitter.glsl"
 #endif
 
 #ifdef COLOR_CODED_PROGRAMS
-	#include "/lib/misc/colorCodedPrograms.glsl"
+    #include "/lib/misc/colorCodedPrograms.glsl"
 #endif
 
 //Program//
 void main() {
-	vec4 color = glColor;
+    vec4 color = glColor;
 
-	vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z);
-	#ifdef TAA
-		vec3 viewPos = ScreenToView(vec3(TAAJitter(screenPos.xy, -0.5), screenPos.z));
-	#else
-		vec3 viewPos = ScreenToView(screenPos);
+    vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z);
+    #ifdef TAA
+        vec3 viewPos = ScreenToView(vec3(TAAJitter(screenPos.xy, -0.5), screenPos.z));
+    #else
+        vec3 viewPos = ScreenToView(screenPos);
     #endif
 	float lViewPos = length(viewPos);
 	vec3 playerPos = ViewToPlayer(viewPos);
@@ -110,7 +112,7 @@ void main() {
 		ColorCodeProgram(color);
 	#endif
 
-	/* DRAWBUFFERS:015 */
+	/* DRAWBUFFERS:065 */
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(0.0, materialMask, 0.0, 1.0);
 	gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normal, 1);
@@ -130,7 +132,7 @@ flat out vec4 glColor;
 
 //Uniforms//
 #if defined GBUFFERS_LINE || defined TAA
-	uniform float viewWidth, viewHeight;
+    uniform float viewWidth, viewHeight;
 #endif
 
 //Attributes//
@@ -141,45 +143,45 @@ flat out vec4 glColor;
 
 //Includes//
 #ifdef TAA
-	#include "/lib/util/jitter.glsl"
+    #include "/lib/antialiasing/jitter.glsl"
 #endif
 
 //Program//
 void main() {
-	#ifndef GBUFFERS_LINE
-		gl_Position = ftransform();
-	#else
-		float lineWidth = 2.0;
-		vec2 screenSize = vec2(viewWidth, viewHeight);
-		const mat4 VIEW_SCALE = mat4(mat3(1.0 - (1.0 / 256.0)));
-		vec4 linePosStart = projectionMatrix * VIEW_SCALE * modelViewMatrix * vec4(vaPosition, 1.0);
-		vec4 linePosEnd = projectionMatrix * VIEW_SCALE * modelViewMatrix * (vec4(vaPosition + vaNormal, 1.0));
-		vec3 ndc1 = linePosStart.xyz / linePosStart.w;
-		vec3 ndc2 = linePosEnd.xyz / linePosEnd.w;
-		vec2 lineScreenDirection = normalize((ndc2.xy - ndc1.xy) * screenSize);
-		vec2 lineOffset = vec2(-lineScreenDirection.y, lineScreenDirection.x) * lineWidth / screenSize;
-		if (lineOffset.x < 0.0)
-			lineOffset *= -1.0;
-		if (gl_VertexID % 2 == 0)
-			gl_Position = vec4((ndc1 + vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w);
-		else
-			gl_Position = vec4((ndc1 - vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w);
-	#endif
+    #ifndef GBUFFERS_LINE
+        gl_Position = ftransform();
+    #else
+        float lineWidth = 2.0;
+        vec2 screenSize = vec2(viewWidth, viewHeight);
+        const mat4 VIEW_SCALE = mat4(mat3(1.0 - (1.0 / 256.0)));
+        vec4 linePosStart = projectionMatrix * VIEW_SCALE * modelViewMatrix * vec4(vaPosition, 1.0);
+        vec4 linePosEnd = projectionMatrix * VIEW_SCALE * modelViewMatrix * (vec4(vaPosition + vaNormal, 1.0));
+        vec3 ndc1 = linePosStart.xyz / linePosStart.w;
+        vec3 ndc2 = linePosEnd.xyz / linePosEnd.w;
+        vec2 lineScreenDirection = normalize((ndc2.xy - ndc1.xy) * screenSize);
+        vec2 lineOffset = vec2(-lineScreenDirection.y, lineScreenDirection.x) * lineWidth / screenSize;
+        if (lineOffset.x < 0.0)
+            lineOffset *= -1.0;
+        if (gl_VertexID % 2 == 0)
+            gl_Position = vec4((ndc1 + vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w);
+        else
+            gl_Position = vec4((ndc1 - vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w);
+    #endif
 
-	#ifdef TAA
-		gl_Position.xy = TAAJitter(gl_Position.xy, gl_Position.w);
-	#endif
+    #ifdef TAA
+        gl_Position.xy = TAAJitter(gl_Position.xy, gl_Position.w);
+    #endif
 
-	lmCoord  = GetLightMapCoordinates();
+    lmCoord  = GetLightMapCoordinates();
 
-	glColor = gl_Color;
+    glColor = gl_Color;
 
-	normal = normalize(gl_NormalMatrix * gl_Normal);
+    normal = normalize(gl_NormalMatrix * gl_Normal);
 
-	upVec = normalize(gbufferModelView[1].xyz);
-	eastVec = normalize(gbufferModelView[0].xyz);
-	northVec = normalize(gbufferModelView[2].xyz);
-	sunVec = GetSunVector();
+    upVec = normalize(gbufferModelView[1].xyz);
+    eastVec = normalize(gbufferModelView[0].xyz);
+    northVec = normalize(gbufferModelView[2].xyz);
+    sunVec = GetSunVector();
 }
 
 #endif

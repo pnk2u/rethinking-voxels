@@ -13,7 +13,7 @@ noperspective in vec2 texCoord;
 flat in vec3 upVec, sunVec;
 
 #ifdef LIGHTSHAFTS_ACTIVE
-	flat in float vlFactor;
+    flat in float vlFactor;
 #endif
 
 //Uniforms//
@@ -45,11 +45,11 @@ uniform sampler2D depthtex1;
 #if defined LIGHTSHAFTS_ACTIVE || defined NETHER_STORM || CONWAY > 0 || RAINBOWS > 0
 	uniform int frameCounter;
 
-	#ifndef LIGHT_COLORING
-		uniform sampler2D colortex3;
-	#else
-		uniform sampler2D colortex8;
-	#endif
+    #ifndef LIGHT_COLORING
+        uniform sampler2D colortex3;
+    #else
+        uniform sampler2D colortex8;
+    #endif
 #endif
 
 #if defined LIGHTSHAFTS_ACTIVE || defined VOLUMETRIC_BLOCKLIGHT
@@ -59,22 +59,22 @@ uniform sampler2D depthtex1;
 	uniform float frameTime;
 	uniform float frameTimeSmooth;
 
-	uniform ivec2 eyeBrightness;
+    uniform ivec2 eyeBrightness;
 
-	uniform vec3 skyColor;
+    uniform vec3 skyColor;
 
-	uniform sampler2D shadowtex0;
-	uniform sampler2DShadow shadowtex1;
-	uniform sampler2D shadowcolor1;
+    uniform sampler2D shadowtex0;
+    uniform sampler2DShadow shadowtex1;
+    uniform sampler2D shadowcolor1;
 #endif
 
 #if WATER_QUALITY >= 3
-	uniform sampler2D colortex1;
+    uniform sampler2D colortex6;
 #endif
 
 #if RAINBOWS == 1
-	uniform float wetness;
-	uniform float inRainy;
+    uniform float wetness;
+    uniform float inRainy;
 #endif
 
 //Pipeline Constants//
@@ -89,16 +89,16 @@ float sunVisibility2 = sunVisibility * sunVisibility;
 vec2 view = vec2(viewWidth, viewHeight);
 
 #ifdef OVERWORLD
-	vec3 lightVec = sunVec * ((timeAngle < 0.5325 || timeAngle > 0.9675) ? 1.0 : -1.0);
+    vec3 lightVec = sunVec * ((timeAngle < 0.5325 || timeAngle > 0.9675) ? 1.0 : -1.0);
 #else
-	vec3 lightVec = sunVec;
+    vec3 lightVec = sunVec;
 #endif
 
 #ifdef LIGHTSHAFTS_ACTIVE
-	float shadowTimeVar1 = abs(sunVisibility - 0.5) * 2.0;
-	float shadowTimeVar2 = shadowTimeVar1 * shadowTimeVar1;
-	float shadowTime = shadowTimeVar2 * shadowTimeVar2;
-	float vlTime = min(abs(SdotU) - 0.05, 0.15) / 0.15;
+    float shadowTimeVar1 = abs(sunVisibility - 0.5) * 2.0;
+    float shadowTimeVar2 = shadowTimeVar1 * shadowTimeVar1;
+    float shadowTime = shadowTimeVar2 * shadowTimeVar2;
+    float vlTime = min(abs(SdotU) - 0.05, 0.15) / 0.15;
 #endif
 
 //Common Functions//
@@ -107,14 +107,14 @@ vec2 view = vec2(viewWidth, viewHeight);
 #include "/lib/atmospherics/fog/waterFog.glsl"
 
 #ifdef BLOOM_FOG_COMPOSITE
-	#include "/lib/atmospherics/fog/bloomFog.glsl"
+    #include "/lib/atmospherics/fog/bloomFog.glsl"
 #endif
 
 #ifdef LIGHTSHAFTS_ACTIVE
-	#ifdef END
-		#include "/lib/atmospherics/enderBeams.glsl"
-	#endif
-	#include "/lib/atmospherics/volumetricLight.glsl"
+    #ifdef END
+        #include "/lib/atmospherics/enderBeams.glsl"
+    #endif
+    #include "/lib/atmospherics/volumetricLight.glsl"
 #endif
 
 #if WATER_QUALITY >= 3 || defined NETHER_STORM || CONWAY > 0
@@ -122,19 +122,22 @@ vec2 view = vec2(viewWidth, viewHeight);
 #endif
 
 #if WATER_QUALITY >= 3
-	#include "/lib/materials/materialMethods/refraction.glsl"
+    #include "/lib/materials/materialMethods/refraction.glsl"
 #endif
 
 #ifdef NETHER_STORM
-	#include "/lib/atmospherics/netherStorm.glsl"
+    #include "/lib/atmospherics/netherStorm.glsl"
 #endif
 
 #ifdef ATM_COLOR_MULTS
-	#include "/lib/colors/colorMultipliers.glsl"
+    #include "/lib/colors/colorMultipliers.glsl"
+#endif
+#ifdef MOON_PHASE_INF_ATMOSPHERE
+    #include "/lib/colors/moonPhaseInfluence.glsl"
 #endif
 
 #if RAINBOWS > 0 && defined OVERWORLD
-	#include "/lib/atmospherics/rainbow.glsl"
+    #include "/lib/atmospherics/rainbow.glsl"
 #endif
 
 #if CONWAY > 0
@@ -217,6 +220,10 @@ void main() {
 		volumetricEffect.rgb *= GetAtmColorMult();
 	#endif
 
+    #ifdef MOON_PHASE_INF_ATMOSPHERE
+        volumetricEffect.rgb *= moonPhaseInfluence;
+    #endif
+
 	#ifdef VOLUMETRIC_BLOCKLIGHT
 		volumetricBlocklight = GetVolumetricBlocklight(translucentMult, nViewPos, z0, z1, dither) * (1 - 0.5 / 255.0 * eyeBrightness.y * sunFactor);
 	#endif
@@ -289,14 +296,14 @@ noperspective out vec2 texCoord;
 flat out vec3 upVec, sunVec;
 
 #ifdef LIGHTSHAFTS_ACTIVE
-	flat out float vlFactor;
+    flat out float vlFactor;
 #endif
 
 //Uniforms//
 #if defined LIGHTSHAFTS_ACTIVE && (LIGHTSHAFT_BEHAVIOUR == 1 && SHADOW_QUALITY >= 1 || defined END)
-	uniform float viewWidth, viewHeight;
-	
-	uniform sampler2D colortex4;
+    uniform float viewWidth, viewHeight;
+
+    uniform sampler2D colortex4;
 #endif
 
 //Attributes//
@@ -309,24 +316,24 @@ flat out vec3 upVec, sunVec;
 
 //Program//
 void main() {
-	gl_Position = ftransform();
+    gl_Position = ftransform();
 
-	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+    texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 
-	upVec = normalize(gbufferModelView[1].xyz);
-	sunVec = GetSunVector();
+    upVec = normalize(gbufferModelView[1].xyz);
+    sunVec = GetSunVector();
 
-	#ifdef LIGHTSHAFTS_ACTIVE
-		#if LIGHTSHAFT_BEHAVIOUR == 1 && SHADOW_QUALITY >= 1 || defined END
-			vlFactor = texelFetch(colortex4, ivec2(viewWidth-1, viewHeight-1), 0).r;
-		#else
-			#if LIGHTSHAFT_BEHAVIOUR == 2
-				vlFactor = 0.0;
-			#elif LIGHTSHAFT_BEHAVIOUR == 3
-				vlFactor = 1.0;
-			#endif
-		#endif
-	#endif
+    #ifdef LIGHTSHAFTS_ACTIVE
+        #if LIGHTSHAFT_BEHAVIOUR == 1 && SHADOW_QUALITY >= 1 || defined END
+            vlFactor = texelFetch(colortex4, ivec2(viewWidth-1, viewHeight-1), 0).r;
+        #else
+            #if LIGHTSHAFT_BEHAVIOUR == 2
+                vlFactor = 0.0;
+            #elif LIGHTSHAFT_BEHAVIOUR == 3
+                vlFactor = 1.0;
+            #endif
+        #endif
+    #endif
 }
 
 #endif

@@ -25,7 +25,7 @@ uniform sampler2D colortex12;
 uniform sampler2D colortex8;
 uniform sampler2D colortex4;
 uniform sampler2D colortex2;
-uniform sampler2D colortex1;
+uniform sampler2D colortex6;
 uniform sampler2D depthtex1;
 
 #ifndef LIGHT_COLORING
@@ -42,6 +42,7 @@ uniform sampler2D colortex3;
 #endif
 
 //Common Variables//
+vec2 view = vec2(viewWidth, viewHeight);
 
 //Common Functions//
 float GetLinearDepth(float depth) {
@@ -50,7 +51,7 @@ float GetLinearDepth(float depth) {
 
 //Includes//
 #ifdef TAA
-	#include "/lib/antialiasing/taa.glsl"
+    #include "/lib/antialiasing/taa.glsl"
 #endif
 
 //Program//
@@ -94,9 +95,9 @@ void main() {
     
 	#ifdef TEMPORAL_FILTER
         #ifndef LIGHT_COLORING
-        /* RENDERTARGETS:3,2,12,6 */
+        /* RENDERTARGETS:3,2,12,1 */
         #else
-        /* RENDERTARGETS:8,2,12,6 */
+        /* RENDERTARGETS:8,2,12,1 */
         #endif
         gl_FragData[3] = vec4(depth, 0.0, 0.0, 1.0);
 	#endif
@@ -121,9 +122,9 @@ noperspective out vec2 texCoord;
 
 //Program//
 void main() {
-	gl_Position = ftransform();
+    gl_Position = ftransform();
 
-	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+    texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 }
 
 #endif

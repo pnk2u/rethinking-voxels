@@ -14,17 +14,16 @@ noperspective in vec2 texCoord;
 uniform float viewWidth, viewHeight;
 
 #ifndef LIGHT_COLORING
-	uniform sampler2D colortex3;
+    uniform sampler2D colortex3;
 #else
-	uniform sampler2D colortex3; /*test*//*test*//*test*//*test*/
-	uniform sampler2D colortex8;
+    uniform sampler2D colortex8;
 #endif
 uniform sampler2D shadowcolor0;
 
 uniform float frameTimeCounter;
 
 #ifdef UNDERWATER_DISTORTION
-	uniform int isEyeInWater;
+    uniform int isEyeInWater;
 #endif
 
 //Pipeline Constants//
@@ -34,27 +33,27 @@ uniform float frameTimeCounter;
 
 //Common Functions//
 #if IMAGE_SHARPENING > 0
-	vec2 viewD = 1.0 / vec2(viewWidth, viewHeight);
+    vec2 viewD = 1.0 / vec2(viewWidth, viewHeight);
 
-	vec2 sharpenOffsets[4] = vec2[4](
-		vec2( viewD.x,  0.0),
-		vec2( 0.0,  viewD.x),
-		vec2(-viewD.x,  0.0),
-		vec2( 0.0, -viewD.x)
-	);
+    vec2 sharpenOffsets[4] = vec2[4](
+        vec2( viewD.x,  0.0),
+        vec2( 0.0,  viewD.x),
+        vec2(-viewD.x,  0.0),
+        vec2( 0.0, -viewD.x)
+    );
 
-	void SharpenImage(inout vec3 color, vec2 texCoordM) {
-		float mult = 0.0125 * IMAGE_SHARPENING;
-		color *= 1.0 + 0.05 * IMAGE_SHARPENING;
+    void SharpenImage(inout vec3 color, vec2 texCoordM) {
+        float mult = 0.0125 * IMAGE_SHARPENING;
+        color *= 1.0 + 0.05 * IMAGE_SHARPENING;
 
-		for (int i = 0; i < 4; i++) {
-			#ifndef LIGHT_COLORING
-				color -= texture2D(colortex3, texCoordM + sharpenOffsets[i]).rgb * mult;
-			#else
-				color -= texture2D(colortex8, texCoordM + sharpenOffsets[i]).rgb * mult;
-			#endif
-		}
-	}
+        for (int i = 0; i < 4; i++) {
+            #ifndef LIGHT_COLORING
+                color -= texture2D(colortex3, texCoordM + sharpenOffsets[i]).rgb * mult;
+            #else
+                color -= texture2D(colortex8, texCoordM + sharpenOffsets[i]).rgb * mult;
+            #endif
+        }
+    }
 #endif
 
 //Includes//
@@ -115,34 +114,6 @@ void main() {
 
 	#ifdef LIGHT_COLORING
 		if (max(texCoordM.x, texCoordM.y) < 0.25) color = texture2D(colortex3, texCoordM * 4.0).rgb;
-	#endif
-
-	#ifdef MC_ANISOTROPIC_FILTERING
-		color.rgb = mix(color.rgb, vec3(0.0), 0.75);
-
-		beginTextM(8, vec2(6, 10));
-		text.fgCol = vec4(1.0, 0.0, 0.0, 1.0);
-		printString((_I, _m, _p, _o, _r, _t, _a, _n, _t, _space, _I, _s, _s, _u, _e, _space));
-		endText(color.rgb);
-
-		beginTextM(4, vec2(15, 30));
-		printLine();
-		text.fgCol = vec4(1.0, 1.0, 1.0, 1.0);
-		printString((
-			_P, _l, _e, _a, _s, _e, _space, _g, _o, _space, _t, _o, _space,
-			_E, _S, _C, _space, _minus, _space, _O, _p, _t, _i, _o, _n, _s, _space, _minus, _space
-		));
-		printLine();
-		printString((
-			_V, _i, _d, _e, _o, _space, _S, _e, _t, _t, _i, _n, _g, _s, _space, _minus, _space,
-			_Q, _u, _a, _l, _i, _t, _y, _space, _minus, _space
-		));
-		printLine();
-		printString((
-			_a, _n, _d, _space, _d, _i, _s, _a, _b, _l, _e, _space,
-			_A, _n, _i, _s, _o, _t, _r, _o, _p, _i, _c, _space, _F, _i, _l, _t, _e, _r, _i, _n, _g, _dot
-		));
-		endText(color.rgb);
 	#endif
 
 	#ifndef IS_IRIS

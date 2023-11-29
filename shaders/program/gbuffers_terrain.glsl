@@ -22,18 +22,24 @@ in vec3 normal;
 in vec4 glColorRaw;
 
 #if RAIN_PUDDLES >= 1 || defined GENERATED_NORMALS || defined CUSTOM_PBR
-	flat in vec3 binormal, tangent;
+    flat in vec3 binormal, tangent;
 #endif
 
 #ifdef POM
-	in vec3 viewVector;
+    in vec3 viewVector;
 
-	in vec4 vTexCoordAM;
+    in vec4 vTexCoordAM;
+#endif
+
+#if ANISOTROPIC_FILTER > 0
+    in vec4 spriteBounds;
 #endif
 
 //Uniforms//
 uniform int isEyeInWater;
 uniform int frameCounter;
+uniform int heldItemId;
+uniform int heldItemId2;
 
 uniform float viewWidth;
 uniform float viewHeight;
@@ -52,36 +58,31 @@ uniform sampler2D tex;
 uniform sampler2D noisetex;
 
 #if defined IPBR || defined POM
-	uniform ivec2 atlasSize;
+    uniform ivec2 atlasSize;
 #endif
 
 #if RAIN_PUDDLES >= 1
-	#if RAIN_PUDDLES < 3
-		uniform float wetness;
-		uniform float inRainy;
-	#else
-		float wetness = 1.0;
-		float inRainy = 1.0;
-	#endif
-#endif
-
-#if SHOW_LIGHT_LEVEL == 1
-	uniform int heldItemId;
-	uniform int heldItemId2;
+    #if RAIN_PUDDLES < 3
+        uniform float wetness;
+        uniform float inRainy;
+    #else
+        float wetness = 1.0;
+        float inRainy = 1.0;
+    #endif
 #endif
 
 #if HELD_LIGHTING_MODE == 0 && SHOW_LIGHT_LEVEL == 2
-	uniform int heldBlockLightValue;
-	uniform int heldBlockLightValue2;
+    uniform int heldBlockLightValue;
+    uniform int heldBlockLightValue2;
 #endif
 
 #ifdef CUSTOM_PBR
-	uniform sampler2D normals;
-	uniform sampler2D specular;
+    uniform sampler2D normals;
+    uniform sampler2D specular;
 #endif
 
 #ifdef LIGHT_COLORING
-	layout (rgba8) uniform image2D colorimg3;
+    layout (rgba8) uniform image2D colorimg3;
 #endif
 
 //Pipeline Constants//
@@ -100,43 +101,43 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 vec4 glColor = glColorRaw;
 
 #ifdef OVERWORLD
-	vec3 lightVec = sunVec * ((timeAngle < 0.5325 || timeAngle > 0.9675) ? 1.0 : -1.0);
+    vec3 lightVec = sunVec * ((timeAngle < 0.5325 || timeAngle > 0.9675) ? 1.0 : -1.0);
 #else
-	vec3 lightVec = sunVec;
+    vec3 lightVec = sunVec;
 #endif
 
 #if RAIN_PUDDLES >= 1 || defined GENERATED_NORMALS || defined CUSTOM_PBR
-	mat3 tbnMatrix = mat3(
-		tangent.x, binormal.x, normal.x,
-		tangent.y, binormal.y, normal.y,
-		tangent.z, binormal.z, normal.z
-	);
+    mat3 tbnMatrix = mat3(
+        tangent.x, binormal.x, normal.x,
+        tangent.y, binormal.y, normal.y,
+        tangent.z, binormal.z, normal.z
+    );
 #endif
 
 //Common Functions//
 void DoFoliageColorTweaks(inout vec3 color, inout vec3 shadowMult, inout float snowMinNdotU, float lViewPos) {
-	float factor = max(80.0 - lViewPos, 0.0);
-	shadowMult *= 1.0 + 0.004 * noonFactor * factor;
+    float factor = max(80.0 - lViewPos, 0.0);
+    shadowMult *= 1.0 + 0.004 * noonFactor * factor;
 
-	if (signMidCoordPos.x < 0.0) color.rgb *= 1.08;
-	else color.rgb *= 0.93;
+    if (signMidCoordPos.x < 0.0) color.rgb *= 1.08;
+    else color.rgb *= 0.93;
 
-	#ifdef SNOWY_WORLD
-		if (glColor.g - glColor.b > 0.01)
-			snowMinNdotU = min(pow2(pow2(max0(color.g * 2.0 - color.r - color.b))) * 5.0, 0.1);
-		else
-			snowMinNdotU = min(pow2(pow2(max0(color.g * 2.0 - color.r - color.b))) * 3.0, 0.1) * 0.25;
-	#endif
+    #ifdef SNOWY_WORLD
+        if (glColor.g - glColor.b > 0.01)
+            snowMinNdotU = min(pow2(pow2(max0(color.g * 2.0 - color.r - color.b))) * 5.0, 0.1);
+        else
+            snowMinNdotU = min(pow2(pow2(max0(color.g * 2.0 - color.r - color.b))) * 3.0, 0.1) * 0.25;
+    #endif
 }
 
 void DoBrightBlockTweaks(vec3 color, float minLight, inout vec3 shadowMult, inout float highlightMult) {
-	float factor = mix(minLight, 1.0, pow2(pow2(color.r)));
-	shadowMult = vec3(factor);
-	highlightMult /= factor;
+    float factor = mix(minLight, 1.0, pow2(pow2(color.r)));
+    shadowMult = vec3(factor);
+    highlightMult /= factor;
 }
 
 void DoOceanBlockTweaks(inout float smoothnessD) {
-	smoothnessD *= max0(lmCoord.y - 0.95) * 20.0;
+    smoothnessD *= max0(lmCoord.y - 0.95) * 20.0;
 }
 
 //Includes//
@@ -144,32 +145,40 @@ void DoOceanBlockTweaks(inout float smoothnessD) {
 #include "/lib/lighting/mainLighting.glsl"
 
 #ifdef TAA
-	#include "/lib/util/jitter.glsl"
+    #include "/lib/antialiasing/jitter.glsl"
 #endif
 
 #if defined GENERATED_NORMALS || defined COATED_TEXTURES
-	#include "/lib/util/miplevel.glsl"
+    #include "/lib/util/miplevel.glsl"
 #endif
 
 #ifdef GENERATED_NORMALS
-	#include "/lib/materials/materialMethods/generatedNormals.glsl"
+    #include "/lib/materials/materialMethods/generatedNormals.glsl"
 #endif
 
 #ifdef COATED_TEXTURES
-	#include "/lib/materials/materialMethods/coatedTextures.glsl"
+    #include "/lib/materials/materialMethods/coatedTextures.glsl"
 #endif
 
 #ifdef CUSTOM_PBR
-	#include "/lib/materials/materialHandling/customMaterials.glsl"
+    #include "/lib/materials/materialHandling/customMaterials.glsl"
 #endif
 
 #ifdef COLOR_CODED_PROGRAMS
-	#include "/lib/misc/colorCodedPrograms.glsl"
+    #include "/lib/misc/colorCodedPrograms.glsl"
+#endif
+
+#if ANISOTROPIC_FILTER > 0
+    #include "/lib/materials/materialMethods/anisotropicFiltering.glsl"
 #endif
 
 //Program//
 void main() {
-	vec4 color = texture2D(tex, texCoord);
+    #if ANISOTROPIC_FILTER == 0
+        vec4 color = texture2D(tex, texCoord);
+    #else
+        vec4 color = textureAF(tex, texCoord);
+    #endif
 
 	float smoothnessD = 0.0, materialMask = 0.0, skyLightFactor = 0.0;
 	vec3 normalM = normal;
@@ -329,7 +338,7 @@ void main() {
 		ColorCodeProgram(color);
 	#endif
 
-	/* DRAWBUFFERS:015 */
+	/* DRAWBUFFERS:065 */
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
 	gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
@@ -354,26 +363,30 @@ out vec3 normal;
 out vec4 glColorRaw;
 
 #if RAIN_PUDDLES >= 1 || defined GENERATED_NORMALS || defined CUSTOM_PBR
-	flat out vec3 binormal, tangent;
+    flat out vec3 binormal, tangent;
 #endif
 
 #ifdef POM
-	out vec3 viewVector;
+    out vec3 viewVector;
 
-	out vec4 vTexCoordAM;
+    out vec4 vTexCoordAM;
+#endif
+
+#if ANISOTROPIC_FILTER > 0
+    out vec4 spriteBounds;
 #endif
 
 //Uniforms//
 #ifdef TAA
-	uniform float viewWidth, viewHeight;
+    uniform float viewWidth, viewHeight;
 #endif
 
 #ifdef WAVING_ANYTHING_TERRAIN
-	uniform float frameTimeCounter;
+    uniform float frameTimeCounter;
 
-	uniform vec3 cameraPosition;
+    uniform vec3 cameraPosition;
 
-	uniform mat4 gbufferModelViewInverse;
+    uniform mat4 gbufferModelViewInverse;
 #endif
 
 //Attributes//
@@ -381,7 +394,7 @@ attribute vec4 mc_Entity;
 attribute vec4 mc_midTexCoord;
 
 #if RAIN_PUDDLES >= 1 || defined GENERATED_NORMALS || defined CUSTOM_PBR
-	attribute vec4 at_tangent;
+    attribute vec4 at_tangent;
 #endif
 
 //Common Variables//
@@ -391,11 +404,11 @@ vec4 glColor = vec4(1.0);
 
 //Includes//
 #ifdef TAA
-	#include "/lib/util/jitter.glsl"
+    #include "/lib/antialiasing/jitter.glsl"
 #endif
 
 #ifdef WAVING_ANYTHING_TERRAIN
-	#include "/lib/materials/materialMethods/wavingBlocks.glsl"
+    #include "/lib/materials/materialMethods/wavingBlocks.glsl"
 #endif
 
 #define MATERIALMAP_ONLY
@@ -403,25 +416,25 @@ vec4 glColor = vec4(1.0);
 
 //Program//
 void main() {
-	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
-	lmCoord  = GetLightMapCoordinates();
+    texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+    lmCoord  = GetLightMapCoordinates();
 
-	glColorRaw = gl_Color;
-	if (glColorRaw.a < 0.1) glColorRaw.a = 1.0;
-	glColor = glColorRaw;
+    glColorRaw = gl_Color;
+    if (glColorRaw.a < 0.1) glColorRaw.a = 1.0;
+    glColor = glColorRaw;
 
-	normal = normalize(gl_NormalMatrix * gl_Normal);
-	upVec = normalize(gbufferModelView[1].xyz);
-	eastVec = normalize(gbufferModelView[0].xyz);
-	northVec = normalize(gbufferModelView[2].xyz);
-	sunVec = GetSunVector();
+    normal = normalize(gl_NormalMatrix * gl_Normal);
+    upVec = normalize(gbufferModelView[1].xyz);
+    eastVec = normalize(gbufferModelView[0].xyz);
+    northVec = normalize(gbufferModelView[2].xyz);
+    sunVec = GetSunVector();
 
-	midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
-	vec2 texMinMidCoord = texCoord - midCoord;
-	signMidCoordPos = sign(texMinMidCoord);
-	absMidCoordPos  = abs(texMinMidCoord);
+    midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
+    vec2 texMinMidCoord = texCoord - midCoord;
+    signMidCoordPos = sign(texMinMidCoord);
+    absMidCoordPos  = abs(texMinMidCoord);
 
-	mat = getProcessedBlockId(int(mc_Entity.x + 0.5));
+    mat = int(mc_Entity.x + 0.5);
 
 	vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
 
@@ -430,49 +443,50 @@ void main() {
 			mat = 10004;
 		}
 	}
-	#ifdef WAVING_ANYTHING_TERRAIN
+    #ifdef WAVING_ANYTHING_TERRAIN
 
-		DoWave(position.xyz, mat);
+        DoWave(position.xyz, mat);
 
-		#ifdef FLICKERING_FIX
-			//position.y += max0(0.002 - abs(mat - 10256.0)); // Iron Bars
-		#endif
+        gl_Position = gl_ProjectionMatrix * gbufferModelView * position;
+    #else
+        gl_Position = ftransform();
 
-		gl_Position = gl_ProjectionMatrix * gbufferModelView * position;
-	#else
-		gl_Position = ftransform();
+        #ifndef WAVING_LAVA
+            if (mat == 10068) { // Lava
+                // G8FL735 Fixes Optifine-Iris parity. Optifine has 0.9 gl_Color.rgb on a lot of versions
+                glColorRaw.rgb = min(glColorRaw.rgb, vec3(0.9));
+            }
+        #endif
+    #endif
 
-		#ifndef WAVING_LAVA
-			// G8FL735 Fixes Optifine-Iris parity. Optifine has 0.9 gl_Color.rgb on a lot of versions
-			glColorRaw.rgb = min(glColorRaw.rgb, vec3(0.9));
-		#endif
-	
-		#ifdef FLICKERING_FIX
-			//if (mat == 10256) gl_Position.z -= 0.00001; // Iron Bars
-		#endif
-	#endif
+    #ifdef TAA
+        gl_Position.xy = TAAJitter(gl_Position.xy, gl_Position.w);
+    #endif
 
-	#ifdef TAA
-		gl_Position.xy = TAAJitter(gl_Position.xy, gl_Position.w);
-	#endif
+    #if RAIN_PUDDLES >= 1 || defined GENERATED_NORMALS || defined CUSTOM_PBR
+        binormal = normalize(gl_NormalMatrix * cross(at_tangent.xyz, gl_Normal.xyz) * at_tangent.w);
+        tangent  = normalize(gl_NormalMatrix * at_tangent.xyz);
+    #endif
 
-	#if RAIN_PUDDLES >= 1 || defined GENERATED_NORMALS || defined CUSTOM_PBR
-		binormal = normalize(gl_NormalMatrix * cross(at_tangent.xyz, gl_Normal.xyz) * at_tangent.w);
-		tangent  = normalize(gl_NormalMatrix * at_tangent.xyz);
-	#endif
+    #ifdef POM
+        mat3 tbnMatrix = mat3(
+            tangent.x, binormal.x, normal.x,
+            tangent.y, binormal.y, normal.y,
+            tangent.z, binormal.z, normal.z
+        );
 
-	#ifdef POM
-		mat3 tbnMatrix = mat3(
-			tangent.x, binormal.x, normal.x,
-			tangent.y, binormal.y, normal.y,
-			tangent.z, binormal.z, normal.z
-		);
+        viewVector = tbnMatrix * (gl_ModelViewMatrix * gl_Vertex).xyz;
 
-		viewVector = tbnMatrix * (gl_ModelViewMatrix * gl_Vertex).xyz;
+        vTexCoordAM.zw  = abs(texMinMidCoord) * 2;
+        vTexCoordAM.xy  = min(texCoord, midCoord - texMinMidCoord);
+    #endif
 
-		vTexCoordAM.zw  = abs(texMinMidCoord) * 2;
-		vTexCoordAM.xy  = min(texCoord, midCoord - texMinMidCoord);
-	#endif
+    #if ANISOTROPIC_FILTER > 0
+        vec2 spriteRadius = abs(texCoord - mc_midTexCoord.xy);
+        vec2 bottomLeft = mc_midTexCoord.xy - spriteRadius;
+        vec2 topRight = mc_midTexCoord.xy + spriteRadius;
+        spriteBounds = vec4(bottomLeft, topRight);
+    #endif
 }
 
 #endif

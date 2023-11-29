@@ -17,24 +17,26 @@ in vec3 normal;
 in vec4 glColor;
 
 #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-	in vec2 signMidCoordPos;
-	flat in vec2 absMidCoordPos;
+    in vec2 signMidCoordPos;
+    flat in vec2 absMidCoordPos;
 #endif
 
 #if defined GENERATED_NORMALS || defined CUSTOM_PBR
-	flat in vec3 binormal, tangent;
+    flat in vec3 binormal, tangent;
 #endif
 
 #ifdef POM
-	in vec3 viewVector;
+    in vec3 viewVector;
 
-	in vec4 vTexCoordAM;
+    in vec4 vTexCoordAM;
 #endif
 
 //Uniforms//
 uniform int isEyeInWater;
 uniform int blockEntityId;
 uniform int frameCounter;
+uniform int heldItemId;
+uniform int heldItemId2;
 
 uniform float viewWidth;
 uniform float viewHeight;
@@ -53,12 +55,12 @@ uniform sampler2D tex;
 uniform sampler2D noisetex;
 
 #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-	uniform ivec2 atlasSize;
+    uniform ivec2 atlasSize;
 #endif
 
 #ifdef CUSTOM_PBR
-	uniform sampler2D normals;
-	uniform sampler2D specular;
+    uniform sampler2D normals;
+    uniform sampler2D specular;
 #endif
 
 //Pipeline Constants//
@@ -75,17 +77,17 @@ float shadowTimeVar2 = shadowTimeVar1 * shadowTimeVar1;
 float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 
 #ifdef OVERWORLD
-	vec3 lightVec = sunVec * ((timeAngle < 0.5325 || timeAngle > 0.9675) ? 1.0 : -1.0);
+    vec3 lightVec = sunVec * ((timeAngle < 0.5325 || timeAngle > 0.9675) ? 1.0 : -1.0);
 #else
-	vec3 lightVec = sunVec;
+    vec3 lightVec = sunVec;
 #endif
 
 #if defined GENERATED_NORMALS || defined CUSTOM_PBR
-	mat3 tbnMatrix = mat3(
-		tangent.x, binormal.x, normal.x,
-		tangent.y, binormal.y, normal.y,
-		tangent.z, binormal.z, normal.z
-	);
+    mat3 tbnMatrix = mat3(
+        tangent.x, binormal.x, normal.x,
+        tangent.y, binormal.y, normal.y,
+        tangent.z, binormal.z, normal.z
+    );
 #endif
 
 //Common Functions//
@@ -96,30 +98,30 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 #include "/lib/lighting/mainLighting.glsl"
 
 #ifdef TAA
-	#include "/lib/util/jitter.glsl"
+    #include "/lib/antialiasing/jitter.glsl"
 #endif
 
 #if defined GENERATED_NORMALS || defined COATED_TEXTURES
-	#include "/lib/util/miplevel.glsl"
+    #include "/lib/util/miplevel.glsl"
 #endif
 
 #ifdef GENERATED_NORMALS
-	#include "/lib/materials/materialMethods/generatedNormals.glsl"
+    #include "/lib/materials/materialMethods/generatedNormals.glsl"
 #endif
 
 #ifdef COATED_TEXTURES
-	#include "/lib/materials/materialMethods/coatedTextures.glsl"
+    #include "/lib/materials/materialMethods/coatedTextures.glsl"
 #endif
 
 #ifdef CUSTOM_PBR
-	#include "/lib/materials/materialHandling/customMaterials.glsl"
+    #include "/lib/materials/materialHandling/customMaterials.glsl"
 #endif
 
 #define MATERIALMAP_ONLY
 #include "/lib/vx/SSBOs.glsl"
 
 #ifdef COLOR_CODED_PROGRAMS
-	#include "/lib/misc/colorCodedPrograms.glsl"
+    #include "/lib/misc/colorCodedPrograms.glsl"
 #endif
 
 //Program//
@@ -177,11 +179,18 @@ void main() {
 	           noSmoothLighting, noDirectionalShading, false, false,
 			   0, smoothnessG, highlightMult, emission);
 
+    #ifdef PBR_REFLECTIONS
+        #ifdef OVERWORLD
+            skyLightFactor = pow2(max(lmCoord.y - 0.7, 0.0) * 3.33333);
+        #else
+            skyLightFactor = dot(shadowMult, shadowMult) / 3.0;
+        #endif
+    #endif
 	#ifdef COLOR_CODED_PROGRAMS
 		ColorCodeProgram(color);
 	#endif
  
-	/* DRAWBUFFERS:015 */
+	/* DRAWBUFFERS:065 */
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
 	gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
@@ -201,47 +210,46 @@ out vec3 normal;
 out vec4 glColor;
 
 #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-	out vec2 signMidCoordPos;
-	flat out vec2 absMidCoordPos;
+    out vec2 signMidCoordPos;
+    flat out vec2 absMidCoordPos;
 #endif
 
 #if defined GENERATED_NORMALS || defined CUSTOM_PBR
-	flat out vec3 binormal, tangent;
+    flat out vec3 binormal, tangent;
 #endif
 
 #ifdef POM
-	out vec3 viewVector;
+    out vec3 viewVector;
 
-	out vec4 vTexCoordAM;
+    out vec4 vTexCoordAM;
 #endif
 
 //Uniforms//
 
 #ifdef TAA
-	uniform float viewWidth, viewHeight;
+    uniform float viewWidth, viewHeight;
 #endif
 
 #if defined IPBR || defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-	uniform int blockEntityId;
+    uniform int blockEntityId;
 #endif
 
 #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-	uniform vec3 cameraPosition;
+    uniform vec3 cameraPosition;
 
 	uniform mat4 gbufferModelViewInverse;
 
-	#define MATERIALMAP_ONLY
+    #define MATERIALMAP_ONLY
 	#include "/lib/vx/SSBOs.glsl"
-
 #endif
 
 //Attributes//
 #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-	attribute vec4 mc_midTexCoord;
+    attribute vec4 mc_midTexCoord;
 #endif
 
 #if defined GENERATED_NORMALS || defined CUSTOM_PBR
-	attribute vec4 at_tangent;
+    attribute vec4 at_tangent;
 #endif
 
 //Common Variables//
@@ -250,7 +258,7 @@ out vec4 glColor;
 
 //Includes//
 #ifdef TAA
-	#include "/lib/util/jitter.glsl"
+    #include "/lib/antialiasing/jitter.glsl"
 #endif
 
 //Program//
