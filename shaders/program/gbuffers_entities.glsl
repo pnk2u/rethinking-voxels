@@ -126,85 +126,85 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 
 //Program//
 void main() {
-	vec4 color = texture2D(tex, texCoord);
-	#ifdef GENERATED_NORMALS
-		vec3 colorP = color.rgb;
-	#endif
-	color *= glColor;
+    vec4 color = texture2D(tex, texCoord);
+    #ifdef GENERATED_NORMALS
+        vec3 colorP = color.rgb;
+    #endif
+    color *= glColor;
 
-	color.rgb = mix(color.rgb, entityColor.rgb, entityColor.a);
+    color.rgb = mix(color.rgb, entityColor.rgb, entityColor.a);
 
-	float smoothnessD = 0.0, skyLightFactor = 0.0, materialMask = OSIEBCA * 254.0; // No SSAO, No TAA
-	vec3 normalM = normal;
+    float smoothnessD = 0.0, skyLightFactor = 0.0, materialMask = OSIEBCA * 254.0; // No SSAO, No TAA
+    vec3 normalM = normal;
 
-	if (color.a > 0.001) {
-		vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z);
-		vec3 viewPos = ScreenToView(screenPos);
-		vec3 nViewPos = normalize(viewPos);
-		vec3 playerPos = ViewToPlayer(viewPos);
-		float lViewPos = length(viewPos);
+    if (color.a > 0.001) {
+        vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z);
+        vec3 viewPos = ScreenToView(screenPos);
+        vec3 nViewPos = normalize(viewPos);
+        vec3 playerPos = ViewToPlayer(viewPos);
+        float lViewPos = length(viewPos);
 
-		bool noSmoothLighting = atlasSize.x < 600.0; // To fix fire looking too dim
-		bool noGeneratedNormals = false;
-		float smoothnessG = 0.0, highlightMult = 0.0, emission = 0.0, noiseFactor = 0.75;
-		vec2 lmCoordM = lmCoord;
-		vec3 shadowMult = vec3(1.0);
-		#ifdef IPBR
-			#include "/lib/materials/materialHandling/entityMaterials.glsl"
+        bool noSmoothLighting = atlasSize.x < 600.0; // To fix fire looking too dim
+        bool noGeneratedNormals = false;
+        float smoothnessG = 0.0, highlightMult = 0.0, emission = 0.0, noiseFactor = 0.75;
+        vec2 lmCoordM = lmCoord;
+        vec3 shadowMult = vec3(1.0);
+        #ifdef IPBR
+            #include "/lib/materials/materialHandling/entityMaterials.glsl"
 
-			#ifdef IS_IRIS
-				vec3 maRecolor = vec3(0.0);
-				#include "/lib/materials/materialHandling/irisMaterials.glsl"
-			#endif
-			if (materialMask != OSIEBCA * 254.0) materialMask += OSIEBCA * 100.0; // Entity Reflection Handling
+            #ifdef IS_IRIS
+                vec3 maRecolor = vec3(0.0);
+                #include "/lib/materials/materialHandling/irisMaterials.glsl"
+            #endif
+            if (materialMask != OSIEBCA * 254.0) materialMask += OSIEBCA * 100.0; // Entity Reflection Handling
             else if (smoothnessD > 0.2) materialMask = 100.0;
-			#ifdef GENERATED_NORMALS
-				if (!noGeneratedNormals) GenerateNormals(normalM, colorP);
-			#endif
+            #ifdef GENERATED_NORMALS
+                if (!noGeneratedNormals) GenerateNormals(normalM, colorP);
+            #endif
 
-			#ifdef COATED_TEXTURES
-				CoatTextures(color.rgb, noiseFactor, playerPos);
-			#endif
-		#else
-			#ifdef CUSTOM_PBR
-				GetCustomMaterials(color, normalM, lmCoordM, NdotU, shadowMult, smoothnessG, smoothnessD, highlightMult, emission, materialMask, viewPos, lViewPos);
-			#endif
-			
-			if (entityId == 50004) { // Lightning Bolt
-				#include "/lib/materials/specificMaterials/entities/lightningBolt.glsl"
-			} else if (entityId == 50008) { // Item Frame, Glow Item Frame
-				noSmoothLighting = true;
-			}
-		#endif
+            #ifdef COATED_TEXTURES
+                CoatTextures(color.rgb, noiseFactor, playerPos);
+            #endif
+        #else
+            #ifdef CUSTOM_PBR
+                GetCustomMaterials(color, normalM, lmCoordM, NdotU, shadowMult, smoothnessG, smoothnessD, highlightMult, emission, materialMask, viewPos, lViewPos);
+            #endif
+            
+            if (entityId == 50004) { // Lightning Bolt
+                #include "/lib/materials/specificMaterials/entities/lightningBolt.glsl"
+            } else if (entityId == 50008) { // Item Frame, Glow Item Frame
+                noSmoothLighting = true;
+            }
+        #endif
 
-		normalM = gl_FrontFacing ? normalM : -normalM; // Inverted Normal Workaround
+        normalM = gl_FrontFacing ? normalM : -normalM; // Inverted Normal Workaround
 
-		DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, normalM, lmCoordM,
-				   noSmoothLighting, false, false, true,
-				   0, smoothnessG, highlightMult, emission);
+        DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, normalM, lmCoordM,
+                   noSmoothLighting, false, false, true,
+                   0, smoothnessG, highlightMult, emission);
 
-		#if defined IPBR && defined IS_IRIS
-			color.rgb += maRecolor;
-		#endif
+        #if defined IPBR && defined IS_IRIS
+            color.rgb += maRecolor;
+        #endif
 
-		#ifdef PBR_REFLECTIONS
-			#ifdef OVERWORLD
-				skyLightFactor = pow2(max(lmCoord.y - 0.7, 0.0) * 3.33333);
-			#else
-				skyLightFactor = dot(shadowMult, shadowMult) / 3.0;
-			#endif
-		#endif
-	}
+        #ifdef PBR_REFLECTIONS
+            #ifdef OVERWORLD
+                skyLightFactor = pow2(max(lmCoord.y - 0.7, 0.0) * 3.33333);
+            #else
+                skyLightFactor = dot(shadowMult, shadowMult) / 3.0;
+            #endif
+        #endif
+    }
 
-	#ifdef COLOR_CODED_PROGRAMS
-		ColorCodeProgram(color);
-	#endif
+    #ifdef COLOR_CODED_PROGRAMS
+        ColorCodeProgram(color);
+    #endif
 
-	/* RENDERTARGETS:0,6,5,10 */
-	gl_FragData[0] = color;
-	gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
-	gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
-	gl_FragData[3] = vec4(velocity, 1.0);
+    /* RENDERTARGETS:0,6,5,10 */
+    gl_FragData[0] = color;
+    gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
+    gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
+    gl_FragData[3] = vec4(velocity, 1.0);
 }
 
 #endif
@@ -271,84 +271,84 @@ in vec3 at_velocity;
 #include "/lib/vx/SSBOs.glsl"
 //Program//
 void main() {
-	gl_Position = ftransform();
+    gl_Position = ftransform();
 
-	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
-	lmCoord  = GetLightMapCoordinates();
+    texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+    lmCoord  = GetLightMapCoordinates();
 
-	lmCoord.x = min(lmCoord.x, 0.9);
-	//Fixes some servers/mods making entities insanely bright, while also slightly reducing the max blocklight on a normal entity
+    lmCoord.x = min(lmCoord.x, 0.9);
+    //Fixes some servers/mods making entities insanely bright, while also slightly reducing the max blocklight on a normal entity
 
-	glColor = gl_Color;
+    glColor = gl_Color;
 
-	normal = normalize(gl_NormalMatrix * gl_Normal);
+    normal = normalize(gl_NormalMatrix * gl_Normal);
 
-	vec4 viewPos = gl_ModelViewMatrix * gl_Vertex;
+    vec4 viewPos = gl_ModelViewMatrix * gl_Vertex;
 
-	vec4 prevViewPos = viewPos - vec4(at_velocity, 0); 
+    vec4 prevViewPos = viewPos - vec4(at_velocity, 0); 
 
-	vec3 prevPosition = (gbufferPreviousModelViewInverse * prevViewPos).xyz + previousCameraPosition - cameraPosition;
+    vec3 prevPosition = (gbufferPreviousModelViewInverse * prevViewPos).xyz + previousCameraPosition - cameraPosition;
 
-	vec4 position = gbufferModelViewInverse * viewPos;
+    vec4 position = gbufferModelViewInverse * viewPos;
 
-	velocity = position.xyz - prevPosition.xyz;
+    velocity = position.xyz - prevPosition.xyz;
 
-	if (at_velocity == vec3(0)) velocity = vec3(0);
+    if (at_velocity == vec3(0)) velocity = vec3(0);
 
-	upVec = normalize(gbufferModelView[1].xyz);
-	eastVec = normalize(gbufferModelView[0].xyz);
-	northVec = normalize(gbufferModelView[2].xyz);
-	sunVec = GetSunVector();
-	
-	#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined IPBR && defined IS_IRIS	
-		midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
-		vec2 texMinMidCoord = texCoord - midCoord;
-		signMidCoordPos = sign(texMinMidCoord);
-		absMidCoordPos  = abs(texMinMidCoord);
-	#endif
+    upVec = normalize(gbufferModelView[1].xyz);
+    eastVec = normalize(gbufferModelView[0].xyz);
+    northVec = normalize(gbufferModelView[2].xyz);
+    sunVec = GetSunVector();
+    
+    #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined IPBR && defined IS_IRIS	
+        midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
+        vec2 texMinMidCoord = texCoord - midCoord;
+        signMidCoordPos = sign(texMinMidCoord);
+        absMidCoordPos  = abs(texMinMidCoord);
+    #endif
 
-	#if defined GENERATED_NORMALS || defined CUSTOM_PBR
-		binormal = normalize(gl_NormalMatrix * cross(at_tangent.xyz, gl_Normal.xyz) * at_tangent.w);
-		tangent  = normalize(gl_NormalMatrix * at_tangent.xyz);
-	#endif
+    #if defined GENERATED_NORMALS || defined CUSTOM_PBR
+        binormal = normalize(gl_NormalMatrix * cross(at_tangent.xyz, gl_Normal.xyz) * at_tangent.w);
+        tangent  = normalize(gl_NormalMatrix * at_tangent.xyz);
+    #endif
 
-	#ifdef POM
-		mat3 tbnMatrix = mat3(
-			tangent.x, binormal.x, normal.x,
-			tangent.y, binormal.y, normal.y,
-			tangent.z, binormal.z, normal.z
-		);
+    #ifdef POM
+        mat3 tbnMatrix = mat3(
+            tangent.x, binormal.x, normal.x,
+            tangent.y, binormal.y, normal.y,
+            tangent.z, binormal.z, normal.z
+        );
 
-		viewVector = tbnMatrix * (gl_ModelViewMatrix * gl_Vertex).xyz;
+        viewVector = tbnMatrix * (gl_ModelViewMatrix * gl_Vertex).xyz;
 
-		vTexCoordAM.zw  = abs(texMinMidCoord) * 2;
-		vTexCoordAM.xy  = min(texCoord, midCoord - texMinMidCoord);
-	#endif
+        vTexCoordAM.zw  = abs(texMinMidCoord) * 2;
+        vTexCoordAM.xy  = min(texCoord, midCoord - texMinMidCoord);
+    #endif
 
-	#ifdef GBUFFERS_ENTITIES_GLOWING
-		if (glColor.a > 0.99) gl_Position.z *= 0.01;
-	#endif
+    #ifdef GBUFFERS_ENTITIES_GLOWING
+        if (glColor.a > 0.99) gl_Position.z *= 0.01;
+    #endif
 
-	#ifdef FLICKERING_FIX
-		if (entityId == 50008 || entityId == 50012) { // Item Frame, Glow Item Frame
-			if (dot(normal, upVec) > 0.99) {
-				vec3 comPos = fract(position.xyz + cameraPosition);
-				comPos = abs(comPos - vec3(0.5));
-				if ((comPos.y > 0.437 && comPos.y < 0.438) || (comPos.y > 0.468 && comPos.y < 0.469)) {
-					gl_Position.z += 0.0001;
-				}
-			}
-			if (gl_Normal.y == 1.0) { // Maps
-				normal = upVec * 2.0;
-			}
-		} else if (entityId == 50084) { // Slime
-			gl_Position.z -= 0.00015;
-		}
+    #ifdef FLICKERING_FIX
+        if (entityId == 50008 || entityId == 50012) { // Item Frame, Glow Item Frame
+            if (dot(normal, upVec) > 0.99) {
+                vec3 comPos = fract(position.xyz + cameraPosition);
+                comPos = abs(comPos - vec3(0.5));
+                if ((comPos.y > 0.437 && comPos.y < 0.438) || (comPos.y > 0.468 && comPos.y < 0.469)) {
+                    gl_Position.z += 0.0001;
+                }
+            }
+            if (gl_Normal.y == 1.0) { // Maps
+                normal = upVec * 2.0;
+            }
+        } else if (entityId == 50084) { // Slime
+            gl_Position.z -= 0.00015;
+        }
 
-		#ifndef REALTIME_SHADOWS
-			if (glColor.a < 0.5) gl_Position.z += 0.0005;
-		#endif
-	#endif
+        #ifndef REALTIME_SHADOWS
+            if (glColor.a < 0.5) gl_Position.z += 0.0005;
+        #endif
+    #endif
 }
 
 #endif

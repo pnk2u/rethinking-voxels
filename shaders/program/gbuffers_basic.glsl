@@ -79,43 +79,43 @@ void main() {
     #else
         vec3 viewPos = ScreenToView(screenPos);
     #endif
-	float lViewPos = length(viewPos);
-	vec3 playerPos = ViewToPlayer(viewPos);
+    float lViewPos = length(viewPos);
+    vec3 playerPos = ViewToPlayer(viewPos);
 
-	float materialMask = 0.0;
-	vec3 shadowMult = vec3(1.0);
+    float materialMask = 0.0;
+    vec3 shadowMult = vec3(1.0);
 
-	#ifndef GBUFFERS_LINE
-		DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, normal, lmCoord,
-				false, false, false, false,
-				0, 0.0, 0.0, 0.0);
-	#endif
+    #ifndef GBUFFERS_LINE
+        DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, normal, lmCoord,
+                false, false, false, false,
+                0, 0.0, 0.0, 0.0);
+    #endif
 
-	#if SELECT_OUTLINE != 1
-	if (abs(color.a - 0.4) + dot(color.rgb, color.rgb) < 0.01) {
-		#if SELECT_OUTLINE == 0
-			discard;
-		#elif SELECT_OUTLINE == 2 // Rainbow
-			float posFactor = playerPos.x + playerPos.y + playerPos.z + cameraPosition.x + cameraPosition.y + cameraPosition.z;
-			color.rgb = clamp(abs(mod(fract(frameTimeCounter*0.25 + posFactor*0.2) * 6.0 + vec3(0.0,4.0,2.0), 6.0) - 3.0) - 1.0,
-						0.0, 1.0) * vec3(3.0, 2.0, 3.0) * SELECT_OUTLINE_I;
-		#elif SELECT_OUTLINE == 3 // Select Color
-			color.rgb = vec3(SELECT_OUTLINE_R, SELECT_OUTLINE_G, SELECT_OUTLINE_B) * SELECT_OUTLINE_I;
-		#elif SELECT_OUTLINE == 4 // Versatile
-			color.a = 0.1;
-			materialMask = OSIEBCA * 252.0; // Versatile Selection Outline
-		#endif
-	}
-	#endif
+    #if SELECT_OUTLINE != 1
+    if (abs(color.a - 0.4) + dot(color.rgb, color.rgb) < 0.01) {
+        #if SELECT_OUTLINE == 0
+            discard;
+        #elif SELECT_OUTLINE == 2 // Rainbow
+            float posFactor = playerPos.x + playerPos.y + playerPos.z + cameraPosition.x + cameraPosition.y + cameraPosition.z;
+            color.rgb = clamp(abs(mod(fract(frameTimeCounter*0.25 + posFactor*0.2) * 6.0 + vec3(0.0,4.0,2.0), 6.0) - 3.0) - 1.0,
+                        0.0, 1.0) * vec3(3.0, 2.0, 3.0) * SELECT_OUTLINE_I;
+        #elif SELECT_OUTLINE == 3 // Select Color
+            color.rgb = vec3(SELECT_OUTLINE_R, SELECT_OUTLINE_G, SELECT_OUTLINE_B) * SELECT_OUTLINE_I;
+        #elif SELECT_OUTLINE == 4 // Versatile
+            color.a = 0.1;
+            materialMask = OSIEBCA * 252.0; // Versatile Selection Outline
+        #endif
+    }
+    #endif
 
-	#ifdef COLOR_CODED_PROGRAMS
-		ColorCodeProgram(color);
-	#endif
+    #ifdef COLOR_CODED_PROGRAMS
+        ColorCodeProgram(color);
+    #endif
 
-	/* DRAWBUFFERS:065 */
-	gl_FragData[0] = color;
-	gl_FragData[1] = vec4(0.0, materialMask, 0.0, 1.0);
-	gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normal, 1);
+    /* DRAWBUFFERS:065 */
+    gl_FragData[0] = color;
+    gl_FragData[1] = vec4(0.0, materialMask, 0.0, 1.0);
+    gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normal, 1);
 }
 
 #endif

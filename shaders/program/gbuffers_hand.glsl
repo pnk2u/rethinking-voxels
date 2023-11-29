@@ -122,72 +122,72 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 
 //Program//
 void main() {
-	vec4 color = texture2D(tex, texCoord);
+    vec4 color = texture2D(tex, texCoord);
 
-	float smoothnessD = 0.0, skyLightFactor = 0.0, materialMask = OSIEBCA * 254.0; // No SSAO, No TAA
-	vec3 normalM = normal;
-	if (color.a > 0.00001) {
-		#ifdef GENERATED_NORMALS
-			vec3 colorP = color.rgb;
-		#endif
-		color.rgb *= glColor.rgb;
-		
-		vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z + 0.38);
-		vec3 viewPos = ScreenToView(screenPos);
-		vec3 playerPos = ViewToPlayer(viewPos);
+    float smoothnessD = 0.0, skyLightFactor = 0.0, materialMask = OSIEBCA * 254.0; // No SSAO, No TAA
+    vec3 normalM = normal;
+    if (color.a > 0.00001) {
+        #ifdef GENERATED_NORMALS
+            vec3 colorP = color.rgb;
+        #endif
+        color.rgb *= glColor.rgb;
+        
+        vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z + 0.38);
+        vec3 viewPos = ScreenToView(screenPos);
+        vec3 playerPos = ViewToPlayer(viewPos);
 
-		if (color.a < 0.75) materialMask = 0.0;
-		
-		bool noSmoothLighting = true, noGeneratedNormals = false;
-		float smoothnessG = 0.0, highlightMult = 1.0, emission = 0.0, noiseFactor = 0.6;
-		vec2 lmCoordM = lmCoord;
-		vec3 shadowMult = vec3(0.4);
-		#ifdef IPBR
-			#ifdef IS_IRIS
-				vec3 maRecolor = vec3(0.0);	
-				#include "/lib/materials/materialHandling/irisMaterials.glsl"
+        if (color.a < 0.75) materialMask = 0.0;
+        
+        bool noSmoothLighting = true, noGeneratedNormals = false;
+        float smoothnessG = 0.0, highlightMult = 1.0, emission = 0.0, noiseFactor = 0.6;
+        vec2 lmCoordM = lmCoord;
+        vec3 shadowMult = vec3(0.4);
+        #ifdef IPBR
+            #ifdef IS_IRIS
+                vec3 maRecolor = vec3(0.0);	
+                #include "/lib/materials/materialHandling/irisMaterials.glsl"
                 if (materialMask != OSIEBCA * 254.0) materialMask += OSIEBCA * 100.0; // Entity Reflection Handling
                 else if (smoothnessD > 0.2) materialMask = 100.0;
-			#endif
+            #endif
 
-			#ifdef GENERATED_NORMALS
-				if (!noGeneratedNormals) GenerateNormals(normalM, colorP);
-			#endif
+            #ifdef GENERATED_NORMALS
+                if (!noGeneratedNormals) GenerateNormals(normalM, colorP);
+            #endif
 
-			#ifdef COATED_TEXTURES
-				CoatTextures(color.rgb, noiseFactor, playerPos);
-			#endif
-		#else
-			#ifdef CUSTOM_PBR
-				GetCustomMaterials(color, normalM, lmCoordM, NdotU, shadowMult, smoothnessG, smoothnessD, highlightMult, emission, materialMask, viewPos, 0.0);
-			#endif
-		#endif
+            #ifdef COATED_TEXTURES
+                CoatTextures(color.rgb, noiseFactor, playerPos);
+            #endif
+        #else
+            #ifdef CUSTOM_PBR
+                GetCustomMaterials(color, normalM, lmCoordM, NdotU, shadowMult, smoothnessG, smoothnessD, highlightMult, emission, materialMask, viewPos, 0.0);
+            #endif
+        #endif
 
-		DoLighting(color, shadowMult, playerPos, viewPos, 0.0, normalM, lmCoordM,
-				   noSmoothLighting, false, false, false,
-				   0, smoothnessG, highlightMult, emission);
+        DoLighting(color, shadowMult, playerPos, viewPos, 0.0, normalM, lmCoordM,
+                   noSmoothLighting, false, false, false,
+                   0, smoothnessG, highlightMult, emission);
 
-		#if defined IPBR && defined IS_IRIS
-			color.rgb += maRecolor;
-		#endif
+        #if defined IPBR && defined IS_IRIS
+            color.rgb += maRecolor;
+        #endif
 
-		#if (defined CUSTOM_PBR || defined IPBR && defined IS_IRIS) && defined PBR_REFLECTIONS
-			#ifdef OVERWORLD
-				skyLightFactor = pow2(max(lmCoord.y - 0.7, 0.0) * 3.33333);
-			#else
-				skyLightFactor = dot(shadowMult, shadowMult) / 3.0;
-			#endif
-		#endif
-	}
+        #if (defined CUSTOM_PBR || defined IPBR && defined IS_IRIS) && defined PBR_REFLECTIONS
+            #ifdef OVERWORLD
+                skyLightFactor = pow2(max(lmCoord.y - 0.7, 0.0) * 3.33333);
+            #else
+                skyLightFactor = dot(shadowMult, shadowMult) / 3.0;
+            #endif
+        #endif
+    }
 
-	#ifdef COLOR_CODED_PROGRAMS
-		ColorCodeProgram(color);
-	#endif
+    #ifdef COLOR_CODED_PROGRAMS
+        ColorCodeProgram(color);
+    #endif
 
-	/* DRAWBUFFERS:065 */
-	gl_FragData[0] = color;
-	gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
-	gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
+    /* DRAWBUFFERS:065 */
+    gl_FragData[0] = color;
+    gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
+    gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
 }
 
 #endif

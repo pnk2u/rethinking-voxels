@@ -102,11 +102,11 @@ void main() {
         float VdotU = dot(nViewPos, upVec);
         float VdotS = dot(nViewPos, sunVec);
         float dither = Bayer8(gl_FragCoord.xy);
-		#if FRACTAL_GALAXY > 0
-			if (sunFactor < 0.99) {
-				fractalSkyColorMod(nightUpSkyColor, mat3(gbufferModelViewInverse) * nViewPos, mat3(gbufferModelViewInverse) * sunVec);
-			}
-		#endif
+        #if FRACTAL_GALAXY > 0
+            if (sunFactor < 0.99) {
+                fractalSkyColorMod(nightUpSkyColor, mat3(gbufferModelViewInverse) * nViewPos, mat3(gbufferModelViewInverse) * sunVec);
+            }
+        #endif
         color.rgb = GetSky(VdotU, VdotS, dither, true, false);
 
         vec2 starCoord = GetStarCoord(viewPos.xyz, 0.75);

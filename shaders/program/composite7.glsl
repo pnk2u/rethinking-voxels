@@ -53,11 +53,11 @@ void main() {
 
     //color = texelFetch(colortex8, texelCoord, 0).rgb;
 /*	if (true || texCoord.x > 0.5) {
-		vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1.0));
-		dir /= dir.w;
-		ray_hit_t rayHit = raytrace(fract(cameraPosition), dir.xyz);
-		color = mix(color, rayHit.rayColor.rgb * float(rayHit.emissive), 0.5);
-	}*/
+        vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1.0));
+        dir /= dir.w;
+        ray_hit_t rayHit = raytrace(fract(cameraPosition), dir.xyz);
+        color = mix(color, rayHit.rayColor.rgb * float(rayHit.emissive), 0.5);
+    }*/
     #ifndef LIGHT_COLORING
     /* DRAWBUFFERS:3 */
     #else

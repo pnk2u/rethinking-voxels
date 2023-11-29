@@ -41,9 +41,9 @@ const int petalCount = 16;
 
 vec2 rand2(int u) {
     uint q = uint(u + 12347689);
-	uvec2 n = q * uvec2(1597334673u, 3812015801u);
-	n = (n.x ^ n.y) * uvec2(1597334673u, 3812015801u);
-	return vec2(n) / float(0xffffffffu);
+    uvec2 n = q * uvec2(1597334673u, 3812015801u);
+    n = (n.x ^ n.y) * uvec2(1597334673u, 3812015801u);
+    return vec2(n) / float(0xffffffffu);
 }
 
 vec4 drawFlower(vec2 uv) {

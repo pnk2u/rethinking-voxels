@@ -410,7 +410,7 @@ void main() {
 
     glColor = gl_Color;
 
-	mat = getProcessedBlockId(int(mc_Entity.x + 0.5));
+    mat = getProcessedBlockId(int(mc_Entity.x + 0.5));
 
     normal = normalize(gl_NormalMatrix * gl_Normal);
     upVec = normalize(gbufferModelView[1].xyz);

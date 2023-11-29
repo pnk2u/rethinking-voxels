@@ -208,20 +208,20 @@ uniform sampler2D specular;
 #include "/lib/materials/shadowChecks.glsl"
 
 void main() {
-	#include "/lib/vx/voxelization.glsl"
-	#if (defined OVERWORLD || defined END) && defined REALTIME_SHADOWS
-		for (int i = 0; i < 3; i++) {
-			gl_Position = gl_in[i].gl_Position;
-			mat = getProcessedBlockId(matV[i]);
-			texCoord = texCoordV[i];
-			sunVec = sunVecV[i];
-			upVec = upVecV[i];
-			position = positionV[i];
-			glColor = glColorV[i];
-			EmitVertex();
-		}
-		EndPrimitive();
-	#endif
+    #include "/lib/vx/voxelization.glsl"
+    #if (defined OVERWORLD || defined END) && defined REALTIME_SHADOWS
+        for (int i = 0; i < 3; i++) {
+            gl_Position = gl_in[i].gl_Position;
+            mat = getProcessedBlockId(matV[i]);
+            texCoord = texCoordV[i];
+            sunVec = sunVecV[i];
+            upVec = upVecV[i];
+            position = positionV[i];
+            glColor = glColorV[i];
+            EmitVertex();
+        }
+        EndPrimitive();
+    #endif
 }
 #endif
 
@@ -282,43 +282,43 @@ in vec3 at_midBlock;
 
 //Program//
 void main() {
-	texCoordV = gl_MultiTexCoord0.xy;
-	lmCoordV = clamp(((gl_TextureMatrix[1] * gl_MultiTexCoord1).xy - 0.03125) * 1.06667, 0.0, 1.0);
-	glColorV = gl_Color;
+    texCoordV = gl_MultiTexCoord0.xy;
+    lmCoordV = clamp(((gl_TextureMatrix[1] * gl_MultiTexCoord1).xy - 0.03125) * 1.06667, 0.0, 1.0);
+    glColorV = gl_Color;
 
-	sunVecV = GetSunVector();
-	upVecV = normalize(gbufferModelView[1].xyz);
+    sunVecV = GetSunVector();
+    upVecV = normalize(gbufferModelView[1].xyz);
 
-	matV = int(mc_Entity.x + 0.5);
-	if (blockEntityId > 0 || renderStage == MC_RENDER_STAGE_ENTITIES) {
-		matV = max(blockEntityId, entityId);
-	}
-	int mat = getProcessedBlockId(matV);
-	positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
-	midBlock = at_midBlock / 64.0;
-	#if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
-		#ifdef NO_WAVING_INDOORS
-			lmCoord = GetLightMapCoordinates();
-		#endif
+    matV = int(mc_Entity.x + 0.5);
+    if (blockEntityId > 0 || renderStage == MC_RENDER_STAGE_ENTITIES) {
+        matV = max(blockEntityId, entityId);
+    }
+    int mat = getProcessedBlockId(matV);
+    positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
+    midBlock = at_midBlock / 64.0;
+    #if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
+        #ifdef NO_WAVING_INDOORS
+            lmCoord = GetLightMapCoordinates();
+        #endif
 
-		DoWave(positionV.xyz, mat);
-	#endif
+        DoWave(positionV.xyz, mat);
+    #endif
 
-	#ifdef PERPENDICULAR_TWEAKS
-		if (mat == 10004 || mat == 10016) { // Foliage
-			vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
-			vec2 texMinMidCoord = texCoordV - midCoord;
-			if (texMinMidCoord.y < 0.0) {
-				vec3 normal = gl_NormalMatrix * gl_Normal;
-				positionV.xyz += normal * 0.35;
-			}
-		}
-	#endif
+    #ifdef PERPENDICULAR_TWEAKS
+        if (mat == 10004 || mat == 10016) { // Foliage
+            vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
+            vec2 texMinMidCoord = texCoordV - midCoord;
+            if (texMinMidCoord.y < 0.0) {
+                vec3 normal = gl_NormalMatrix * gl_Normal;
+                positionV.xyz += normal * 0.35;
+            }
+        }
+    #endif
 
-	if (mat == 31000) { // Water
-		positionV.y += 0.015 * max0(length(positionV.xyz) - 50.0);
-	}
-	gl_Position = shadowProjection * shadowModelView * positionV;
+    if (mat == 31000) { // Water
+        positionV.y += 0.015 * max0(length(positionV.xyz) - 50.0);
+    }
+    gl_Position = shadowProjection * shadowModelView * positionV;
 
     float lVertexPos = sqrt(gl_Position.x * gl_Position.x + gl_Position.y * gl_Position.y);
     float distortFactor = lVertexPos * shadowMapBias + (1.0 - shadowMapBias);

@@ -126,58 +126,58 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 
 //Program//
 void main() {
-	int mat = getProcessedBlockId(blockEntityId);
-	vec4 color = texture2D(tex, texCoord);
-	#ifdef GENERATED_NORMALS
-		vec3 colorP = color.rgb;
-	#endif
-	color *= glColor;
-
-	vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z);
-	#ifdef TAA
-		vec3 viewPos = ScreenToView(vec3(TAAJitter(screenPos.xy, -0.5), screenPos.z));
-	#else
-		vec3 viewPos = ScreenToView(screenPos);
+    int mat = getProcessedBlockId(blockEntityId);
+    vec4 color = texture2D(tex, texCoord);
+    #ifdef GENERATED_NORMALS
+        vec3 colorP = color.rgb;
     #endif
-	float lViewPos = length(viewPos);
-	vec3 playerPos = ViewToPlayer(viewPos);
+    color *= glColor;
 
-	bool noSmoothLighting = false, noDirectionalShading = false;
-	
-	float smoothnessD = 0.0, skyLightFactor = 0.0, materialMask = 0.0;
-	float smoothnessG = 0.0, highlightMult = 1.0, emission = 0.0, noiseFactor = 1.0;
-	vec2 lmCoordM = lmCoord;
-	vec3 normalM = normal, shadowMult = vec3(1.0);
-	#ifdef IPBR
-		#include "/lib/materials/materialHandling/blockEntityMaterials.glsl"
-	#else
-		#ifdef CUSTOM_PBR
-			GetCustomMaterials(color, normalM, lmCoordM, NdotU, shadowMult, smoothnessG, smoothnessD, highlightMult, emission, materialMask, viewPos, lViewPos);
-		#endif
+    vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z);
+    #ifdef TAA
+        vec3 viewPos = ScreenToView(vec3(TAAJitter(screenPos.xy, -0.5), screenPos.z));
+    #else
+        vec3 viewPos = ScreenToView(screenPos);
+    #endif
+    float lViewPos = length(viewPos);
+    vec3 playerPos = ViewToPlayer(viewPos);
 
-		if (mat == 60024) { // End Portal
-			#include "/lib/materials/specificMaterials/others/endPortalEffect.glsl"
-		} else if (mat == 60004) { // Signs
-			noSmoothLighting = true;
-			if (glColor.r + glColor.g + glColor.b <= 2.99 || lmCoord.x > 0.999) { // Sign Text
-				#include "/lib/materials/specificMaterials/others/signText.glsl"
-			}
-		} else {	
-			noSmoothLighting = true;
-		}
-	#endif
+    bool noSmoothLighting = false, noDirectionalShading = false;
+    
+    float smoothnessD = 0.0, skyLightFactor = 0.0, materialMask = 0.0;
+    float smoothnessG = 0.0, highlightMult = 1.0, emission = 0.0, noiseFactor = 1.0;
+    vec2 lmCoordM = lmCoord;
+    vec3 normalM = normal, shadowMult = vec3(1.0);
+    #ifdef IPBR
+        #include "/lib/materials/materialHandling/blockEntityMaterials.glsl"
+    #else
+        #ifdef CUSTOM_PBR
+            GetCustomMaterials(color, normalM, lmCoordM, NdotU, shadowMult, smoothnessG, smoothnessD, highlightMult, emission, materialMask, viewPos, lViewPos);
+        #endif
 
-	#ifdef GENERATED_NORMALS
-		GenerateNormals(normalM, colorP);
-	#endif
+        if (mat == 60024) { // End Portal
+            #include "/lib/materials/specificMaterials/others/endPortalEffect.glsl"
+        } else if (mat == 60004) { // Signs
+            noSmoothLighting = true;
+            if (glColor.r + glColor.g + glColor.b <= 2.99 || lmCoord.x > 0.999) { // Sign Text
+                #include "/lib/materials/specificMaterials/others/signText.glsl"
+            }
+        } else {	
+            noSmoothLighting = true;
+        }
+    #endif
 
-	#ifdef COATED_TEXTURES
-		CoatTextures(color.rgb, noiseFactor, playerPos);
-	#endif
+    #ifdef GENERATED_NORMALS
+        GenerateNormals(normalM, colorP);
+    #endif
 
-	DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, normalM, lmCoordM,
-	           noSmoothLighting, noDirectionalShading, false, false,
-			   0, smoothnessG, highlightMult, emission);
+    #ifdef COATED_TEXTURES
+        CoatTextures(color.rgb, noiseFactor, playerPos);
+    #endif
+
+    DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, normalM, lmCoordM,
+               noSmoothLighting, noDirectionalShading, false, false,
+               0, smoothnessG, highlightMult, emission);
 
     #ifdef PBR_REFLECTIONS
         #ifdef OVERWORLD
@@ -186,14 +186,14 @@ void main() {
             skyLightFactor = dot(shadowMult, shadowMult) / 3.0;
         #endif
     #endif
-	#ifdef COLOR_CODED_PROGRAMS
-		ColorCodeProgram(color);
-	#endif
+    #ifdef COLOR_CODED_PROGRAMS
+        ColorCodeProgram(color);
+    #endif
  
-	/* DRAWBUFFERS:065 */
-	gl_FragData[0] = color;
-	gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
-	gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
+    /* DRAWBUFFERS:065 */
+    gl_FragData[0] = color;
+    gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
+    gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
 }
 
 #endif
@@ -237,10 +237,10 @@ out vec4 glColor;
 #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
     uniform vec3 cameraPosition;
 
-	uniform mat4 gbufferModelViewInverse;
+    uniform mat4 gbufferModelViewInverse;
 
     #define MATERIALMAP_ONLY
-	#include "/lib/vx/SSBOs.glsl"
+    #include "/lib/vx/SSBOs.glsl"
 #endif
 
 //Attributes//
@@ -263,64 +263,64 @@ out vec4 glColor;
 
 //Program//
 void main() {
-	#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-		int mat = getProcessedBlockId(blockEntityId);
-	#endif
-	gl_Position = ftransform();
-	#ifdef TAA
-		gl_Position.xy = TAAJitter(gl_Position.xy, gl_Position.w);
-	#endif
+    #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
+        int mat = getProcessedBlockId(blockEntityId);
+    #endif
+    gl_Position = ftransform();
+    #ifdef TAA
+        gl_Position.xy = TAAJitter(gl_Position.xy, gl_Position.w);
+    #endif
 
-	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+    texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 
-	lmCoord  = GetLightMapCoordinates();
+    lmCoord  = GetLightMapCoordinates();
  
-	glColor = gl_Color;
+    glColor = gl_Color;
 
-	normal = normalize(gl_NormalMatrix * gl_Normal);
+    normal = normalize(gl_NormalMatrix * gl_Normal);
 
-	upVec = normalize(gbufferModelView[1].xyz);
-	eastVec = normalize(gbufferModelView[0].xyz);
-	northVec = normalize(gbufferModelView[2].xyz);
-	sunVec = GetSunVector();
+    upVec = normalize(gbufferModelView[1].xyz);
+    eastVec = normalize(gbufferModelView[0].xyz);
+    northVec = normalize(gbufferModelView[2].xyz);
+    sunVec = GetSunVector();
 
-	if (normal != normal) normal = -upVec; // Mod Fix: Fixes Better Nether Fireflies
+    if (normal != normal) normal = -upVec; // Mod Fix: Fixes Better Nether Fireflies
 
-	#ifdef IPBR
-		if (blockEntityId == 60024) { // End Portal, End Gateway
-			gl_Position.z -= 0.002;
-		}
-	#endif
+    #ifdef IPBR
+        if (blockEntityId == 60024) { // End Portal, End Gateway
+            gl_Position.z -= 0.002;
+        }
+    #endif
 
-	#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-		if (mat == 60008) { // Chest
-			float fractWorldPosY = fract((gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex).y + cameraPosition.y);
-			if (fractWorldPosY > 0.56 && 0.57 > fractWorldPosY) gl_Position.z -= 0.0001;
-		}
-		
-		vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
-		vec2 texMinMidCoord = texCoord - midCoord;
-		signMidCoordPos = sign(texMinMidCoord);
-		absMidCoordPos  = abs(texMinMidCoord);
-	#endif
+    #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
+        if (mat == 60008) { // Chest
+            float fractWorldPosY = fract((gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex).y + cameraPosition.y);
+            if (fractWorldPosY > 0.56 && 0.57 > fractWorldPosY) gl_Position.z -= 0.0001;
+        }
+        
+        vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
+        vec2 texMinMidCoord = texCoord - midCoord;
+        signMidCoordPos = sign(texMinMidCoord);
+        absMidCoordPos  = abs(texMinMidCoord);
+    #endif
 
-	#if defined GENERATED_NORMALS || defined CUSTOM_PBR
-		binormal = normalize(gl_NormalMatrix * cross(at_tangent.xyz, gl_Normal.xyz) * at_tangent.w);
-		tangent  = normalize(gl_NormalMatrix * at_tangent.xyz);
-	#endif
+    #if defined GENERATED_NORMALS || defined CUSTOM_PBR
+        binormal = normalize(gl_NormalMatrix * cross(at_tangent.xyz, gl_Normal.xyz) * at_tangent.w);
+        tangent  = normalize(gl_NormalMatrix * at_tangent.xyz);
+    #endif
 
-	#ifdef POM
-		mat3 tbnMatrix = mat3(
-			tangent.x, binormal.x, normal.x,
-			tangent.y, binormal.y, normal.y,
-			tangent.z, binormal.z, normal.z
-		);
+    #ifdef POM
+        mat3 tbnMatrix = mat3(
+            tangent.x, binormal.x, normal.x,
+            tangent.y, binormal.y, normal.y,
+            tangent.z, binormal.z, normal.z
+        );
 
-		viewVector = tbnMatrix * (gl_ModelViewMatrix * gl_Vertex).xyz;
+        viewVector = tbnMatrix * (gl_ModelViewMatrix * gl_Vertex).xyz;
 
-		vTexCoordAM.zw  = abs(texMinMidCoord) * 2;
-		vTexCoordAM.xy  = min(texCoord, midCoord - texMinMidCoord);
-	#endif
+        vTexCoordAM.zw  = abs(texMinMidCoord) * 2;
+        vTexCoordAM.xy  = min(texCoord, midCoord - texMinMidCoord);
+    #endif
 }
 
 #endif

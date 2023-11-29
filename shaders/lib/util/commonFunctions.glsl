@@ -236,7 +236,7 @@ vec4 smoothstep1(vec4 x) {
 }
 
 float infnorm(vec3 x) {
-	return max(max(abs(x.x), abs(x.y)), abs(x.z));
+    return max(max(abs(x.x), abs(x.y)), abs(x.z));
 }
 vec3 rgb2hsv(vec3 c)
 {

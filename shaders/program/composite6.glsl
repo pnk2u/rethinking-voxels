@@ -89,18 +89,18 @@ void main() {
     #else
     /* RENDERTARGETS:8,2,12 */
     #endif
-	gl_FragData[0] = vec4(color, 1.0);
+    gl_FragData[0] = vec4(color, 1.0);
     gl_FragData[1] = vec4(temp, 1.0 - depth);
     gl_FragData[2] = accumulatedLight;
     
-	#ifdef TEMPORAL_FILTER
+    #ifdef TEMPORAL_FILTER
         #ifndef LIGHT_COLORING
         /* RENDERTARGETS:3,2,12,1 */
         #else
         /* RENDERTARGETS:8,2,12,1 */
         #endif
         gl_FragData[3] = vec4(depth, 0.0, 0.0, 1.0);
-	#endif
+    #endif
 }
 
 #endif

@@ -12,7 +12,7 @@ uniform float darknessLightFactor;
 
 #define MATERIALMAP_ONLY
 #if defined PER_BLOCK_LIGHT || defined GI
-	#define IRRADIANCECACHE_ONLY
+    #define IRRADIANCECACHE_ONLY
 #endif
 #include "/lib/vx/SSBOs.glsl"
 
@@ -443,21 +443,21 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Combine Lighting
-	vec3 vxPos = playerPos + fract(cameraPosition);
-	#ifdef PER_BLOCK_LIGHT
-		vec3 blockLighting = readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);
-	#else
-		vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;
-	#endif
-	float voxelFactor = pow(clamp01(infnorm(vxPos * 2.0 / voxelVolumeSize)), 10);
-	if (voxelFactor < 0.999) {
-	#ifdef GI
-			blockLighting += GI_STRENGTH * readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM);
-	#endif
-	float blockLightingLen = max(length(blockLighting), 0.0001);
-	blockLighting = 4 * log(blockLightingLen * 5.0 * BLOCKLIGHT_I + 1.0) * (blockLighting / blockLightingLen);
-	}
-	blockLighting = mix(blockLighting, lightmapXM * blocklightCol, voxelFactor);
+    vec3 vxPos = playerPos + fract(cameraPosition);
+    #ifdef PER_BLOCK_LIGHT
+        vec3 blockLighting = readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);
+    #else
+        vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;
+    #endif
+    float voxelFactor = pow(clamp01(infnorm(vxPos * 2.0 / voxelVolumeSize)), 10);
+    if (voxelFactor < 0.999) {
+    #ifdef GI
+            blockLighting += GI_STRENGTH * readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM);
+    #endif
+    float blockLightingLen = max(length(blockLighting), 0.0001);
+    blockLighting = 4 * log(blockLightingLen * 5.0 * BLOCKLIGHT_I + 1.0) * (blockLighting / blockLightingLen);
+    }
+    blockLighting = mix(blockLighting, lightmapXM * blocklightCol, voxelFactor);
 
     vec3 sceneLighting = lightColorM * shadowMult + ambientColorM * ambientMult;
     float dotSceneLighting = dot(sceneLighting, sceneLighting);
