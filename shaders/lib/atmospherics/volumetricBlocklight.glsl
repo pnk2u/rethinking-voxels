@@ -1,9 +1,6 @@
 #ifndef INCLUDE_VOLUMETRIC_BLOCKLIGHT
 #define INCLUDE_VOLUMETRIC_BLOCKLIGHT
 
-#define IRRADIANCECACHE_ONLY
-#include "/lib/vx/blocklightReading.glsl"
-
 #ifndef LIGHTSHAFTS_ACTIVE
     float GetDepth(float depth) {
         return 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));
@@ -71,9 +68,9 @@ vec3 GetVolumetricBlocklight(vec3 translucentMult, vec3 nViewPos, float z0, floa
         if (currentDist < 5.0) sampleMult *= smoothstep1(clamp(currentDist / 5.0, 0.0, 1.0));
         sampleMult /= sampleCount;
         if (isInRange(vxPos)) {
-            vlSample = readVolumetricBlocklight(vxPos);
+            vlSample = textureLod(irradianceCache, (vxPos + mat3(gbufferModelViewInverse)) / voxelVolumeSize + 0.5, 0);
         }
-        
+
         if (currentDist > depth0) vlSample *= translucentMult;
 
         volumetricBlocklight += vlSample * sampleMult;

@@ -93,7 +93,7 @@ uniform mat4 gbufferModelViewInverse;
 #define WRITE_TO_SSBOS
 #define IRRADIANCECACHE
 #include "/lib/vx/SSBOs.glsl"
-#include "/lib/vx/raytrace.glsl"
+#include "/lib/vx/voxelReading.glsl"
 #include "/lib/util/random.glsl"
 
 #define MAX_LIGHT_COUNT 48

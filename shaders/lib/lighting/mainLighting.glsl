@@ -441,7 +441,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     // Combine Lighting
     vec3 vxPos = playerPos + fract(cameraPosition);
     #ifdef PER_BLOCK_LIGHT
-        vec3 blockLighting = textureLod(irradianceCache, vxPos + mat3(gbufferModelViewInverse) * normalM, 0);
+        vec3 blockLighting = textureLod(irradianceCache, (vxPos + mat3(gbufferModelViewInverse) * normalM) / voxelVolumeSize + 0.5, 0);
     #else
         vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;
     #endif
