@@ -22,9 +22,6 @@ flat in mat4 prevProjectionMatrix;
     float GetLinearDepth(float depth) {
         return (2.0 * near) / (farPlusNear - depth * (farMinusNear));
     }
-    #define DENOISE_DATA
-    #define WRITE_TO_SSBOS
-    #include "/lib/vx/SSBOs.glsl"
 
 #endif
 

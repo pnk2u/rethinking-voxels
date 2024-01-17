@@ -263,8 +263,7 @@ in vec3 at_velocity;
 //Common Functions//
 
 //Includes//
-#define MATERIALMAP_ONLY
-#include "/lib/vx/SSBOs.glsl"
+
 //Program//
 void main() {
     gl_Position = ftransform();

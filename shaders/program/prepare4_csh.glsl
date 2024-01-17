@@ -19,8 +19,7 @@ uniform sampler2D colortex8;
 layout(rgba16f) uniform image2D colorimg10;
 layout(rgba16i) uniform iimage2D colorimg11;
 
-#include "/lib/vx/SSBOs.glsl"
-#include "/lib/vx/raytrace.glsl"
+#include "/lib/vx/voxelReading.glsl"
 #include "/lib/util/random.glsl"
 
 #define MAX_LIGHT_COUNT 48

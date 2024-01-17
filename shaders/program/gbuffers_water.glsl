@@ -400,9 +400,6 @@ attribute vec4 at_tangent;
     #include "/lib/materials/materialMethods/wavingBlocks.glsl"
 #endif
 
-#define MATERIALMAP_ONLY
-#include "/lib/vx/SSBOs.glsl"
-
 //Program//
 void main() {
     texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
@@ -410,7 +407,7 @@ void main() {
 
     glColor = gl_Color;
 
-    mat = getProcessedBlockId(int(mc_Entity.x + 0.5));
+    mat = int(mc_Entity.x + 0.5);
 
     normal = normalize(gl_NormalMatrix * gl_Normal);
     upVec = normalize(gbufferModelView[1].xyz);

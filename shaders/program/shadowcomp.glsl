@@ -1,225 +1,10 @@
 #include "/lib/common.glsl"
+
 //////1st Compute Shader//////1st Compute Shader//////1st Compute Shader//////
-
-/*
-This program creates a list of block-relative emissive locations for all materials.
-it also gives emissive voxels a more saturated colour.
-*/
-#ifdef CSH
-#if VOXEL_DETAIL_AMOUNT <= 5
-    const ivec3 workGroups = ivec3(16384, 1, 1);
-#else
-    const ivec3 workGroups = ivec3(15000, 1, 1);
-#endif
-#if VOXEL_DETAIL_AMOUNT == 1
-    layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
-#elif VOXEL_DETAIL_AMOUNT == 2
-    layout(local_size_x = 2, local_size_y = 2, local_size_z = 2) in;
-#else
-    layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
-#endif
-shared ivec4 emissiveParts[64];
-shared int sortMap[64];
-shared int heightMap[1<<(VOXEL_DETAIL_AMOUNT-1)][1<<(VOXEL_DETAIL_AMOUNT-1)];
-shared int emissiveCount;
-shared uvec4 totalEmissiveColor;
-shared ivec4 meanEmissivePos;
-shared uint maxThreshold;
-uniform vec3 cameraPosition;
-
-#define WRITE_TO_SSBOS
-#include "/lib/vx/SSBOs.glsl"
-
-#include "/lib/materials/shadowChecks.glsl"
-
-float getSaturation(vec3 color) {
-    return 1 - min(min(color.r, color.g), color.b) / max(max(color.r, color.g), max(color.b, 0.0001));
-}
-
-void main() {
-    int index = int(gl_LocalInvocationID.x + gl_LocalInvocationID.y * gl_WorkGroupSize.x + gl_LocalInvocationID.z * gl_WorkGroupSize.y * gl_WorkGroupSize.x);
-    if (index == 0) {
-        emissiveCount = 0;
-        totalEmissiveColor = uvec4(0);
-        meanEmissivePos = ivec4(0);
-        maxThreshold = 0;
-    }
-    barrier();
-    memoryBarrierShared();
-    int mat = int(gl_WorkGroupID.x);
-    bool matIsAvailable = getMaterialAvailability(mat);
-    int processedMat = getProcessedBlockId(mat);
-    ivec4 currentVal;
-    int baseIndex = getBaseIndex(mat);
-    int responsibleSize = 1;
-    ivec3 baseCoord = ivec3(0);
-    if (matIsAvailable) {
-        responsibleSize = (1<<(VOXEL_DETAIL_AMOUNT-1)) / int(gl_WorkGroupSize.x);
-        if (responsibleSize == 0) responsibleSize = 1;
-        baseCoord = ivec3(gl_LocalInvocationID) * responsibleSize;
-        if (baseCoord.y == 0) {
-            for (int x = 0; x < responsibleSize; x++) {
-                for (int z = 0; z < responsibleSize; z++) {
-                    heightMap[baseCoord.x + x][baseCoord.z + z] = 0;
-                }
-            }
-        }
-    }
-    barrier();
-    memoryBarrierShared();
-    if (matIsAvailable) {
-        for (int x = 0; x < responsibleSize; x++) {
-            for (int y = 0; y < responsibleSize; y++) {
-                for (int z = 0; z < responsibleSize; z++) {
-                    voxel_t thisVoxel = readGeometry(baseIndex, baseCoord + ivec3(x, y, z));
-                    if (thisVoxel.emissive) {
-                        float thisLuminance = max(max(thisVoxel.color.r, thisVoxel.color.g), thisVoxel.color.b);
-                        float thisSaturation = getSaturation(thisVoxel.color.rgb) * thisLuminance;
-                        atomicMax(maxThreshold, uint(512 * (thisLuminance + thisSaturation)));
-                        for (int i = 0; i < 3; i++) {
-                            atomicAdd(totalEmissiveColor[i], uint(thisVoxel.color[i] * thisVoxel.color[i] * 255 + 0.5));
-                        }
-                        atomicAdd(totalEmissiveColor.w, 255);
-                    }
-                    if (thisVoxel.color.a > 0.1) {
-                        atomicMax(heightMap[baseCoord.x + x][baseCoord.z + z], baseCoord.y + y);
-                    }
-                }
-            }
-        }
-    }
-    barrier();
-    memoryBarrierShared();
-    vec3 meanEmissiveColor = sqrt(vec3(totalEmissiveColor.rgb) / max(totalEmissiveColor.a, 1));
-    #if RP_MODE <= 1 && VOXEL_DETAIL_AMOUNT > 2
-        barrier();
-        memoryBarrierShared();
-        if (gl_LocalInvocationID == uvec3(0)) {
-            totalEmissiveColor = uvec4(0);
-        }
-        barrier();
-        memoryBarrierShared();
-        if (matIsAvailable) {
-            float meanEmissiveLuminance = max(max(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
-            float meanEmissiveSaturation = getSaturation(meanEmissiveColor) * meanEmissiveLuminance;
-            float threshold = 0.5 * (meanEmissiveLuminance + meanEmissiveSaturation + maxThreshold / 512.0) * sqrt(sqrt(sqrt(LIGHTSOURCE_SIZE_MULT)));
-            for (int x = 0; x < responsibleSize; x++) {
-                for (int y = 0; y < responsibleSize; y++) {
-                    for (int z = 0; z < responsibleSize; z++) {
-                        voxel_t thisVoxel = readGeometry(baseIndex, baseCoord + ivec3(x, y, z));
-                        if (thisVoxel.emissive) {
-                            float thisLuminance = max(max(thisVoxel.color.r, thisVoxel.color.g), thisVoxel.color.b);
-                            float thisSaturation = getSaturation(thisVoxel.color.rgb) * thisLuminance;
-                            if (thisLuminance + thisSaturation > threshold ||
-                                thisLuminance > min(0.3 * meanEmissiveLuminance + 0.7, 0.8) ||
-                                thisSaturation > min(0.3 * meanEmissiveSaturation + 0.7, 0.8)
-                            ) {
-                                for (int i = 0; i < 3; i++) {
-                                    atomicAdd(totalEmissiveColor[i], uint(thisVoxel.color[i] * thisVoxel.color[i] * 255 + 0.5));
-                                }
-                                atomicAdd(totalEmissiveColor.w, 255);
-                            } else {
-                                thisVoxel.emissive = false;
-                                writeGeometry(baseIndex, (baseCoord + ivec3(x, y, z)) * (1.0 / (1<<(VOXEL_DETAIL_AMOUNT - 1))), thisVoxel);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        barrier();
-        memoryBarrierShared();
-        memoryBarrierBuffer();
-    #endif
-    meanEmissiveColor = sqrt(vec3(totalEmissiveColor.rgb) / max(totalEmissiveColor.a, 1));
-    if (matIsAvailable) {
-        float meanEmissiveColorMax = max(max(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
-        float meanEmissiveColorMin = min(min(meanEmissiveColor.r, meanEmissiveColor.g), meanEmissiveColor.b);
-        float meanEmissiveSaturation = getSaturation(meanEmissiveColor);
-        vec3 saturatedMeanEmissiveColor = meanEmissiveColorMax + meanEmissiveColorMax / max(meanEmissiveColorMax - meanEmissiveColorMin, 0.001) * (meanEmissiveColor - meanEmissiveColorMax);
-        saturatedMeanEmissiveColor = mix(meanEmissiveColor, saturatedMeanEmissiveColor, sqrt(meanEmissiveSaturation) * LIGHT_COLOR_SATURATION);
-        vec3 lightCol = getLightCol(getProcessedBlockId(mat));
-        if (length(lightCol) > 0.01) saturatedMeanEmissiveColor = lightCol;
-        for (int x = 0; x < responsibleSize; x++) {
-            for (int y = 0; y < responsibleSize; y++) {
-                for (int z = 0; z < responsibleSize; z++) {
-                    voxel_t thisVoxel = readGeometry(baseIndex, baseCoord + ivec3(x, y, z));
-                    if (thisVoxel.emissive) {
-                        thisVoxel.color.rgb = mix(thisVoxel.color.rgb, saturatedMeanEmissiveColor, 0.5);
-                        thisVoxel.color.a = 1.0;
-                        writeGeometry(baseIndex, (baseCoord + ivec3(x, y, z)) * (1.0 / (1<<(VOXEL_DETAIL_AMOUNT - 1))), thisVoxel);
-                    }
-                    if (processedMat == 31000 &&
-                        baseCoord.y + y < heightMap[baseCoord.x + x][baseCoord.z + z]
-                    ) {
-                        thisVoxel.color     = vec4(0);
-                        thisVoxel.emissive  = false;
-                        thisVoxel.glColored = false;
-                        writeGeometry(baseIndex, (baseCoord + ivec3(x, y, z)) * (1.0 / (1<<(VOXEL_DETAIL_AMOUNT - 1))), thisVoxel);
-                    }
-                }
-            }
-        }
-        vec3 emissiveColor = vec3(0);
-        int thisEmissiveCount = 0;
-        vec3 subCoord = vec3(0);
-        for (int x = 0; x < responsibleSize; x++) {
-            for (int y = 0; y < responsibleSize; y++) {
-                for (int z = 0; z < responsibleSize; z++) {
-                    voxel_t thisVoxel = readGeometry(baseIndex, baseCoord + ivec3(x, y, z));
-                    if (thisVoxel.emissive) {
-                        emissiveColor += thisVoxel.color.rgb;
-                        subCoord += vec3(x, y, z) + 0.5001;
-                        thisEmissiveCount++;
-                    }
-                }
-            }
-        }
-        #if VOXEL_DETAIL_AMOUNT == 1
-            if (thisEmissiveCount > 0) {
-                setEmissiveCount(baseIndex, 1);
-                storeEmissive(baseIndex, 0, ivec3(4, 4, 4));
-            } else {
-                setEmissiveCount(baseIndex, 0);
-            }
-        #else
-            if (thisEmissiveCount > 0) {
-                vec3 blockRelCoord = (baseCoord + subCoord / thisEmissiveCount) * (7.0 / (1<<(VOXEL_DETAIL_AMOUNT-1)));
-                int sortVal = 0;
-                float maxRelDist = 0;
-                for (int k = 0; k < 3; k++) {
-                    float thisRelDist = abs(blockRelCoord[k] - 0.5);
-                    if (thisRelDist > maxRelDist) {
-                        sortVal = (k+1) * (2 * int(blockRelCoord[k] > 0) - 1);
-                        maxRelDist = thisRelDist;
-                    }
-                }
-                int emissiveIndex = atomicAdd(emissiveCount, 1);
-                emissiveParts[emissiveIndex] = ivec4(blockRelCoord, sortVal);
-                for (int k = 0; k < 4; k++) {
-                    atomicAdd(meanEmissivePos[k], ivec4(blockRelCoord, 1)[k]);
-                }
-            }
-        #endif
-    }
-    #if VOXEL_DETAIL_AMOUNT > 1
-        barrier();
-        memoryBarrierShared();
-        storeEmissive(baseIndex, index, index < emissiveCount ? emissiveParts[index].xyz : ivec3(-1));
-        if (index == 0) {
-            setEmissiveCount(baseIndex, emissiveCount);
-            ivec3 meanEmissivePosToStore = meanEmissivePos.w > 0 ? (meanEmissivePos.xyz * 2 + 1) / (2 * meanEmissivePos.w) : ivec3(4);
-            storeEmissive(baseIndex, emissiveCount, meanEmissivePosToStore);
-        }
-    #endif
-}
-
-#endif
-//////2nd Compute Shader//////2nd Compute Shader//////2nd Compute Shader//////
 /*
 This program offsets irradiance cache data to account for camera movement, and handles its temporal accumulation falloff
 */
-#ifdef CSH_A
+#ifdef CSH
 
 #if VX_VOL_SIZE == 0
     const ivec3 workGroups = ivec3(12, 8, 12);
@@ -262,11 +47,11 @@ void main() {
 }
 #endif
 
-//////3rd Compute Shader//////3rd Compute Shader//////3rd Compute Shader//////
+//////2nd Compute Shader//////2nd Compute Shader//////2nd Compute Shader//////
 /*
 this program calculates volumetric block lighting
 */
-#ifdef CSH_B
+#ifdef CSH_A
 #if VX_VOL_SIZE == 0
     const ivec3 workGroups = ivec3(12, 8, 12);
 #elif VX_VOL_SIZE == 1
@@ -570,7 +355,9 @@ void main() {
                 positions[index].x + voxelVolumeSize.x / 2 +
                 voxelVolumeSize.x * (positions[index].y + voxelVolumeSize.y / 2 +
                 voxelVolumeSize.y * (positions[index].z + voxelVolumeSize.z / 2 +
-                voxelVolumeSize.z * frameCounter % 2))) : ivec4(0));
+                voxelVolumeSize.z * frameCounter % 2))
+            ) : ivec4(0)
+        );
     }
 }
 #endif

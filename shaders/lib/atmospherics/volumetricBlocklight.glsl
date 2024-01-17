@@ -2,7 +2,7 @@
 #define INCLUDE_VOLUMETRIC_BLOCKLIGHT
 
 #define IRRADIANCECACHE_ONLY
-#include "/lib/vx/SSBOs.glsl"
+#include "/lib/vx/blocklightReading.glsl"
 
 #ifndef LIGHTSHAFTS_ACTIVE
     float GetDepth(float depth) {

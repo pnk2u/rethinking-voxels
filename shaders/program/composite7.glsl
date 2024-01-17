@@ -30,13 +30,6 @@ uniform float viewWidth, viewHeight;
     #include "/lib/antialiasing/fxaa.glsl"
 #endif
 
-/*
-uniform vec3 cameraPosition;
-uniform mat4 gbufferProjectionInverse, gbufferModelViewInverse;
-#include "/lib/vx/SSBOs.glsl"
-#include "/lib/vx/raytrace.glsl"
-*/
-
 uniform sampler2D colortex8;
 
 //Program//

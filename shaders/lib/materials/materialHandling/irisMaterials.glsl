@@ -1,4 +1,4 @@
-int mat = getProcessedBlockId(currentRenderedItemId);
+int mat = currentRenderedItemId;
 
 #ifdef GBUFFERS_HAND
     float lViewPos = 0.0;

@@ -259,7 +259,7 @@ void main() {
                 = vec2(      vxPos[i][(bestNormalAxis+1)%3],       vxPos[i][(bestNormalAxis+2)%3])
                 - vec2(lowerBounds[i][(bestNormalAxis+1)%3], lowerBounds[i][(bestNormalAxis+2)%3]);
             gl_Position = vec4(relProjectedPos * (1<<localResolution) / shadowMapResolution - 1, 0.0, 1.0);
-            mat = getProcessedBlockId(matV[i]);
+            mat = matV[i];
             texCoord = texCoordV[i];
             sunVec = sunVecV[i];
             upVec = upVecV[i];
@@ -275,7 +275,7 @@ void main() {
     #if (defined OVERWORLD || defined END) && defined REALTIME_SHADOWS
         for (int i = 0; i < 3; i++) {
             gl_Position = gl_in[i].gl_Position;
-            mat = getProcessedBlockId(matV[i]);
+            mat = matV[i];
             texCoord = texCoordV[i];
             sunVec = sunVecV[i];
             upVec = upVecV[i];

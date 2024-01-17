@@ -22,10 +22,7 @@ const ivec2 offsets[8] = ivec2[8](
     ivec2( 0,-1),
     ivec2( 1,-1));
 
-#undef RT_ENTITIES
-#include "/lib/vx/SSBOs.glsl"
-#include "/lib/vx/raytrace.glsl"
-
+#include "/lib/vx/voxelReading.glsl"
 void main() {
     ivec2 texelCoord = ivec2(gl_FragCoord.xy);
     vec4 writeData = texelFetch(colortex8, texelCoord, 0);
@@ -74,9 +71,6 @@ out vec3 dir;
 
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
-
-#define DECLARE_CAMPOS
-#include "/lib/vx/SSBOs.glsl"
 
 void main() {
     gl_Position = ftransform();

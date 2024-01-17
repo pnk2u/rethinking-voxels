@@ -61,7 +61,7 @@ uniform mat4 gbufferProjection;
 uniform int frameCounter;
 
 #define MATERIALMAP_ONLY
-#include "/lib/vx/SSBOs.glsl
+#include "/lib/vx/SSBOs.glsl"
 
 void main() {
     projectionMatrix =

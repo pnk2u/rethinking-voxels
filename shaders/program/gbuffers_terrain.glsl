@@ -411,9 +411,6 @@ vec4 glColor = vec4(1.0);
     #include "/lib/materials/materialMethods/wavingBlocks.glsl"
 #endif
 
-#define MATERIALMAP_ONLY
-#include "/lib/vx/SSBOs.glsl"
-
 //Program//
 void main() {
     texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;

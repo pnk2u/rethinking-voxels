@@ -117,16 +117,12 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
     #include "/lib/materials/materialHandling/customMaterials.glsl"
 #endif
 
-#define MATERIALMAP_ONLY
-#include "/lib/vx/SSBOs.glsl"
-
 #ifdef COLOR_CODED_PROGRAMS
     #include "/lib/misc/colorCodedPrograms.glsl"
 #endif
 
 //Program//
 void main() {
-    int mat = getProcessedBlockId(blockEntityId);
     vec4 color = texture2D(tex, texCoord);
     #ifdef GENERATED_NORMALS
         vec3 colorP = color.rgb;
@@ -155,9 +151,9 @@ void main() {
             GetCustomMaterials(color, normalM, lmCoordM, NdotU, shadowMult, smoothnessG, smoothnessD, highlightMult, emission, materialMask, viewPos, lViewPos);
         #endif
 
-        if (mat == 60024) { // End Portal
+        if (blockEntityId == 60024) { // End Portal
             #include "/lib/materials/specificMaterials/others/endPortalEffect.glsl"
-        } else if (mat == 60004) { // Signs
+        } else if (blockEntityId == 60004) { // Signs
             noSmoothLighting = true;
             if (glColor.r + glColor.g + glColor.b <= 2.99 || lmCoord.x > 0.999) { // Sign Text
                 #include "/lib/materials/specificMaterials/others/signText.glsl"
@@ -239,8 +235,6 @@ out vec4 glColor;
 
     uniform mat4 gbufferModelViewInverse;
 
-    #define MATERIALMAP_ONLY
-    #include "/lib/vx/SSBOs.glsl"
 #endif
 
 //Attributes//
@@ -263,9 +257,6 @@ out vec4 glColor;
 
 //Program//
 void main() {
-    #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-        int mat = getProcessedBlockId(blockEntityId);
-    #endif
     gl_Position = ftransform();
     #ifdef TAA
         gl_Position.xy = TAAJitter(gl_Position.xy, gl_Position.w);
@@ -293,7 +284,7 @@ void main() {
     #endif
 
     #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
-        if (mat == 60008) { // Chest
+        if (blockEntityId == 60008) { // Chest
             float fractWorldPosY = fract((gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex).y + cameraPosition.y);
             if (fractWorldPosY > 0.56 && 0.57 > fractWorldPosY) gl_Position.z -= 0.0001;
         }

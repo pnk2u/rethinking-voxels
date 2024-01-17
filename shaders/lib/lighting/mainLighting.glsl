@@ -6,15 +6,12 @@ uniform float darknessLightFactor;
     uniform int heldBlockLightValue2;
 #endif
 
+uniform sampler2D colortex13;
+uniform sampler2D irradianceCache;
+
 //Lighting Includes//
 #include "/lib/colors/lightAndAmbientColors.glsl"
 #include "/lib/lighting/ggx.glsl"
-
-#define MATERIALMAP_ONLY
-#if defined PER_BLOCK_LIGHT || defined GI
-    #define IRRADIANCECACHE_ONLY
-#endif
-#include "/lib/vx/SSBOs.glsl"
 
 #if defined REALTIME_SHADOWS && (defined OVERWORLD || defined END)
     #include "/lib/lighting/shadowSampling.glsl"
@@ -35,7 +32,6 @@ uniform float darknessLightFactor;
     #include "/lib/colors/colorMultipliers.glsl"
 #endif
 
-uniform sampler2D colortex13;
 #if defined MOON_PHASE_INF_LIGHT || defined MOON_PHASE_INF_REFLECTION
     #include "/lib/colors/moonPhaseInfluence.glsl"
 #endif
@@ -445,7 +441,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     // Combine Lighting
     vec3 vxPos = playerPos + fract(cameraPosition);
     #ifdef PER_BLOCK_LIGHT
-        vec3 blockLighting = readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);
+        vec3 blockLighting = textureLod(irradianceCache, vxPos + mat3(gbufferModelViewInverse) * normalM, 0);
     #else
         vec3 blockLighting = texelFetch(colortex13, texelCoord, 0).rgb;
     #endif
