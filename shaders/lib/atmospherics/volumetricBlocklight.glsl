@@ -11,6 +11,7 @@
     }
 #endif
 
+#include "/lib/vx/irradianceCache.glsl"
 vec3 GetVolumetricBlocklight(vec3 translucentMult, vec3 nViewPos, float z0, float z1, float dither) {
     if (max(blindness, darknessFactor) > 0.1) return vec3(0.0);
 
@@ -68,7 +69,7 @@ vec3 GetVolumetricBlocklight(vec3 translucentMult, vec3 nViewPos, float z0, floa
         if (currentDist < 5.0) sampleMult *= smoothstep1(clamp(currentDist / 5.0, 0.0, 1.0));
         sampleMult /= sampleCount;
         if (isInRange(vxPos)) {
-            vlSample = textureLod(irradianceCache, (vxPos + mat3(gbufferModelViewInverse)) / voxelVolumeSize + 0.5, 0);
+            vlSample = textureLod(irradianceCache, vxPos / voxelVolumeSize + 0.5, 0).rgb;
         }
 
         if (currentDist > depth0) vlSample *= translucentMult;

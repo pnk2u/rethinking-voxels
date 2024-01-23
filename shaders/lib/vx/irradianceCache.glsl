@@ -1,4 +1,8 @@
-#ifndef READONLY
+bool isInRange(vec3 vxPos) {
+    return all(greaterThan(vxPos, -0.5*voxelVolumeSize)) && all(lessThan(vxPos, 0.5*voxelVolumeSize));
+}
+
+#ifdef WRITE_TO_SSBOS
     layout(rgba16f) uniform image3D irradianceCacheI;
 #else
     uniform sampler3D irradianceCache;

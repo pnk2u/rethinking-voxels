@@ -31,8 +31,9 @@ uniform sampler2D colortex4;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 
-#if defined LIGHTSHAFTS_ACTIVE || WATER_QUALITY >= 3 || defined NETHER_STORM || CONWAY > 0 || RAINBOWS > 0
+#if defined LIGHTSHAFTS_ACTIVE || WATER_QUALITY >= 3 || defined NETHER_STORM || CONWAY > 0 || RAINBOWS > 0 || defined VOLUMETRIC_BLOCKLIGHT
     uniform float frameTimeCounter;
+    uniform int frameCounter;
 
     uniform mat4 gbufferProjection;
     uniform mat4 gbufferModelViewInverse;
@@ -43,8 +44,6 @@ uniform sampler2D depthtex1;
 #endif
 
 #if defined LIGHTSHAFTS_ACTIVE || defined NETHER_STORM || CONWAY > 0 || RAINBOWS > 0
-    uniform int frameCounter;
-
     #ifndef LIGHT_COLORING
         uniform sampler2D colortex3;
     #else

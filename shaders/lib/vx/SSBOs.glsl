@@ -10,4 +10,7 @@
         mat4 gbufferPreviousProjectionInverse;
         mat4 reprojectionMatrix;
     };
+    #ifdef READONLY
+        #undef WRITE_TO_SSBOS
+    #endif
 #endif

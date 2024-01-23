@@ -30,6 +30,7 @@ shared ivec4[MAX_LIGHT_COUNT] positions;
 shared int[MAX_LIGHT_COUNT] mergeOffsets;
 
 void main() {
+    float dither = fract((10000 * frameCounter + dot(vec2(gl_GlobalInvocationID.xy), vec2(985, 173))) / 1.61803399);
     if (gl_LocalInvocationID.xy == uvec2(0)) {
         lightCount = 0;
     }
@@ -45,14 +46,15 @@ void main() {
     if (validData) {
         vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
         playerPos /= playerPos.w;
-        vxPos = playerToVx(playerPos.xyz) + max(0.1, 0.005 * length(playerPos.xyz)) * normalDepthData.xyz;
+        vxPos = playerPos.xyz + fract(cameraPosition) + max(0.1, 0.005 * length(playerPos.xyz)) * normalDepthData.xyz;
         vec3 dir = randomSphereSample();
         if (dot(dir, normalDepthData.xyz) < 0) dir *= -1;
-        ray_hit_t rayHit0 = raytrace(vxPos, LIGHT_TRACE_LENGTH * dir);
-        if (rayHit0.emissive) {
+        vec3 rayNormal0;
+        vec4 rayHit0 = voxelTrace(vxPos, LIGHT_TRACE_LENGTH * dir, rayNormal0);
+        if (rayHit0.a > 16) {
             int lightIndex = atomicAdd(lightCount, 1);
             if (lightIndex < MAX_LIGHT_COUNT) {
-                positions[lightIndex] = ivec4(rayHit0.pos - 0.05 * rayHit0.normal + 1000, 1) - ivec4(1000, 1000, 1000, 0);
+                positions[lightIndex] = ivec4(rayHit0.xyz - 0.05 * rayNormal0 + 1000, 1) - ivec4(1000, 1000, 1000, 0);
                 mergeOffsets[lightIndex] = 0;
             } else {
                 atomicMin(lightCount, MAX_LIGHT_COUNT);
@@ -139,48 +141,20 @@ void main() {
         #endif
         vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
         float ndotl0 = max(0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
-        ivec3 lightCoords = vxPosToVxCoords(lightPos);
-        int mat = readBlockVolume(lightCoords);
-        int baseIndex = getBaseIndex(mat);
-        int emissiveVoxelCount = mat < MATERIALCOUNT ? readEmissiveCount(baseIndex) : 0;
-        bool entity = false;
-        int entityOccupancy = readEntityOccupancy(lightCoords);
-        if (emissiveVoxelCount > 0) {
-            int subEmissiveIndex = int(nextUint() % emissiveVoxelCount);
-            vec3 localPos = readEmissiveLoc(baseIndex, subEmissiveIndex);
-            vec3 meanLocalPos = readEmissiveLoc(baseIndex, emissiveVoxelCount);
-            if (any(lessThan(localPos, vec3(-0.5)))) {
-                lightPos = vec3(-10000);
-            }
-            localPos += (vec3(nextFloat(), nextFloat(), nextFloat()) - 0.5) / (1<<(min(VOXEL_DETAIL_AMOUNT, 3)-1));
-            lightPos = floor(lightPos) + (localPos - meanLocalPos) * LIGHTSOURCE_SIZE_MULT + meanLocalPos;
-        } else if (entityOccupancy != 0) {
-            vec3 emissiveLocs[8];
-            for (int k = 0; k < 8; k++) {
-                ivec3 offset = ivec3(k%2, k/2%2, k/4%2);
-                if ((entityOccupancy >> (k + 8) & 1) != 0) {
-                    entity = true;
-                    emissiveLocs[emissiveVoxelCount++] = (offset + vec3(nextFloat(), nextFloat(), nextFloat()) - 1.0) * 0.5;
-                }
-            }
-            if (entity) {
-                int subEmissiveIndex = int(nextUint() % emissiveVoxelCount);
-                lightPos += emissiveLocs[subEmissiveIndex];
-            } else {
-                lightPos = vec3(-10000);
-            }
-        } else {
+        ivec3 lightCoords = ivec3(lightPos + 1000) - 1000 + voxelVolumeSize / 2;
+        int lightData = imageLoad(occupancyVolume, lightCoords).r;
+        if ((lightData & 16) == 0) {
             lightPos = vec3(-10000);
         }
         vec3 dir = lightPos - vxPos;
         float dirLen = length(dir);
         if (dirLen < LIGHT_TRACE_LENGTH) {
-            float lightBrightness = readLightLevel(vxPosToVxCoords(lightPos)) * 0.04;
+            float lightBrightness = getLightLevel(ivec3(lightPos + 1000) - 1000 + voxelVolumeSize/2) * 0.04;
             lightBrightness *= lightBrightness;
             float ndotl = ndotl0 * lightBrightness;
-            ray_hit_t rayHit1 = raytrace(vxPos, (1.0 + 0.1 / (length(dir) + 0.1)) * dir);
-            if (length(rayHit1.rayColor.rgb) > 0.003 && rayHit1.emissive && infnorm(rayHit1.pos - 0.05 * rayHit1.normal - positions[thisLightIndex].xyz - 0.5) < 0.51 + float(entity)) {
-                writeColor += rayHit1.rayColor.rgb * float(rayHit1.emissive) * ndotl * (sqrt(1 - dirLen / LIGHT_TRACE_LENGTH)) / (dirLen + 0.1);
+            vec4 rayHit1 = coneTrace(vxPos, (1.0 + 0.1 / (length(dir) + 0.1)) * dir, 0.3 / dirLen, dither);
+            if (rayHit1.w > 0.01) {
+                writeColor += getColor(rayHit1.xyz).xyz * rayHit1.w * ndotl * (sqrt(1 - dirLen / LIGHT_TRACE_LENGTH)) / (dirLen + 0.1);
                 positions[thisLightIndex].w = 1;
             }
         }

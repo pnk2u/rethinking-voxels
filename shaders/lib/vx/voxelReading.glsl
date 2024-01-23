@@ -1,5 +1,9 @@
+uniform sampler3D distanceField;
+layout(r32i) uniform iimage3D voxelCols;
+layout(r32i) uniform iimage3D occupancyVolume;
+
 float getDistanceField(vec3 pos) {
-    int resolution = max(min(int(-log2(infnorm(pos/(voxelVolumeSize-2.01))))-1, CASCADES-1), 0);
+    int resolution = max(min(int(-log2(infnorm(pos/(voxelVolumeSize-2.01))))-1, VOXEL_DETAIL_AMOUNT-1), 0);
     pos = clamp((1<<resolution) * pos / voxelVolumeSize + 0.5, 0.5/voxelVolumeSize, 1-0.5/voxelVolumeSize);
     pos.y = 0.5 * (pos.y + (frameCounter+1)%2);
     return texture(distanceField, pos)[resolution];
@@ -29,6 +33,10 @@ vec4 getColor(vec3 pos) {
     col /= max(vec2(20, 4).xxxy * (rawCol.g >> 23), vec4(1));
     col.a = 1.0 - col.a;
     return col;
+}
+
+int getLightLevel(ivec3 coords) {
+    return imageLoad(occupancyVolume, coords).r >> 6 & 16; //FIXME not implemented
 }
 
 vec3 rayTrace(vec3 start, vec3 dir) {
@@ -70,24 +78,25 @@ vec4 coneTrace(vec3 start, vec3 dir, float angle, float dither) {
         max(0, (angle/angle0 - 0.01) / 0.99));
 }
 
-vec4 voxelTrace(vec3 start, vec3 dir) {
+vec4 voxelTrace(vec3 start, vec3 dir, out vec3 normal) {
     dir += 0.000001 * vec3(equal(dir, vec3(0)));
     vec3 stp = 1.0 / abs(dir);
     float hit = 0;
     vec3 dirsgn = sign(dir);
     vec3 progress = (0.5 + 0.5 * dirsgn - fract(start)) * stp * dirsgn;
     float w = 0.000001;
-    vec3 normal = vec3(0);
+    normal = vec3(0);
     for (int k = 0; k < 2000; k++) {
         ivec3 thisVoxelPos = ivec3(start + w * dir + 0.5 * normal * dirsgn + voxelVolumeSize/2);
         int thisVoxelData = imageLoad(occupancyVolume, thisVoxelPos).r;
         if ((thisVoxelData & 17) != 0 || w > 1) {
-            hit = thisVoxelData >> 4 & 1;
+            hit = thisVoxelData & 17;
             break;
         }
         progress += normal * stp;
         w = min(min(progress.x, progress.y), progress.z);
         normal = vec3(equal(progress, vec3(w)));
     }
+    normal *= -dirsgn;
     return vec4(start + w * dir, hit);
 }

@@ -15,7 +15,7 @@
 
     #define RP_MODE 1 //[1 0 3 2]
 
-    #define VOXEL_DETAIL_AMOUNT 4 //[1 2 3 4 5 6]
+    #define VOXEL_DETAIL_AMOUNT 4 //[1 2 3 4]
     #define VX_VOL_SIZE 1 //[0 1 2 3]
     #if VX_VOL_SIZE == 0
         const float voxelDistance = 48;

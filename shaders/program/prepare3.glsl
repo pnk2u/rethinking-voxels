@@ -5,6 +5,8 @@
 in vec3 dir;
 
 uniform sampler2D colortex8;
+
+uniform int frameCounter;
 uniform float viewWidth;
 uniform float viewHeight;
 vec2 view = vec2(viewWidth, viewHeight);
@@ -50,10 +52,11 @@ void main() {
             writeData = avgAroundData / validAroundCount;
         } else {
             // fuck view bobbing!
-            ray_hit_t rayHit = raytrace(fract(cameraPosition) - gbufferModelView[3].xyz, dir);
-            if (rayHit.mat >= 0) {
-                writeData.rgb = rayHit.normal;
-                vec4 clipHitPos = gbufferProjection * (gbufferModelView * vec4(rayHit.pos - fract(cameraPosition), 1));
+            vec3 rayHit = rayTrace(fract(cameraPosition) - gbufferModelView[3].xyz, dir);
+            float hitDF = getDistanceField(rayHit);
+            if (hitDF < 0.1) {
+                writeData.rgb = normalize(distanceFieldGradient(rayHit));
+                vec4 clipHitPos = gbufferProjection * (gbufferModelView * vec4(rayHit - fract(cameraPosition), 1));
                 clipHitPos = 0.5 / clipHitPos.w * clipHitPos + 0.5;
                 writeData.a = 1 - clipHitPos.z;
             }

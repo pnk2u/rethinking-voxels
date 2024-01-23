@@ -252,12 +252,12 @@ void main() {
     vec3 lowerBound = floor(min(min(vxPos[0], vxPos[1]), vxPos[2]));
     vec3 minAbsPos = min(min(abs(vxPos[0]), abs(vxPos[1])), abs(vxPos[2]));
     int bestNormalAxis = int(dot(vec3(greaterThanEqual(abs(cnormal), max(abs(cnormal).yzx, abs(cnormal.zxy)))), vec3(0.5, 1.5, 2.5)));
-    int localResolution = min(4, int(-log2(infnorm(minPos / voxelVolumeSize))));
-    if (resolution > 0) {
+    int localResolution = min(4, int(-log2(infnorm(minAbsPos / voxelVolumeSize))));
+    if (localResolution > 0) {
         for (int i = 0; i < 3; i++) {
             vec2 relProjectedPos
-                = vec2(      vxPos[i][(bestNormalAxis+1)%3],       vxPos[i][(bestNormalAxis+2)%3])
-                - vec2(lowerBounds[i][(bestNormalAxis+1)%3], lowerBounds[i][(bestNormalAxis+2)%3]);
+                = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])
+                - vec2(lowerBound[(bestNormalAxis+1)%3], lowerBound[(bestNormalAxis+2)%3]);
             gl_Position = vec4(relProjectedPos * (1<<localResolution) / shadowMapResolution - 1, 0.0, 1.0);
             mat = matV[i];
             texCoord = texCoordV[i];
@@ -355,11 +355,11 @@ void main() {
             lmCoord = GetLightMapCoordinates();
         #endif
 
-        DoWave(positionV.xyz, mat);
+        DoWave(positionV.xyz, matV);
     #endif
 
     #ifdef PERPENDICULAR_TWEAKS
-        if (mat == 10004 || mat == 10016) { // Foliage
+        if (matV == 10004 || matV == 10016) { // Foliage
             vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
             vec2 texMinMidCoord = texCoordV - midCoord;
             if (texMinMidCoord.y < 0.0) {
@@ -369,7 +369,7 @@ void main() {
         }
     #endif
 
-    if (mat == 31000) { // Water
+    if (matV == 31000) { // Water
         positionV.y += 0.015 * max0(length(positionV.xyz) - 50.0);
     }
     gl_Position = shadowProjection * shadowModelView * positionV;
