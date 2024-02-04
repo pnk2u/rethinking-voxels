@@ -31,6 +31,12 @@ uniform float viewWidth, viewHeight;
 #endif
 
 //Program//
+
+uniform int frameCounter;
+#include "/lib/vx/voxelReading.glsl"
+uniform mat4 gbufferProjectionInverse;
+uniform mat4 gbufferModelViewInverse;
+uniform vec3 cameraPosition;
 void main() {
     #ifndef LIGHT_COLORING
         vec3 color = texelFetch(colortex3, texelCoord, 0).rgb;
@@ -41,7 +47,16 @@ void main() {
     #ifdef FXAA
         FXAA311(color);
     #endif
-
+    if (texCoord.x < 0.5) {
+/*         vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
+        dir = normalize(dir * dir.w) * 20;
+        vec3 start = fract(cameraPosition);
+        vec3 normal;
+        vec3 hitPos = rayTrace(start, dir.xyz);
+        normal = normalize(distanceFieldGradient(hitPos));
+        color = 0.5 * getColor(hitPos).xyz + 0.25 * normal + 0.25;
+ */        color = vec3(getDistanceField(vec3(vec2(4, 2) * texCoord - 1, 0).xzy * 10 + fract(cameraPosition)) * 0.5);
+    }
     #ifndef LIGHT_COLORING
     /* DRAWBUFFERS:3 */
     #else

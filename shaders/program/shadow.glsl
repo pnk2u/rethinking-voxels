@@ -180,28 +180,32 @@ void main() {
             gl_FragData[1] = color2; // Light Shaft Color
         #endif
     } else {
-        vec4 col = textureLod(tex, texCoord, 0) * glColor;
+        vec4 col = textureLod(tex, texCoord, 0);
+        col.rgb *= glColor.rgb;
         if (col.a > 0.1) {
             vec3 vxPos = position.xyz + fract(cameraPosition);
+            ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
+                                    int(20 * col.b) + (int(4.5 * (1 - col.a)) << 13) + (1<<23));
             for (int k = 0; k < 4; k++) {
-                vec3 position2 = vxPos * (1<<k) - 0.1 * normal + voxelVolumeSize * 0.5;
+                vec3 position2 = vxPos * (1<<k) - 0.3 * normal + voxelVolumeSize * 0.5;
+                ivec3 coords2 = ivec3(position2);
                 if (any(lessThan(position2, vec3(0))) || any(greaterThanEqual(position2, voxelVolumeSize - 0.01))) {
                     break;
                 }
                 if (k == 0) {
                     if (mat == 2) {
-                        imageAtomicOr(occupancyVolume, ivec3(position2), 1<<4);
+                        imageAtomicOr(occupancyVolume, coords2, 1<<4);
                     }
                     if (all(lessThan(mod(gl_FragCoord.xy, vec2(1.0, 2.0)), vec2(1.0)))) {
                         imageAtomicAdd(voxelCols,
-                            ivec3(position2) * ivec3(1, 2, 1),
-                            int(20 * col.r) + (int(20 * col.g) << 13));
+                            coords2 * ivec3(1, 2, 1),
+                            packedCol.x);
                         imageAtomicAdd(voxelCols,
-                            ivec3(position2) * ivec3(1, 2, 1) + ivec3(0, 1, 0),
-                            int(20 * col.b) + (int(4.5 * (1 - col.a)) << 13) + (1<<23));
+                            coords2 * ivec3(1, 2, 1) + ivec3(0, 1, 0),
+                            packedCol.y);
                     }
                 }
-                imageAtomicOr(occupancyVolume, ivec3(position2), 1<<(k + 5 * int(col.a < 0.9)));
+                imageAtomicOr(occupancyVolume, coords2, 1<<(k + 5 * int(col.a < 0.9)));
             }
         }
         discard;
@@ -252,13 +256,18 @@ void main() {
     vec3 lowerBound = floor(min(min(vxPos[0], vxPos[1]), vxPos[2]));
     vec3 minAbsPos = min(min(abs(vxPos[0]), abs(vxPos[1])), abs(vxPos[2]));
     int bestNormalAxis = int(dot(vec3(greaterThanEqual(abs(cnormal), max(abs(cnormal).yzx, abs(cnormal.zxy)))), vec3(0.5, 1.5, 2.5)));
-    int localResolution = min(4, int(-log2(infnorm(minAbsPos / voxelVolumeSize))));
+    int localResolution = min(VOXEL_DETAIL_AMOUNT, int(-log2(infnorm(minAbsPos / voxelVolumeSize))));
     if (localResolution > 0) {
+        if (cnormal[bestNormalAxis] > 0) {
+            vec3 tmp = vxPos[0];
+            vxPos[0] = vxPos[1];
+            vxPos[1] = tmp;
+        }
         for (int i = 0; i < 3; i++) {
             vec2 relProjectedPos
                 = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])
                 - vec2(lowerBound[(bestNormalAxis+1)%3], lowerBound[(bestNormalAxis+2)%3]);
-            gl_Position = vec4(relProjectedPos * (1<<localResolution) / shadowMapResolution - 1, 0.0, 1.0);
+            gl_Position = vec4(relProjectedPos * (1<<localResolution) / shadowMapResolution - 0.5, 0.5, 1.0);
             mat = matV[i];
             texCoord = texCoordV[i];
             sunVec = sunVecV[i];

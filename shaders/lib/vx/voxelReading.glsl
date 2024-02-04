@@ -30,7 +30,7 @@ vec4 getColor(vec3 pos) {
         rawCol.g % (1<<13),
         rawCol.g >> 13 & 0x3ff
     );
-    col /= max(vec2(20, 4).xxxy * (rawCol.g >> 23), vec4(1));
+    col /= max(vec2(20, 4).xxxy * (rawCol.g >> 23), max(max(col.r, col.g), col.b) * vec2(1, 4.0/20.0).xxxy);
     col.a = 1.0 - col.a;
     return col;
 }
