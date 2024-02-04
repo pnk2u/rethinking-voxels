@@ -235,6 +235,14 @@ vec4 smoothstep1(vec4 x) {
     return x * x * (3.0 - 2.0 * x);
 }
 
+float infnorm(vec3 x) {
+    return max(max(abs(x.x), abs(x.y)), abs(x.z));
+}
+
+float onenorm(vec3 x) {
+    return dot(abs(x), vec3(1));
+}
+
 vec3 rgb2hsv(vec3 c)
 {
     vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);

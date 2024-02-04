@@ -15,10 +15,76 @@
 
     #define RP_MODE 1 //[1 0 3 2]
 
+    #define VOXEL_DETAIL_AMOUNT 4 //[1 2 3 4]
+    #define VX_VOL_SIZE 1 //[0 1 2 3]
+    #if VX_VOL_SIZE == 0
+        const float voxelDistance = 48;
+        const ivec3 voxelVolumeSize = ivec3(96, 64, 96);
+    #elif VX_VOL_SIZE == 1
+        const float voxelDistance = 64;
+        const ivec3 voxelVolumeSize = ivec3(128, 96, 128);
+    #elif VX_VOL_SIZE == 2
+        const float voxelDistance = 128;
+        const ivec3 voxelVolumeSize = ivec3(256, 128, 256);
+    #elif VX_VOL_SIZE == 3
+        const float voxelDistance = 256;
+        const ivec3 voxelVolumeSize = ivec3(512, 128, 512);
+    #endif
+
+    #define PER_PIXEL_LIGHT
+    #ifndef PER_PIXEL_LIGHT
+        #define PER_BLOCK_LIGHT
+    #endif
+    #define GI_STRENGTH 1 //[0 1 2]
+
+    #if GI_STRENGTH > 0
+        #define GI
+    #endif
+
+    #define ACCUMULATION
+    #define ACCUM_FALLOFF_SPEED 0.10 //[0.001 0.002 0.005 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.11 0.12 0.13 0.14 0.15 0.16 0.17 0.18 0.19 0.20 0.22 0.24 0.26 0.3]
+
+  //#define RESET_ACCUMULATION_WITHOUT_LIGHTSOURCE
+    #define DENOISING_DEFINE 1 //[0 1 2]
+    #define DENOISE_MAX_BLUR 20 //[10 12 14 16 18 20 22 25 28 32 36 40 45 50]
+    #define DENOISE_LENIENCE 1 //[0 1 2 3]
+    #define BLOCKLIGHT_I 1.0 //[0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.5 10.0]
+    #define LIGHT_TRACE_LENGTH 30.0 //[10.0 12.0 15.0 18.0 22.0 26.0 30.0 35.0 40.0 57.0 55.0 65.0 76.0 88.0 100.0]
+    #define LIGHT_COLOR_SATURATION 0.5 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+    #define LIGHTSOURCE_SIZE_MULT 0.6 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+  //#define TRACE_ALL_LIGHTS
+
+    #if DENOISING_DEFINE > 0
+        #define DENOISING
+        #if DENOISING_DEFINE == 1 && defined TRACE_ALL_LIGHTS
+            #define DENOISE_MAX_BLUR_MOD DENOISE_MAX_BLUR / 2
+            #define DENOISE_MIN_BLUR_MOD DENOISE_MIN_BLUR / 2
+        #else
+            #define DENOISE_MAX_BLUR_MOD DENOISE_MAX_BLUR
+            #define DENOISE_MIN_BLUR_MOD DENOISE_MIN_BLUR
+        #endif
+    #endif
+
+    #define VOLUMETRIC_BLOCKLIGHT
+    #define VBL_STRENGTH 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
+    #define VBL_NETHER_MULT 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
+    #define VBL_END_MULT 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
+
+    #ifdef END
+        #define CONWAY 2 //[0 1 2]
+        #define CONWAY_HEIGHT 10.1
+    #endif
+    #ifdef OVERWORLD
+        #define FRACTAL_GALAXY 0 //[0 1 2 3]
+    #endif
+
     #define REALTIME_SHADOWS
     #define SHADOW_QUALITY 2 //[0 1 2 3 4 5]
-    const float shadowDistance = 192.0; //[64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0]
-    //#define ENTITY_SHADOWS
+    const float shadowDistance = 128.0; //[64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0]
+    #define ENTITY_SHADOWS
+    #ifdef ENTITY_SHADOWS
+        #define RT_ENTITIES
+    #endif
     #define SSAO_QUALI_DEFINE 2 //[0 2 3]
     #define FXAA
     #define DETAIL_QUALITY 2 //[0 2 3]
@@ -149,6 +215,7 @@
     #define GLOWING_LICHEN 1 //[0 1 2]
     //#define EMISSIVE_REDSTONE_BLOCK
     //#define EMISSIVE_LAPIS_BLOCK
+    //#define EMISSIVE_EMERALD_BLOCK
     //#define GLOWING_ARMOR_TRIM
 
     #define NORMAL_MAP_STRENGTH 100 //[0 10 15 20 30 40 60 80 100 120 140 160 180 200]
@@ -161,7 +228,7 @@
     #define DIRECTIONAL_BLOCKLIGHT 0 //[0 3 7 11]
 
     #define MINIMUM_LIGHT_MODE 2 //[0 1 2 3 4 5 6]
-    #define HELD_LIGHTING_MODE 2 //[0 1 2]
+    #define HELD_LIGHTING_MODE 0 //[0 1 2]
     #define BLOCKLIGHT_FLICKERING 0 //[0 2 3 4 5 6 7 8 9 10]
     #define AMBIENT_MULT 100 //[50 55 60 65 70 75 80 85 90 95 100 110 120 130 140 150 160 170 180 190 200]
 
@@ -278,8 +345,6 @@
     #define XLIGHT_R 1.00 //[0.01 0.03 0.05 0.07 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00 1.10 1.20 1.30 1.40 1.50 1.60 1.70 1.80 1.90 2.00]
     #define XLIGHT_G 1.00 //[0.01 0.03 0.05 0.07 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00 1.10 1.20 1.30 1.40 1.50 1.60 1.70 1.80 1.90 2.00]
     #define XLIGHT_B 1.00 //[0.01 0.03 0.05 0.07 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00 1.10 1.20 1.30 1.40 1.50 1.60 1.70 1.80 1.90 2.00]
-
-    //#define LIGHT_COLORING
 
 //Internal Settings//
     #define SIDE_SHADOWING
