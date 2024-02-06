@@ -1,6 +1,6 @@
 uniform sampler3D distanceField;
-layout(r32i) uniform iimage3D voxelCols;
-layout(r32i) uniform iimage3D occupancyVolume;
+layout(r32i) uniform restrict iimage3D occupancyVolume;
+layout(r32i) uniform restrict iimage3D voxelCols;
 
 float getDistanceField(vec3 pos) {
     int resolution = max(min(int(-log2(infnorm(pos/(voxelVolumeSize-2.01))))-1, VOXEL_DETAIL_AMOUNT-1), 0);

@@ -3,14 +3,17 @@
     const ivec3 workGroups = ivec3(12, 8, 12);
 #elif VX_VOL_SIZE == 1
     const ivec3 workGroups = ivec3(16, 12, 16);
+#elif VX_VOL_SIZE == 2
+    const ivec3 workGroups = ivec3(32, 16, 32);
+#elif VX_VOL_SIZE == 3
+    const ivec3 workGroups = ivec3(64, 16, 64);
 #endif
-//const ivec3 workGroups = ivec3(32, 16, 32);
 
 layout(local_size_x = 10, local_size_y = 10, local_size_z = 10) in;
 
 layout(rgba16f) uniform image3D distanceFieldI;
-layout(r32i) readonly uniform iimage3D occupancyVolume;
-layout(r32i) uniform iimage3D voxelCols;
+layout(r32i) uniform restrict readonly iimage3D occupancyVolume;
+layout(r32i) uniform restrict iimage3D voxelCols;
 
 uniform vec3 cameraPosition;
 uniform vec3 previousCameraPosition;

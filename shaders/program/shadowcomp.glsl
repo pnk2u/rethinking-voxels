@@ -24,7 +24,6 @@ uniform vec3 previousCameraPosition;
 
 #define WRITE_TO_SSBOS
 
-#include "/lib/vx/SSBOs.glsl"
 #include "/lib/vx/irradianceCache.glsl"
 
 #define IRRADIANCECACHE_FALLOFF (1.0 - 0.1 * ACCUM_FALLOFF_SPEED)

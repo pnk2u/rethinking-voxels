@@ -18,8 +18,6 @@ in vec4 position;
 flat in vec4 glColor;
 
 flat in int passType;
-flat in vec3 normal;
-flat in float resolution;
 
 //Uniforms//
 uniform int isEyeInWater;
@@ -29,8 +27,8 @@ uniform vec3 cameraPosition;
 uniform sampler2D tex;
 uniform sampler2D noisetex;
 
-layout(r32i) uniform iimage3D occupancyVolume;
-layout(r32i) uniform iimage3D voxelCols;
+layout(r32i) restrict uniform iimage3D occupancyVolume;
+layout(r32i) restrict uniform iimage3D voxelCols;
 
 #if WATER_CAUSTIC_STYLE >= 3
     uniform float frameTimeCounter;
@@ -184,8 +182,8 @@ void main() {
         col.rgb *= glColor.rgb;
         if (col.a > 0.1) {
             vec3 vxPos = position.xyz + fract(cameraPosition);
-            for (int k = 0; k < resolution; k++) {
-                vec3 position2 = vxPos * (1<<k) - 0.15 * normal + voxelVolumeSize * 0.5;
+            for (int k = 0; k < passType >> 1; k++) {
+                vec3 position2 = vxPos * (1<<k) - 0.15 * upVec + voxelVolumeSize * 0.5;
                 if (any(lessThan(position2, vec3(0))) || any(greaterThanEqual(position2, voxelVolumeSize - 0.01))) {
                     break;
                 }
@@ -236,8 +234,6 @@ out vec4 position;
 flat out vec4 glColor;
 
 flat out int passType;
-flat out vec3 normal;
-flat out float resolution;
 
 //Uniforms//
 
@@ -270,12 +266,10 @@ void main() {
             mat = matV[i];
             texCoord = texCoordV[i];
             sunVec = sunVecV[i];
-            upVec = upVecV[i];
+            upVec = cnormal;
             position = positionV[i];
             glColor = glColorV[i];
-            passType = 1;
-            resolution = localResolution;
-            normal = cnormal;
+            passType = 1 + (localResolution << 1);
             EmitVertex();
         }
     }
@@ -290,8 +284,6 @@ void main() {
             position = positionV[i];
             glColor = glColorV[i];
             passType = 0;
-            resolution = 0;
-            normal = cnormal;
             EmitVertex();
         }
         EndPrimitive();

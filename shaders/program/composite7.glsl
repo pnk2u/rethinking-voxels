@@ -37,6 +37,7 @@ uniform int frameCounter;
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
 uniform vec3 cameraPosition;
+uniform sampler2D colortex8;
 void main() {
     #ifndef LIGHT_COLORING
         vec3 color = texelFetch(colortex3, texelCoord, 0).rgb;
@@ -48,24 +49,16 @@ void main() {
         FXAA311(color);
     #endif
     if (texCoord.x < 0.5) {
-		vec3 vxPos = vec3(vec2(4, 2) * texCoord - 1, 0).xzy * 10 + fract(cameraPosition);
-        color = vec3(getDistanceField(vxPos) * 0.5);
-		vec4 vxCol = getColor(vxPos);
-	    int resolution = max(min(int(-log2(infnorm(vxPos/(voxelVolumeSize-2.01))))-1, VOXEL_DETAIL_AMOUNT-1), 0);
-		ivec3 vxCoords = ivec3(vxPos * (1<<resolution) + 0.5 * voxelVolumeSize);
-		if ((imageLoad(occupancyVolume, vxCoords).r & (1<<resolution)) != 0) {
-			color = vec3(1, 0, 0);
-		}
-
+		color = texture(colortex8, texCoord).rgb;
     } else {
         vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
-        dir = normalize(dir * dir.w) * 20;
-        vec3 start = fract(cameraPosition);
+        dir = normalize(dir * dir.w);
+        vec3 start = fract(cameraPosition) + dir.xyz;
         vec3 normal;
-        vec3 hitPos = rayTrace(start, dir.xyz);
+        vec3 hitPos = rayTrace(start, dir.xyz * 128);
         normal = normalize(distanceFieldGradient(hitPos));
         if (!(length(normal) > 0.5)) normal = vec3(0);
-        color = 0.5 * getColor(hitPos).xyz;// + 0.25 * normal + 0.25;
+        color = 0.5 * getColor(hitPos - 0.1 * normal).xyz;
     }
     #ifndef LIGHT_COLORING
     /* DRAWBUFFERS:3 */

@@ -52,7 +52,7 @@ void main() {
             writeData = avgAroundData / validAroundCount;
         } else {
             // fuck view bobbing!
-            vec3 rayHit = rayTrace(fract(cameraPosition) - gbufferModelView[3].xyz, dir);
+            vec3 rayHit = rayTrace(fract(cameraPosition) - gbufferModelView[3].xyz + normalize(dir), dir);
             float hitDF = getDistanceField(rayHit);
             if (hitDF < 0.1) {
                 writeData.rgb = normalize(distanceFieldGradient(rayHit));
