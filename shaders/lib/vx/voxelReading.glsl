@@ -20,6 +20,9 @@ vec3 distanceFieldGradient(vec3 pos) {
 
 vec4 getColor(vec3 pos) {
     ivec3 coords = ivec3(pos + 0.5 * voxelVolumeSize);
+	if (any(lessThan(coords, ivec3(0))) || any(greaterThanEqual(coords, voxelVolumeSize))) {
+		return vec4(0);
+	}
     ivec2 rawCol = ivec2(
         imageLoad(voxelCols, coords * ivec3(1, 2, 1)).r,
         imageLoad(voxelCols, coords * ivec3(1, 2, 1) + ivec3(0, 1, 0)).r

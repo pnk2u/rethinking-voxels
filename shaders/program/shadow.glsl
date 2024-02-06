@@ -184,12 +184,12 @@ void main() {
         col.rgb *= glColor.rgb;
         if (col.a > 0.1) {
             vec3 vxPos = position.xyz + fract(cameraPosition);
-            for (int k = 0; k < 4; k++) {
+            for (int k = 0; k < resolution; k++) {
                 vec3 position2 = vxPos * (1<<k) - 0.15 * normal + voxelVolumeSize * 0.5;
-                ivec3 coords2 = ivec3(position2);
                 if (any(lessThan(position2, vec3(0))) || any(greaterThanEqual(position2, voxelVolumeSize - 0.01))) {
                     break;
                 }
+                ivec3 coords2 = ivec3(position2);
                 if (k == 0) {
                     if (all(lessThan(mod(gl_FragCoord.xy, vec2(1.0, 2.0)), vec2(1.0)))) {
                         ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
@@ -252,6 +252,9 @@ uniform sampler2D specular;
 
 void main() {
     vec3 cnormal = normalize(cross(positionV[1].xyz - positionV[0].xyz, positionV[2].xyz - positionV[0].xyz));
+	if (!(length(cnormal) > 0.5)) {
+		cnormal = vec3(0,1,0);
+	}
     vec3[3] vxPos;
     for (int i = 0; i < 3; i++) vxPos[i] = positionV[i].xyz + fract(cameraPosition);
     vec3 lowerBound = floor(min(min(vxPos[0], vxPos[1]), vxPos[2]));
