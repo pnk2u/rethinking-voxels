@@ -184,25 +184,26 @@ void main() {
         col.rgb *= glColor.rgb;
         if (col.a > 0.1) {
             vec3 vxPos = position.xyz + fract(cameraPosition);
-            ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
-                                    int(20 * col.b) + (int(4.5 * (1 - col.a)) << 13) + (1<<23));
             for (int k = 0; k < 4; k++) {
-                vec3 position2 = vxPos * (1<<k) - 0.3 * normal + voxelVolumeSize * 0.5;
+                vec3 position2 = vxPos * (1<<k) - 0.15 * normal + voxelVolumeSize * 0.5;
                 ivec3 coords2 = ivec3(position2);
                 if (any(lessThan(position2, vec3(0))) || any(greaterThanEqual(position2, voxelVolumeSize - 0.01))) {
                     break;
                 }
                 if (k == 0) {
-                    if (mat == 2) {
-                        imageAtomicOr(occupancyVolume, coords2, 1<<4);
-                    }
                     if (all(lessThan(mod(gl_FragCoord.xy, vec2(1.0, 2.0)), vec2(1.0)))) {
+                        ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
+                                                int(20 * col.b) + (int(4.5 * (1 - col.a)) << 13) + (1<<23));
                         imageAtomicAdd(voxelCols,
                             coords2 * ivec3(1, 2, 1),
                             packedCol.x);
                         imageAtomicAdd(voxelCols,
                             coords2 * ivec3(1, 2, 1) + ivec3(0, 1, 0),
                             packedCol.y);
+                    }
+                    if (mat == 2) {
+                        imageAtomicOr(occupancyVolume, coords2, 1<<4);
+                        break;
                     }
                 }
                 imageAtomicOr(occupancyVolume, coords2, 1<<(k + 5 * int(col.a < 0.9)));
@@ -258,11 +259,6 @@ void main() {
     int bestNormalAxis = int(dot(vec3(greaterThanEqual(abs(cnormal), max(abs(cnormal).yzx, abs(cnormal.zxy)))), vec3(0.5, 1.5, 2.5)));
     int localResolution = min(VOXEL_DETAIL_AMOUNT, int(-log2(infnorm(minAbsPos / voxelVolumeSize))));
     if (localResolution > 0) {
-        if (cnormal[bestNormalAxis] > 0) {
-            vec3 tmp = vxPos[0];
-            vxPos[0] = vxPos[1];
-            vxPos[1] = tmp;
-        }
         for (int i = 0; i < 3; i++) {
             vec2 relProjectedPos
                 = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])

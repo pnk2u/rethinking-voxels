@@ -58,7 +58,7 @@ void main() {
                 );
                 if ((otherRawCol.g >> 23) > (rawCol.g >> 23)) {
                     rawCol = otherRawCol;
-                    rawCol.g &= (0x7fffffff - (0x3ff << 13));
+                    rawCol.g &= ~(0x3ff << 13);
                 }
             }
             if ((rawCol.g >> 23) > 0) {
