@@ -1050,8 +1050,10 @@ value.VOXEL_DETAIL_AMOUNT.1=1/Block
 value.VOXEL_DETAIL_AMOUNT.2=2/Block
 value.VOXEL_DETAIL_AMOUNT.3=4/Block
 value.VOXEL_DETAIL_AMOUNT.4=8/Block
-value.VOXEL_DETAIL_AMOUNT.5=§c[-]§r 16/Block (1GB VRAM needed)
-value.VOXEL_DETAIL_AMOUNT.6=§c[-]§r 32/Block (3GB VRAM needed)
+value.VOXEL_DETAIL_AMOUNT.5=16/Block
+value.VOXEL_DETAIL_AMOUNT.6=32/Block
+value.VOXEL_DETAIL_AMOUNT.7=64/Block
+value.VOXEL_DETAIL_AMOUNT.8=128/Block
 option.VOXEL_DETAIL_AMOUNT.comment=Adjusts the resolution at which models for blocks are generated. §c[-]§r 16 and more per block need large amounts of VRAM.
 
 option.LIGHT_TRACE_LENGTH=Light Spread Distance

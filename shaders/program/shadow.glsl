@@ -28,7 +28,6 @@ uniform sampler2D tex;
 uniform sampler2D noisetex;
 
 layout(r32i) restrict uniform iimage3D occupancyVolume;
-layout(r32i) restrict uniform iimage3D voxelCols;
 
 #if WATER_CAUSTIC_STYLE >= 3
     uniform float frameTimeCounter;
@@ -189,22 +188,12 @@ void main() {
                 }
                 ivec3 coords2 = ivec3(position2);
                 if (k == 0) {
-                    if (passType < 6 || all(lessThan(mod(gl_FragCoord.xy, vec2(1.0, 2.0)), vec2(1.0)))) {
-                        ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
-                                                int(20 * col.b) + (int(4.5 * (1 - col.a)) << 13) + (1<<23));
-                        imageAtomicAdd(voxelCols,
-                            coords2 * ivec3(1, 2, 1),
-                            packedCol.x);
-                        imageAtomicAdd(voxelCols,
-                            coords2 * ivec3(1, 2, 1) + ivec3(0, 1, 0),
-                            packedCol.y);
-                    }
                     if (mat == 2) {
-                        imageAtomicOr(occupancyVolume, coords2, 1<<4);
+                        imageAtomicOr(occupancyVolume, coords2, 1<<16);
                         break;
                     }
                 }
-                imageAtomicOr(occupancyVolume, coords2, 1<<(k + 5 * int(col.a < 0.9)));
+                imageAtomicOr(occupancyVolume, coords2, 1<<(k + 8 * int(col.a < 0.9)));
             }
         }
         discard;
@@ -237,27 +226,45 @@ flat out int passType;
 
 //Uniforms//
 
-uniform int currentRenderedItemId;
-uniform int blockEntityId;
-uniform int entityId;
 uniform vec3 cameraPosition;
 uniform sampler2D tex;
-uniform sampler2D specular;
+
+layout(r32i) restrict uniform iimage3D voxelCols;
 
 //Includes//
 
 void main() {
     vec3 cnormal = normalize(cross(positionV[1].xyz - positionV[0].xyz, positionV[2].xyz - positionV[0].xyz));
-	if (!(length(cnormal) > 0.5)) {
-		cnormal = vec3(0,1,0);
-	}
+    if (!(length(cnormal) > 0.5)) {
+        cnormal = vec3(0,1,0);
+    }
     vec3[3] vxPos;
     for (int i = 0; i < 3; i++) vxPos[i] = positionV[i].xyz + fract(cameraPosition);
     vec3 lowerBound = floor(min(min(vxPos[0], vxPos[1]), vxPos[2]));
     vec3 minAbsPos = min(min(abs(vxPos[0]), abs(vxPos[1])), abs(vxPos[2]));
+    vec3 center = 0.5 * (
+        min(min(vxPos[0], vxPos[1]), vxPos[2]) +
+        max(max(vxPos[0], vxPos[1]), vxPos[2])
+    );
     int bestNormalAxis = int(dot(vec3(greaterThanEqual(abs(cnormal), max(abs(cnormal).yzx, abs(cnormal.zxy)))), vec3(0.5, 1.5, 2.5)));
     int localResolution = min(VOXEL_DETAIL_AMOUNT, int(-log2(infnorm(minAbsPos / voxelVolumeSize))));
     if (localResolution > 0) {
+        vec4 col = textureLod(
+            tex,
+            0.5 * (
+                min(min(texCoordV[0], texCoordV[1]), texCoordV[2]) +
+                max(max(texCoordV[0], texCoordV[1]), texCoordV[2])
+            ), 0);
+        col.rgb *= glColorV[0].rgb;
+        ivec3 coords = ivec3(center - 0.1 * cnormal + 0.5 * voxelVolumeSize);
+        ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
+                                int(20 * col.b) + (int(4.5 * (1 - col.a)) << 13) + (1<<23));
+        imageAtomicAdd(voxelCols,
+            coords * ivec3(1, 2, 1),
+            packedCol.x);
+        imageAtomicAdd(voxelCols,
+            coords * ivec3(1, 2, 1) + ivec3(0, 1, 0),
+            packedCol.y);
         for (int i = 0; i < 3; i++) {
             vec2 relProjectedPos
                 = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])

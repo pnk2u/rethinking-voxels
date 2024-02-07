@@ -973,11 +973,14 @@ option.VX_VOL_SIZE.comment=Ce réglage modifie la taille de la partie du monde d
 option.VOXEL_DETAIL_AMOUNT=Résolution Voxel
 value.VOXEL_DETAIL_AMOUNT.1=1/Bloc
 value.VOXEL_DETAIL_AMOUNT.2=2/Bloc
-value.VOXEL_DETAIL_AMOUNT.3=4/Blo
-value.VOXEL_DETAIL_AMOUNT.4=8/Block
-value.VOXEL_DETAIL_AMOUNT.5=§c[-]§r 16/Block (1GB VRAM needed)
-value.VOXEL_DETAIL_AMOUNT.6=§c[-]§r 32/Block (3GB VRAM needed)
-option.VOXEL_DETAIL_AMOUNT.comment=Règle la résolution à laquelle les modèles de blocs sont générés. §c[-]§r 16 et plus par bloc nécessitent de grandes quantités de VRAM.
+value.VOXEL_DETAIL_AMOUNT.3=4/Bloc
+value.VOXEL_DETAIL_AMOUNT.4=8/Bloc
+value.VOXEL_DETAIL_AMOUNT.5=16/Bloc
+value.VOXEL_DETAIL_AMOUNT.6=32/Bloc
+value.VOXEL_DETAIL_AMOUNT.7=64/Bloc
+value.VOXEL_DETAIL_AMOUNT.8=128/Bloc
+
+option.VOXEL_DETAIL_AMOUNT.comment=Règle la résolution à laquelle les modèles de blocs sont générés.
 
 option.LIGHT_TRACE_LENGTH=Distance de propagation de la lumière
 option.LIGHT_TRACE_LENGTH.comment=Contrôle la distance maximale à laquelle une source de lumière peut encore éclairer son environnement.

@@ -49,7 +49,7 @@ void main() {
         FXAA311(color);
     #endif
     if (texCoord.x < 0.5) {
-		color = texture(colortex8, texCoord).rgb;
+		color = vec3(getDistanceField(vec3(texCoord * vec2(2, 1) - 0.5, 0).xzy + fract(cameraPosition)));
     } else {
         vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
         dir = normalize(dir * dir.w);
