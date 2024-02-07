@@ -189,7 +189,7 @@ void main() {
                 }
                 ivec3 coords2 = ivec3(position2);
                 if (k == 0) {
-                    if (all(lessThan(mod(gl_FragCoord.xy, vec2(1.0, 2.0)), vec2(1.0)))) {
+                    if (passType < 6 || all(lessThan(mod(gl_FragCoord.xy, vec2(1.0, 2.0)), vec2(1.0)))) {
                         ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
                                                 int(20 * col.b) + (int(4.5 * (1 - col.a)) << 13) + (1<<23));
                         imageAtomicAdd(voxelCols,

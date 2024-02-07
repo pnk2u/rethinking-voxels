@@ -58,7 +58,7 @@ void main() {
         vec3 hitPos = rayTrace(start, dir.xyz * 128);
         normal = normalize(distanceFieldGradient(hitPos));
         if (!(length(normal) > 0.5)) normal = vec3(0);
-        color = 0.5 * getColor(hitPos - 0.1 * normal).xyz;
+        color = getColor(hitPos - 0.1 * normal).xyz;
     }
     #ifndef LIGHT_COLORING
     /* DRAWBUFFERS:3 */
