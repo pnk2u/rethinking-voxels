@@ -10,7 +10,7 @@ float getDistanceField(vec3 pos) {
 }
 
 vec3 distanceFieldGradient(vec3 pos) {
-    const float epsilon = 0.1;
+    const float epsilon = 0.5/(1<<VOXEL_DETAIL_AMOUNT);
     vec3 grad;
     for (int k = 0; k < 3; k++) {
         grad[k] = (getDistanceField(pos + mat3(0.5*epsilon)[k]) - getDistanceField(pos - mat3(0.5*epsilon)[k])) / epsilon;
