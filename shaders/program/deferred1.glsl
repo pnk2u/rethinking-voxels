@@ -36,21 +36,18 @@ uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
+uniform mat4 gbufferModelView;
 
 uniform sampler2D colortex0;
 uniform sampler2D colortex6;
 uniform sampler2D depthtex0;
 uniform sampler2D noisetex;
+uniform sampler2D colortex5;
 
 #if SSAO_QUALI > 0 || defined PBR_REFLECTIONS
     uniform mat4 gbufferProjection;
 #endif
 
-#ifdef PBR_REFLECTIONS
-    uniform mat4 gbufferModelView;
-
-    uniform sampler2D colortex5;
-#endif
 
 #if AURORA_STYLE > 0
     uniform float inSnowy;
@@ -269,6 +266,8 @@ void main() {
     vec3 waterRefColor = vec3(0.0);
     vec3 auroraBorealis = vec3(0.0);
     vec3 nightNebula = vec3(0.0);
+    vec3 texture5 = texelFetch(colortex5, texelCoord, 0).rgb;
+    vec3 normalM = mat3(gbufferModelView) * texture5;
 
     #ifdef TEMPORAL_FILTER
         vec4 refToWrite = vec4(0.0);
@@ -319,8 +318,6 @@ void main() {
 
         #ifdef PBR_REFLECTIONS
             float skyLightFactor = texture6.b;
-            vec3 texture5 = texelFetch(colortex5, texelCoord, 0).rgb;
-            vec3 normalM = mat3(gbufferModelView) * texture5;
 
             float fresnel = clamp(1.0 + dot(normalM, nViewPos), 0.0, 1.0);
 
@@ -503,7 +500,7 @@ void main() {
     /*DRAWBUFFERS:054*/
     gl_FragData[0] = vec4(color, 1.0);
     gl_FragData[1] = vec4(waterRefColor, 1.0 - skyFade);
-    gl_FragData[2] = vec4(cloudLinearDepth, 0.0, 0.0, 1.0);
+    gl_FragData[2] = vec4(cloudLinearDepth, texture5 * 0.5 + 0.5);
     #ifdef TEMPORAL_FILTER
         /*DRAWBUFFERS:0547*/
         gl_FragData[3] = refToWrite;

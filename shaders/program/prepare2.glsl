@@ -19,7 +19,7 @@ uniform sampler2D colortex4;
 uniform sampler2D colortex10;
 
 layout(rgba16f) uniform image2D colorimg8;
-layout(r32ui) uniform uimage2D colorimg9;
+layout(r32ui) uniform restrict readonly uimage2D colorimg9;
 
 #define MATERIALMAP_ONLY
 #include "/lib/vx/SSBOs.glsl"
@@ -33,7 +33,8 @@ void main() {
         newClipPos = unprojectionMatrix * prevClipPos;
         newClipPos.xyz += newClipPos.w * (previousCameraPosition - cameraPosition);
         if (abs(texelFetch(colortex1, texelCoord, 0).y - OSIEBCA * 254.0) < 0.5 * OSIEBCA) {
-            newClipPos.xyz += newClipPos.w * texelFetch(colortex10, texelCoord, 0).rgb;
+            vec3 velocity = texelFetch(colortex10, texelCoord, 0).rgb;
+            newClipPos.xyz += newClipPos.w * velocity;
         }
         newClipPos = projectionMatrix * newClipPos;
         newClipPos /= newClipPos.w;
@@ -66,7 +67,7 @@ uniform mat4 gbufferProjection;
 uniform int frameCounter;
 
 #define MATERIALMAP_ONLY
-#include "/lib/vx/SSBOs.glsl
+#include "/lib/vx/SSBOs.glsl"
 
 void main() {
     projectionMatrix =

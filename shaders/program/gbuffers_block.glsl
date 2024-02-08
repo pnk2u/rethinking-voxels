@@ -187,14 +187,10 @@ void main() {
         ColorCodeProgram(color);
     #endif
 
-    /* DRAWBUFFERS:06 */
+    /* DRAWBUFFERS:065 */
     gl_FragData[0] = color;
     gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
-
-    #if BLOCK_REFLECT_QUALITY >= 2 && RP_MODE != 0
-        /* DRAWBUFFERS:065 */
-        gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
-    #endif
+    gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
 }
 
 #endif

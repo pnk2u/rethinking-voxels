@@ -92,8 +92,8 @@ vec4 voxelTrace(vec3 start, vec3 dir, out vec3 normal) {
     for (int k = 0; k < 2000; k++) {
         ivec3 thisVoxelPos = ivec3(start + w * dir + 0.5 * normal * dirsgn + voxelVolumeSize/2);
         int thisVoxelData = imageLoad(occupancyVolume, thisVoxelPos).r;
-        if ((thisVoxelData & 17) != 0 || w > 1) {
-            hit = thisVoxelData & 17;
+        if ((thisVoxelData & (1<<16|1)) != 0 || w > 1) {
+            hit = thisVoxelData & (1<<16|1);
             break;
         }
         progress += normal * stp;

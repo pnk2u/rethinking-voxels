@@ -52,7 +52,7 @@ void DoNaturalShadowCalculation(inout vec4 color1, inout vec4 color2) {
 }
 
 //Includes//
-
+#include "/lib/materials/shadowChecks.glsl"
 //Program//
 void main() {
     if (passType == 0) {
@@ -188,7 +188,7 @@ void main() {
                 }
                 ivec3 coords2 = ivec3(position2);
                 if (k == 0) {
-                    if (mat == 2) {
+                    if (isEmissive(mat)) {
                         imageAtomicOr(occupancyVolume, coords2, 1<<16);
                         break;
                     }

@@ -156,6 +156,9 @@ noperspective out vec2 texCoord;
 
 //Uniforms//
 
+uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferProjectionInverse;
+
 //Attributes//
 
 //Common Variables//
@@ -163,9 +166,13 @@ noperspective out vec2 texCoord;
 //Common Functions//
 
 //Includes//
+#define WRITE_TO_SSBOS
+#include "/lib/vx/SSBOs.glsl"
 
 //Program//
 void main() {
+    gbufferPreviousModelViewInverse = gbufferModelViewInverse;
+    gbufferPreviousProjectionInverse = gbufferProjectionInverse;
     gl_Position = ftransform();
     texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 }

@@ -17,7 +17,6 @@ uniform sampler2D colortex1;
 uniform sampler2D colortex2;
 uniform sampler2D colortex10;
 
-layout(rgba32f) uniform image2D colorimg10;
 layout(r32ui) uniform uimage2D colorimg9;
 
 #define MATERIALMAP_ONLY

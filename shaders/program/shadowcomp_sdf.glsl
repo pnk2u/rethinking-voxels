@@ -12,12 +12,24 @@
 layout(local_size_x = 10, local_size_y = 10, local_size_z = 10) in;
 
 layout(rgba16f) uniform image3D distanceFieldI;
-layout(r32i) uniform restrict readonly iimage3D occupancyVolume;
+layout(r32i) uniform restrict iimage3D occupancyVolume;
 layout(r32i) uniform restrict iimage3D voxelCols;
 
 uniform vec3 cameraPosition;
 uniform vec3 previousCameraPosition;
 uniform int frameCounter;
+
+bvec2 or(bvec2 a, bvec2 b) {
+    return bvec2(a.x || b.x, a.y || b.y);
+}
+
+bvec3 or(bvec3 a, bvec3 b) {
+    return bvec3(a.x || b.x, a.y || b.y, a.z || b.z);
+}
+
+bvec4 or(bvec4 a, bvec4 b) {
+    return bvec4(a.x || b.x, a.y || b.y, a.z || b.z, a.w || b.w);
+}
 
 shared float fullDist[10][10][10];
 

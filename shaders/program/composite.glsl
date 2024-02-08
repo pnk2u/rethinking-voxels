@@ -71,9 +71,7 @@ uniform sampler2D depthtex1;
     uniform sampler2D colortex6;
 #endif
 
-#if defined LIGHTSHAFTS_ACTIVE && defined LENSFLARE || RAINBOWS > 0 && defined OVERWORLD
-    uniform sampler2D colortex4;
-#endif
+uniform sampler2D colortex4;
 
 #if RAINBOWS == 1
     uniform float wetness;
@@ -248,14 +246,15 @@ void main() {
     gl_FragData[0] = vec4(color, 1.0);
 
     // a.k.a #if defined LIGHTSHAFTS_ACTIVE && (LIGHTSHAFT_BEHAVIOUR == 1 && SHADOW_QUALITY >= 1 || defined END)
+    vec4 tex4Data = texelFetch(colortex4, texelCoord, 0);
     #if LIGHTSHAFT_QUALI_DEFINE > 0 && LIGHTSHAFT_BEHAVIOUR == 1 && SHADOW_QUALITY >= 1 && defined OVERWORLD && defined REALTIME_SHADOWS || defined END
         #ifdef LENSFLARE
             if (viewWidth + viewHeight - gl_FragCoord.x - gl_FragCoord.y > 1.5)
-                vlFactorM = texelFetch(colortex4, texelCoord, 0).r;
+                vlFactorM = tex4Data.r;
         #endif
 
         /* DRAWBUFFERS:04 */
-        gl_FragData[1] = vec4(vlFactorM, 0.0, 0.0, 1.0);
+        gl_FragData[1] = vec4(vlFactorM, tex4Data.gba);
     #endif
 }
 
