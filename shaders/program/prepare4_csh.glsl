@@ -28,11 +28,27 @@ shared int lightCount;
 shared int finalLightCount;
 shared ivec4[MAX_LIGHT_COUNT] positions;
 shared int[MAX_LIGHT_COUNT] mergeOffsets;
+shared uint[128] lightHashMap;
+
+int packPosition(ivec3 pos) {
+    pos += voxelVolumeSize/2;
+    return pos.x + (pos.y << 9) + (pos.z << 18);
+}
+int packPosition(vec3 pos) {
+    return packPosition(ivec3(pos + 1000) - 1000);
+}
+uint posToHash(int pos) {
+    return 3591 * uint(pos) % uint(128*32);
+}
 
 void main() {
+    int index = int(gl_LocalInvocationID.x + gl_WorkGroupSize.x * gl_LocalInvocationID.y);
     float dither = nextFloat();
     if (gl_LocalInvocationID.xy == uvec2(0)) {
         lightCount = 0;
+    }
+    if (index < 128) {
+        lightHashMap[index] = 0;
     }
     barrier();
     memoryBarrierShared();
@@ -42,31 +58,41 @@ void main() {
     ivec3 vxPosFrameOffset = ivec3((floor(previousCameraPosition) - floor(cameraPosition)) * 1.1);
     bool validData = (normalDepthData.a < 1.5 && length(normalDepthData.rgb) > 0.1 && all(lessThan(readTexelCoord, ivec2(view + 0.1))));
     vec3 vxPos = vec3(1000);
-    int index = int(gl_LocalInvocationID.x + gl_WorkGroupSize.x * gl_LocalInvocationID.y);
     if (validData) {
         vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
         playerPos /= playerPos.w;
-        vxPos = playerPos.xyz + fract(cameraPosition) + max(0.05, 0.8 * infnorm(playerPos.xyz/voxelVolumeSize)) * normalDepthData.xyz;
+        vxPos = playerPos.xyz + fract(cameraPosition) + max(0.05, 1.2 * infnorm(playerPos.xyz/voxelVolumeSize)) * normalDepthData.xyz;
         vec3 dir = randomSphereSample();
         if (dot(dir, normalDepthData.xyz) < 0) dir *= -1;
         vec3 rayNormal0;
         vec4 rayHit0 = voxelTrace(vxPos, LIGHT_TRACE_LENGTH * dir, rayNormal0);
         if (rayHit0.a > 16) {
-            int lightIndex = atomicAdd(lightCount, 1);
-            if (lightIndex < MAX_LIGHT_COUNT) {
-                positions[lightIndex] = ivec4(rayHit0.xyz - 0.05 * rayNormal0 + 1000, 1) - ivec4(1000, 1000, 1000, 0);
-                mergeOffsets[lightIndex] = 0;
-            } else {
-                atomicMin(lightCount, MAX_LIGHT_COUNT);
+            int packedPos = packPosition(rayHit0.xyz - 0.05 * rayNormal0);
+            uint hash = posToHash(packedPos);
+            if ((atomicOr(lightHashMap[hash/32], 1<<hash%32) & 1<<hash%32) == 0) {
+                int lightIndex = atomicAdd(lightCount, 1);
+                if (lightIndex < MAX_LIGHT_COUNT) {
+                    positions[lightIndex] = ivec4(rayHit0.xyz - 0.05 * rayNormal0 + 1000, 1) - ivec4(1000, 1000, 1000, 0);
+                    mergeOffsets[lightIndex] = 0;
+                } else {
+                    atomicMin(lightCount, MAX_LIGHT_COUNT);
+                }
             }
         }
     }
-    if (index < 8) {
+    if (index < 4 * MAX_LIGHT_COUNT) {
         ivec2 offset = (index%4/2*2-1) * ivec2(index%2, (index+1)%2);
-        int otherLightIndex = frameCounter%(MAX_LIGHT_COUNT/8) + index/4*(MAX_LIGHT_COUNT/8);//157*frameCounter % min(MAX_LIGHT_COUNT, lightCount + 1) + index/4*(lightCount + 1);
+        int otherLightIndex = index / 4;
         ivec4 prevFrameLight = imageLoad(colorimg11, ivec2(gl_WorkGroupSize.xy) * (ivec2(gl_WorkGroupID.xy) + offset) + ivec2(otherLightIndex % gl_WorkGroupSize.x, otherLightIndex / gl_WorkGroupSize.x));
         prevFrameLight.xyz += vxPosFrameOffset;
-        bool known = (prevFrameLight.w == 0 && (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) != 0);
+        uint hash = posToHash(packPosition(prevFrameLight.xyz));
+        bool known = (
+            prevFrameLight.w == 0 ||
+            (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0
+        );
+        if (!known) {
+            known = (atomicOr(lightHashMap[hash/32], 1<<hash%32) & 1<<hash%32) != 0;
+        }
         if (!known) {
             int thisLightIndex = atomicAdd(lightCount, 1);
             if (thisLightIndex < MAX_LIGHT_COUNT) {
@@ -78,48 +104,20 @@ void main() {
             }
         }
     }
-    barrier();
-    memoryBarrierShared();
-    int oldLightCount = lightCount;
-    int mergeOffset = 0;
-    ivec4 thisPos = ivec4(0);
-    int k = index + 1;
-    if (index < oldLightCount) {
-        thisPos = positions[index];
-        while (k < oldLightCount && positions[k].xyz != thisPos.xyz) k++;
-        if (k < oldLightCount) {
-            atomicAdd(mergeOffsets[k], -1000);
-            mergeOffset = 1;
-            for (k++; k < oldLightCount; k++) {
-                atomicAdd(mergeOffsets[k], 1);
-            }
-        }
-    }
-    barrier();
-    memoryBarrierShared();
-    if (index < oldLightCount) {
-        if (mergeOffsets[index] > 0) {
-            positions[index - mergeOffsets[index]] = thisPos;
-        }
-        if (mergeOffset > 0) {
-            atomicAdd(lightCount, -1);
-        }
-    }
-    barrier();
-    memoryBarrierShared();
-    oldLightCount = lightCount;
-    barrier();
-    memoryBarrierShared();
     if (index < MAX_LIGHT_COUNT) {
         ivec4 prevFrameLight = imageLoad(colorimg11, writeTexelCoord);
-        bool known = (prevFrameLight.w == 0 && (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) != 0);
         prevFrameLight.xyz += vxPosFrameOffset;
-        for (int k = 0; k < oldLightCount; k++) {
-            if (prevFrameLight.xyz == positions[k].xyz) {
-                known = true;
-                break;
-            }
+
+        uint hash = posToHash(packPosition(prevFrameLight.xyz));
+        bool known = (
+            prevFrameLight.w == 0 ||
+            (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0 ||
+            (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0
+        );
+        if (!known) {
+            known = (atomicOr(lightHashMap[hash/32], 1<<hash%32) & 1<<hash%32) != 0;
         }
+
         if (!known) {
             int thisLightIndex = atomicAdd(lightCount, 1);
             if (thisLightIndex < MAX_LIGHT_COUNT) {
@@ -132,12 +130,7 @@ void main() {
     barrier();
     memoryBarrierShared();
     vec3 writeColor = vec3(0);
-    #ifdef TRACE_ALL_LIGHTS
-        for (uint thisLightIndex = lightCount * uint(!validData); thisLightIndex < lightCount; thisLightIndex++) {
-    #else
-        if (lightCount > 0 && validData) {
-            uint thisLightIndex = nextUint() % lightCount;
-        #endif
+    for (uint thisLightIndex = lightCount * uint(!validData); thisLightIndex < lightCount; thisLightIndex++) {
         vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
         float ndotl0 = infnorm(vxPos - 0.5 * normalDepthData.xyz - lightPos) < 0.5 ? 1.0 : max(0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
         ivec3 lightCoords = ivec3(lightPos + 1000) - 1000 + voxelVolumeSize / 2;

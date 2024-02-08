@@ -18,7 +18,7 @@ in vec4 position;
 flat in vec4 glColor;
 
 flat in int passType;
-
+flat in ivec3 correspondingBlock;
 //Uniforms//
 uniform int isEyeInWater;
 
@@ -188,7 +188,7 @@ void main() {
                 }
                 ivec3 coords2 = ivec3(position2);
                 if (k == 0) {
-                    if (isEmissive(mat)) {
+                    if (isEmissive(mat) && (coords2 == correspondingBlock || correspondingBlock == ivec3(-1000))) {
                         imageAtomicOr(occupancyVolume, coords2, 1<<16);
                         break;
                     }
@@ -215,6 +215,7 @@ in vec3 midBlock[3];
 flat in vec3 sunVecV[3], upVecV[3];
 in vec4 positionV[3];
 flat in vec4 glColorV[3];
+flat in ivec3 correspondingBlockV[3];
 
 flat out int mat;
 out vec2 texCoord;
@@ -223,7 +224,7 @@ out vec4 position;
 flat out vec4 glColor;
 
 flat out int passType;
-
+flat out ivec3 correspondingBlock;
 //Uniforms//
 
 uniform vec3 cameraPosition;
@@ -277,6 +278,7 @@ void main() {
             position = positionV[i];
             glColor = glColorV[i];
             passType = 1 + (localResolution << 1);
+			correspondingBlock = correspondingBlockV[i];
             EmitVertex();
         }
     }
@@ -291,6 +293,7 @@ void main() {
             position = positionV[i];
             glColor = glColorV[i];
             passType = 0;
+			correspondingBlock = correspondingBlockV[i];
             EmitVertex();
         }
         EndPrimitive();
@@ -310,8 +313,12 @@ flat out vec3 sunVecV, upVecV;
 
 out vec4 positionV;
 flat out vec4 glColorV;
+flat out ivec3 correspondingBlockV;
 
 //Uniforms//
+uniform int renderStage;
+uniform vec3 cameraPosition;
+
 uniform mat4 shadowProjection, shadowProjectionInverse;
 uniform mat4 shadowModelView, shadowModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
@@ -320,12 +327,11 @@ uniform mat4 gbufferModelViewInverse;
 #if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
     uniform float frameTimeCounter;
 
-    uniform vec3 cameraPosition;
 #endif
 
 //Attributes//
 in vec4 mc_Entity;
-
+in vec3 at_midBlock;
 #if defined PERPENDICULAR_TWEAKS || defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
     attribute vec4 mc_midTexCoord;
 #endif
@@ -356,7 +362,14 @@ void main() {
     matV = int(mc_Entity.x + 0.5);
 
     positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
-
+	correspondingBlockV = ivec3(-1000);
+	if (
+		renderStage == MC_RENDER_STAGE_TERRAIN_SOLID ||
+		renderStage == MC_RENDER_STAGE_TERRAIN_CUTOUT ||
+		renderStage == MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
+	) {
+		correspondingBlockV = ivec3(positionV.xyz + fract(cameraPosition) + at_midBlock/64 + 1000) - 1000 + voxelVolumeSize/2;
+	}
     #if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
         #ifdef NO_WAVING_INDOORS
             lmCoord = GetLightMapCoordinates();
