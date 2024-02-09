@@ -37,6 +37,7 @@ uniform int frameCounter;
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
 uniform vec3 cameraPosition;
+uniform sampler2D colortex4;
 uniform sampler2D colortex12;
 void main() {
     #ifndef LIGHT_COLORING
@@ -51,14 +52,15 @@ void main() {
     if (texCoord.x < 0.5) {
 		color = texelFetch(colortex12, texelCoord, 0).rgb;
     } else if (false) {
-        vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
-        dir = normalize(dir * dir.w);
-        vec3 start = fract(cameraPosition) + dir.xyz;
-        vec3 normal;
-        vec3 hitPos = rayTrace(start, dir.xyz * 128);
-        normal = normalize(distanceFieldGradient(hitPos));
-        if (!(length(normal) > 0.5)) normal = vec3(0);
-        color = getColor(hitPos.xyz - 0.1 * normal).xyz + 0.2 * normal + 0.2;
+        color = texelFetch(colortex4, texelCoord, 0).gba;
+//        vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
+//        dir = normalize(dir * dir.w);
+//        vec3 start = fract(cameraPosition) + dir.xyz;
+//        vec3 normal;
+//        vec3 hitPos = rayTrace(start, dir.xyz * 128);
+//        normal = normalize(distanceFieldGradient(hitPos));
+//        if (!(length(normal) > 0.5)) normal = vec3(0);
+//        color = getColor(hitPos.xyz - 0.1 * normal).xyz + 0.2 * normal + 0.2;
     }
     #ifndef LIGHT_COLORING
     /* DRAWBUFFERS:3 */

@@ -188,8 +188,10 @@ void main() {
                 }
                 ivec3 coords2 = ivec3(position2);
                 if (k == 0) {
-                    if (isEmissive(mat) && (coords2 == correspondingBlock || correspondingBlock == ivec3(-1000))) {
-                        imageAtomicOr(occupancyVolume, coords2, 1<<16);
+                    if (isEmissive(mat)) {
+                        if (coords2 == correspondingBlock || correspondingBlock == ivec3(-1000)) {
+                            imageAtomicOr(occupancyVolume, coords2, 1<<16);
+                        }
                         break;
                     }
                 }

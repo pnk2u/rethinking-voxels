@@ -13,6 +13,7 @@ noperspective in vec2 texCoord;
 //Uniforms//
 uniform float viewWidth, viewHeight;
 
+uniform sampler2D shadowcolor0;
 #ifndef LIGHT_COLORING
     uniform sampler2D colortex3;
 #else
@@ -142,7 +143,7 @@ void main() {
     #endif
 
     //if (gl_FragCoord.x < 479 || gl_FragCoord.x > 1441) color = vec3(0.0);
-
+    if (gl_FragCoord.x < 0) color = texture(shadowcolor0, texCoord).rgb;
     /* DRAWBUFFERS:0 */
     gl_FragData[0] = vec4(color, 1.0);
 }
