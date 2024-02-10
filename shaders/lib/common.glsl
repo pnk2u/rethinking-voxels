@@ -52,18 +52,7 @@
     #define LIGHT_TRACE_LENGTH 30.0 //[10.0 12.0 15.0 18.0 22.0 26.0 30.0 35.0 40.0 57.0 55.0 65.0 76.0 88.0 100.0]
     #define LIGHT_COLOR_SATURATION 0.5 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
     #define LIGHTSOURCE_SIZE_MULT 0.6 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-  //#define TRACE_ALL_LIGHTS
-
-    #if DENOISING_DEFINE > 0
-        #define DENOISING
-        #if DENOISING_DEFINE == 1 && defined TRACE_ALL_LIGHTS
-            #define DENOISE_MAX_BLUR_MOD DENOISE_MAX_BLUR / 2
-            #define DENOISE_MIN_BLUR_MOD DENOISE_MIN_BLUR / 2
-        #else
-            #define DENOISE_MAX_BLUR_MOD DENOISE_MAX_BLUR
-            #define DENOISE_MIN_BLUR_MOD DENOISE_MIN_BLUR
-        #endif
-    #endif
+    #define MAX_TRACE_COUNT 16 //[1 2 4 8 16 32 48 64 96 128 192 256]
 
     #define VOLUMETRIC_BLOCKLIGHT
     #define VBL_STRENGTH 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
