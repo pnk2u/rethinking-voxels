@@ -8,7 +8,7 @@
         all(lessThan(prevTexCoord0, voxelVolumeSize)) ?
         imageLoad(distanceFieldI, prevTexCoord)[j%4] + 1.0 / (1<<j) : (
             #if j > 0
-                max(imageLoad(distanceFieldI, prevCoord)[(j-1)%4] - 0.5 / (1<<j), 0.5/(1<<j))
+                max(imageLoad(distanceFieldI, prevCoord)[(j-1)%4] - 0.5 / (1<<j), 1.0/(1<<j))
             #else
                 1000.0
             #endif
