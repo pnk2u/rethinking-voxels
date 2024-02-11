@@ -273,7 +273,7 @@ void main() {
     }
     barrier();
     memoryBarrierShared();
-    if (index < lightCount) writeColor = vec3(10 * weights[index]);
+    //if (index < lightCount) writeColor = vec3(10 * weights[index]);
     imageStore(colorimg10, writeTexelCoord, vec4(writeColor, finalLightCount));
 
     ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);

@@ -33,6 +33,7 @@ uniform float darknessLightFactor;
     #include "/lib/colors/moonPhaseInfluence.glsl"
 #endif
 
+uniform sampler2D colortex12;
 //
 vec3 highlightColor = normalize(pow(lightColor, vec3(0.37))) * (0.3 + 1.5 * sunVisibility2) * (1.0 - 0.85 * rainFactor);
 
@@ -316,6 +317,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Blocklight
+    lightmap.x = 0;
     #if HELD_LIGHTING_MODE >= 1
         float heldLight = max(heldBlockLightValue, heldBlockLightValue2);
         float lViewPosL = lViewPos;
@@ -436,7 +438,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Combine Lighting
-    vec3 blockLighting = lightmapXM * blocklightCol;
+    vec3 blockLighting = lightmapXM * blocklightCol + 4 * texelFetch(colortex12, ivec2(gl_FragCoord.xy), 0).rgb;
     vec3 sceneLighting = lightColorM * shadowMult + ambientColorM * ambientMult;
     float dotSceneLighting = dot(sceneLighting, sceneLighting);
 
