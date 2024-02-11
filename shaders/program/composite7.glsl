@@ -49,18 +49,18 @@ void main() {
     #ifdef FXAA
         FXAA311(color);
     #endif
-    if (true || texCoord.x < 0.5) {
+    if (true ||  texCoord.x < 0.5) {
 		color = texelFetch(colortex12, texelCoord, 0).rgb;
     } else if (false) {
-        color = texelFetch(colortex4, texelCoord, 0).gba;
-//        vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
-//        dir = normalize(dir * dir.w);
-//        vec3 start = fract(cameraPosition) + dir.xyz;
-//        vec3 normal;
-//        vec3 hitPos = rayTrace(start, dir.xyz * 128);
-//        normal = normalize(distanceFieldGradient(hitPos));
-//        if (!(length(normal) > 0.5)) normal = vec3(0);
-//        color = getColor(hitPos.xyz - 0.1 * normal).xyz + 0.2 * normal + 0.2;
+//        color = texelFetch(colortex4, texelCoord, 0).gba;
+        vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
+        dir = normalize(dir * dir.w);
+        vec3 start = fract(cameraPosition) + 2 * dir.xyz;
+        vec3 normal;
+        vec4 hitPos = voxelTrace(start, dir.xyz * 128, normal);
+        //normal = normalize(distanceFieldGradient(hitPos));
+        //if (!(length(normal) > 0.5)) normal = vec3(0);
+        if (hitPos.a > 16) color = getColor(hitPos.xyz - 0.1 * normal).xyz + 0.2 * normal + 0.2;
     }
     #ifndef LIGHT_COLORING
     /* DRAWBUFFERS:3 */

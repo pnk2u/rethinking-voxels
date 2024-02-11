@@ -96,9 +96,9 @@ vec4 voxelTrace(vec3 start, vec3 dir, out vec3 normal) {
             hit = thisVoxelData & (1<<16|1);
             break;
         }
-        progress += normal * stp;
         w = min(min(progress.x, progress.y), progress.z);
         normal = vec3(equal(progress, vec3(w)));
+        progress += normal * stp;
     }
     normal *= -dirsgn;
     return vec4(start + w * dir, hit);

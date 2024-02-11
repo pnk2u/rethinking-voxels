@@ -170,15 +170,16 @@ void main() {
         }
         vec3 rayNormal0;
         vec4 rayHit0 = voxelTrace(vxPos, LIGHT_TRACE_LENGTH * dir, rayNormal0);
-        if (rayHit0.a > 16) {
-            uint hash = posToHash(rayHit0.xyz - 0.05 * rayNormal0);
+        ivec3 rayHit0Coords = ivec3(rayHit0.xyz - 0.5 * rayNormal0 + 1000) - 1000;
+        if (rayHit0.a > 16 && (imageLoad(occupancyVolume, rayHit0Coords + voxelVolumeSize/2).r >> 16 & 1) != 0) {
+            uint hash = posToHash(rayHit0.xyz - 0.5 * rayNormal0);
             if ((atomicOr(lightHashMap[hash/32], 1<<hash%32) & uint(1)<<hash%32) == 0) {
                 int lightIndex = atomicAdd(lightCount, 1);
                 if (lightIndex < MAX_LIGHT_COUNT) {
-                    positions[lightIndex] = ivec4(rayHit0.xyz - 0.05 * rayNormal0 + 1000, 1) - ivec4(1000, 1000, 1000, 0);
+                    positions[lightIndex] = ivec4(rayHit0Coords, 1);
                     vec3 lightPos = positions[lightIndex].xyz + 0.5;
-                    float ndotl = infnorm(lightPos - vxPos + 0.5 * normalDepthData.xyz) < 0.5 ? 1.0 :
-                        dot(normalize(lightPos - vxPos), normalDepthData.xyz);
+                    float ndotl = rayHit0Coords == positions[lightIndex].xyz ? 1.0 :
+                        max(0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
                     float dirLen = length(lightPos - vxPos);
                     weights[lightIndex] =
                         length(getColor(lightPos).xyz) *
@@ -243,7 +244,7 @@ void main() {
     for (uint thisLightIndex = MAX_TRACE_COUNT * uint(!validData); thisLightIndex < min(lightCount, MAX_TRACE_COUNT); thisLightIndex++) {
         vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
         float ndotl0 = infnorm(vxPos - 0.5 * normalDepthData.xyz - lightPos) < 0.5 ? 1.0 : max(0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
-        ivec3 lightCoords = ivec3(lightPos + 1000) - 1000 + voxelVolumeSize / 2;
+        ivec3 lightCoords = positions[thisLightIndex].xyz + voxelVolumeSize / 2;
         int lightData = imageLoad(occupancyVolume, lightCoords).r;
         vec3 dir = lightPos - vxPos;
         float dirLen = length(dir);
