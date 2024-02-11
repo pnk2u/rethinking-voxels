@@ -42,13 +42,21 @@ int packPosition(ivec3 pos) {
 int packPosition(vec3 pos) {
     return packPosition(ivec3(pos + 1000) - 1000);
 }
-uint posToHash(int pos) {
+uint posToHash(uvec3 pos) {
     // modified version of David Hoskins' hash without sine 2
-    // https://www.shadertoy.com/view/XdGfRR -> common -> hash11
+    // https://www.shadertoy.com/view/XdGfRR -> common -> hash13
     // licensed as CC-BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)
-    uvec2 n = pos * uvec2(1597334673U, 3812015801U);
-    uint hash = (n.x ^ n.y) * 1597334673U;
+    pos *= uvec3(1597334673U, 3812015801U, 2798796415U);
+	uint hash = (pos.x ^ pos.y ^ pos.z) * 1597334673U;
     return hash % uint(128*32);
+}
+
+uint posToHash(vec3 pos) {
+    return posToHash(uvec3(pos + 1000));
+}
+
+uint posToHash(ivec3 pos) {
+    return posToHash(uvec3(pos + 1000));
 }
 
 ivec2 getFlipPair(int index, int stage) {
@@ -60,11 +68,6 @@ ivec2 getDispersePair(int index, int stage) {
     int groupSize = 1<<stage;
     return ivec2(index / groupSize * groupSize * 2) +
            ivec2(index%groupSize, groupSize + index%groupSize);
-}
-
-float getWeight(int index, vec3 meanPos, vec3 meanNormal) {
-    vec3 dPos = positions[index].xyz + 0.5 - meanPos;
-    return (3.0 + dot(normalize(dPos), meanNormal))/(5.0 + dot(dPos, dPos));
 }
 
 void flipPair(int index, int stage, vec3 meanPos, vec3 meanNormal) {
@@ -122,7 +125,7 @@ void main() {
         ivec4 prevFrameLight = imageLoad(colorimg11, writeTexelCoord);
         prevFrameLight.xyz += vxPosFrameOffset;
 
-        uint hash = posToHash(packPosition(prevFrameLight.xyz));
+        uint hash = posToHash(prevFrameLight.xyz);
         bool known = (
             prevFrameLight.w <= 0 ||
             (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0
@@ -144,7 +147,7 @@ void main() {
                     ndotl *
                     (sqrt(1 - min(1.0, dirLen / LIGHT_TRACE_LENGTH))) /
                     (dirLen + 0.1); */
-                weights[thisLightIndex] = 0.001 * prevFrameLight.w;
+                weights[thisLightIndex] = 0.0001 * prevFrameLight.w;
             } else {
                 atomicMin(lightCount, MAX_LIGHT_COUNT);
             }
@@ -168,8 +171,7 @@ void main() {
         vec3 rayNormal0;
         vec4 rayHit0 = voxelTrace(vxPos, LIGHT_TRACE_LENGTH * dir, rayNormal0);
         if (rayHit0.a > 16) {
-            int packedPos = packPosition(rayHit0.xyz - 0.05 * rayNormal0);
-            uint hash = posToHash(packedPos);
+            uint hash = posToHash(rayHit0.xyz - 0.05 * rayNormal0);
             if ((atomicOr(lightHashMap[hash/32], 1<<hash%32) & uint(1)<<hash%32) == 0) {
                 int lightIndex = atomicAdd(lightCount, 1);
                 if (lightIndex < MAX_LIGHT_COUNT) {
@@ -198,7 +200,7 @@ void main() {
         int otherLightIndex = index / 4;
         ivec4 prevFrameLight = imageLoad(colorimg11, ivec2(gl_WorkGroupSize.xy) * (ivec2(gl_WorkGroupID.xy) + offset) + ivec2(otherLightIndex % gl_WorkGroupSize.x, otherLightIndex / gl_WorkGroupSize.x));
         prevFrameLight.xyz += vxPosFrameOffset;
-        uint hash = posToHash(packPosition(prevFrameLight.xyz));
+        uint hash = posToHash(prevFrameLight.xyz);
         bool known = (
             prevFrameLight.w <= 0 ||
             (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0
@@ -210,7 +212,7 @@ void main() {
             int thisLightIndex = atomicAdd(lightCount, 1);
             if (thisLightIndex < MAX_LIGHT_COUNT) {
                 positions[thisLightIndex] = ivec4(prevFrameLight.xyz, 0);
-                weights[thisLightIndex] = 0.001 * prevFrameLight.w;
+                weights[thisLightIndex] = 0.0001 * prevFrameLight.w;
             } else {
                 atomicMin(lightCount, MAX_LIGHT_COUNT);
             }
@@ -229,7 +231,7 @@ void main() {
             float ndotl = infnorm(lightPos - meanPos + 0.5 * meanNormal) < 0.5 ? 1.0 :
                 mix(dot(normalize(lightPos - meanPos), meanNormal), 0.7, length(meanNormal));
             float totalBrightness = ndotl * (sqrt(1 - min(1.0, dirLen / LIGHT_TRACE_LENGTH))) / (dirLen + 0.1);
-            int thisWeight = int(1000 * length(getColor(lightPos)) * totalBrightness);
+            int thisWeight = int(10000.5 * length(getColor(lightPos)) * totalBrightness);
             vec4 rayHit1 = coneTrace(meanPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.3 / dirLen, dither);
             if (rayHit1.w > 0.01) positions[index].w = thisWeight;
         } else if (index < lightCount) {
@@ -254,7 +256,7 @@ void main() {
                 vec3 lightColor = getColor(lightPos).xyz;
                 float totalBrightness = ndotl * (sqrt(1 - dirLen / LIGHT_TRACE_LENGTH)) / (dirLen + 0.1);
                 writeColor += lightColor * rayHit1.w * totalBrightness;
-                int thisWeight = int(1000.5 * length(lightColor) * totalBrightness);
+                int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);
                 atomicMax(positions[thisLightIndex].w, thisWeight);
             }
         }
@@ -270,7 +272,7 @@ void main() {
     }
     barrier();
     memoryBarrierShared();
-    //if (index < lightCount) writeColor = vec3(10 * weights[index]);
+    if (index < lightCount) writeColor = vec3(10 * weights[index]);
     imageStore(colorimg10, writeTexelCoord, vec4(writeColor, finalLightCount));
 
     ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
