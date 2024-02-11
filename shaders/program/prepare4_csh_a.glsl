@@ -28,11 +28,17 @@ void main() {
             for (int j = 0; j < 4; j++) {
                 ivec2 writeOffset = ivec2(j%2, j/2);
                 vec3 writeColor = vec3(0);
+                vec4 writePosNDData = texelFetch(colortex8, 2 * (texelCoord + valueOffset) + writeOffset, 0) * vec4(1, 1, 1, 100);
+                float totalWeight = 0.0001;
                 for (int i = 0; i < 4; i++) {
                     ivec2 corner = ivec2(i%2, i/2);
+                    vec4 cornerNDData = texelFetch(colortex8, 2 * (texelCoord + valueOffset + corner), 0) * vec4(1, 1, 1, 100);
                     float weight = (1 - corner.x + (corner.x - 0.5) * writeOffset.x) * (1 - corner.y + (corner.y - 0.5) * writeOffset.y);
+                    weight *= max(0, 1 - length(cornerNDData - writePosNDData));
                     writeColor += weight * readColors[localCoord.x * 2 + 2 + valueOffset.x + corner.x][localCoord.y * 2 + 2 + valueOffset.y + corner.y];
+                    totalWeight += weight;
                 }
+                writeColor /= totalWeight;
                 imageStore(colorimg12, 2 * (texelCoord + valueOffset) + writeOffset, vec4(writeColor, 1));
             }
         }
