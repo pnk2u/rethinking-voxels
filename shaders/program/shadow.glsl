@@ -52,7 +52,7 @@ void DoNaturalShadowCalculation(inout vec4 color1, inout vec4 color2) {
 }
 
 //Includes//
-#include "/lib/materials/shadowChecks.glsl"
+
 //Program//
 void main() {
     if (passType == 0) {
@@ -187,14 +187,6 @@ void main() {
                     break;
                 }
                 ivec3 coords2 = ivec3(position2);
-                if (k == 0) {
-                    if (isEmissive(mat)) {
-                        if (coords2 == correspondingBlock || correspondingBlock == ivec3(-1000)) {
-                            imageAtomicOr(occupancyVolume, coords2, 1<<16);
-                        }
-                        break;
-                    }
-                }
                 imageAtomicOr(occupancyVolume, coords2, 1<<(k + 8 * int(col.a < 0.9)));
             }
         }
@@ -233,8 +225,10 @@ uniform vec3 cameraPosition;
 uniform sampler2D tex;
 
 layout(r32i) restrict uniform iimage3D voxelCols;
+layout(r32i) restrict uniform iimage3D occupancyVolume;
 
 //Includes//
+#include "/lib/materials/shadowChecks.glsl"
 
 void main() {
     vec3 cnormal = normalize(cross(positionV[1].xyz - positionV[0].xyz, positionV[2].xyz - positionV[0].xyz));
@@ -268,23 +262,28 @@ void main() {
         imageAtomicAdd(voxelCols,
             coords * ivec3(1, 2, 1) + ivec3(0, 1, 0),
             packedCol.y);
-        for (int i = 0; i < 3; i++) {
-            vec2 relProjectedPos
-                = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])
-                - vec2(lowerBound[(bestNormalAxis+1)%3], lowerBound[(bestNormalAxis+2)%3]);
-            gl_Position = vec4(relProjectedPos * (1<<localResolution) / shadowMapResolution - 0.5, 0.5, 1.0);
-            mat = matV[i];
-            texCoord = texCoordV[i];
-            sunVec = sunVecV[i];
-            upVec = cnormal;
-            position = positionV[i];
-            glColor = glColorV[i];
-            passType = 1 + (localResolution << 1);
-			correspondingBlock = correspondingBlockV[i];
-            EmitVertex();
+
+        if (isEmissive(matV[0])) {
+            imageAtomicOr(occupancyVolume, coords, 1<<16);
+        } else {
+            for (int i = 0; i < 3; i++) {
+                vec2 relProjectedPos
+                    = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])
+                    - vec2(lowerBound[(bestNormalAxis+1)%3], lowerBound[(bestNormalAxis+2)%3]);
+                gl_Position = vec4(relProjectedPos * (1<<localResolution) / shadowMapResolution - 0.5, 0.5, 1.0);
+                mat = matV[i];
+                texCoord = texCoordV[i];
+                sunVec = sunVecV[i];
+                upVec = cnormal;
+                position = positionV[i];
+                glColor = glColorV[i];
+                passType = 1 + (localResolution << 1);
+                correspondingBlock = correspondingBlockV[i];
+                EmitVertex();
+            }
+            EndPrimitive();
         }
     }
-    EndPrimitive();
     #if (defined OVERWORLD || defined END) && defined REALTIME_SHADOWS
         for (int i = 0; i < 3; i++) {
             gl_Position = gl_in[i].gl_Position;
