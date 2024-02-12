@@ -1,6 +1,6 @@
 // N>1
 if (participateInSorting) {
-    flipPair(index, 0, meanPos, meanNormal);
+    flipPair(index, 0);
 }
 barrier();
 memoryBarrierShared();
@@ -8,12 +8,12 @@ memoryBarrierShared();
 
 // N>2
 if (participateInSorting) {
-    flipPair(index, 1, meanPos, meanNormal);
+    flipPair(index, 1);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 0, meanPos, meanNormal);
+    dispersePair(index, 0);
 }
 barrier();
 memoryBarrierShared();
@@ -21,17 +21,17 @@ memoryBarrierShared();
 
 // N>4
 if (participateInSorting) {
-    flipPair(index, 2, meanPos, meanNormal);
+    flipPair(index, 2);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 1, meanPos, meanNormal);
+    dispersePair(index, 1);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 0, meanPos, meanNormal);
+    dispersePair(index, 0);
 }
 barrier();
 memoryBarrierShared();
@@ -39,22 +39,22 @@ memoryBarrierShared();
 
 // N>8
 if (participateInSorting) {
-    flipPair(index, 3, meanPos, meanNormal);
+    flipPair(index, 3);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 2, meanPos, meanNormal);
+    dispersePair(index, 2);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 1, meanPos, meanNormal);
+    dispersePair(index, 1);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 0, meanPos, meanNormal);
+    dispersePair(index, 0);
 }
 barrier();
 memoryBarrierShared();
@@ -62,27 +62,27 @@ memoryBarrierShared();
 
 // N>16
 if (participateInSorting) {
-    flipPair(index, 4, meanPos, meanNormal);
+    flipPair(index, 4);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 3, meanPos, meanNormal);
+    dispersePair(index, 3);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 2, meanPos, meanNormal);
+    dispersePair(index, 2);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 1, meanPos, meanNormal);
+    dispersePair(index, 1);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 0, meanPos, meanNormal);
+    dispersePair(index, 0);
 }
 barrier();
 memoryBarrierShared();
@@ -90,32 +90,32 @@ memoryBarrierShared();
 
 // N>32
 if (participateInSorting) {
-    flipPair(index, 5, meanPos, meanNormal);
+    flipPair(index, 5);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 4, meanPos, meanNormal);
+    dispersePair(index, 4);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 3, meanPos, meanNormal);
+    dispersePair(index, 3);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 2, meanPos, meanNormal);
+    dispersePair(index, 2);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 1, meanPos, meanNormal);
+    dispersePair(index, 1);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 0, meanPos, meanNormal);
+    dispersePair(index, 0);
 }
 barrier();
 memoryBarrierShared();
@@ -123,37 +123,37 @@ memoryBarrierShared();
 
 // N>64
 if (participateInSorting) {
-    flipPair(index, 6, meanPos, meanNormal);
+    flipPair(index, 6);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 5, meanPos, meanNormal);
+    dispersePair(index, 5);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 4, meanPos, meanNormal);
+    dispersePair(index, 4);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 3, meanPos, meanNormal);
+    dispersePair(index, 3);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 2, meanPos, meanNormal);
+    dispersePair(index, 2);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 1, meanPos, meanNormal);
+    dispersePair(index, 1);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 0, meanPos, meanNormal);
+    dispersePair(index, 0);
 }
 barrier();
 memoryBarrierShared();
@@ -161,42 +161,42 @@ memoryBarrierShared();
 
 // N>128
 if (participateInSorting) {
-    flipPair(index, 7, meanPos, meanNormal);
+    flipPair(index, 7);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 6, meanPos, meanNormal);
+    dispersePair(index, 6);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 5, meanPos, meanNormal);
+    dispersePair(index, 5);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 4, meanPos, meanNormal);
+    dispersePair(index, 4);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 3, meanPos, meanNormal);
+    dispersePair(index, 3);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 2, meanPos, meanNormal);
+    dispersePair(index, 2);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 1, meanPos, meanNormal);
+    dispersePair(index, 1);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 0, meanPos, meanNormal);
+    dispersePair(index, 0);
 }
 barrier();
 memoryBarrierShared();
@@ -204,47 +204,47 @@ memoryBarrierShared();
 
 // N>256
 if (participateInSorting) {
-    flipPair(index, 8, meanPos, meanNormal);
+    flipPair(index, 8);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 7, meanPos, meanNormal);
+    dispersePair(index, 7);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 6, meanPos, meanNormal);
+    dispersePair(index, 6);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 5, meanPos, meanNormal);
+    dispersePair(index, 5);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 4, meanPos, meanNormal);
+    dispersePair(index, 4);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 3, meanPos, meanNormal);
+    dispersePair(index, 3);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 2, meanPos, meanNormal);
+    dispersePair(index, 2);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 1, meanPos, meanNormal);
+    dispersePair(index, 1);
 }
 barrier();
 memoryBarrierShared();
 if (participateInSorting) {
-    dispersePair(index, 0, meanPos, meanNormal);
+    dispersePair(index, 0);
 }
 barrier();
 memoryBarrierShared();

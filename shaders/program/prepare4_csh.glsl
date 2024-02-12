@@ -1,7 +1,7 @@
 #include "/lib/common.glsl"
 
 #ifdef CSH
-
+#ifdef PER_PIXEL_LIGHT
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 const vec2 workGroupsRender = vec2(0.5, 0.5);
 
@@ -35,19 +35,12 @@ shared ivec4[MAX_LIGHT_COUNT] positions;
 shared float[MAX_LIGHT_COUNT] weights;
 shared uint[128] lightHashMap;
 
-int packPosition(ivec3 pos) {
-    pos += voxelVolumeSize/2;
-    return (pos.x & 511) + ((pos.y & 511) << 9) + ((pos.z & 511) << 18);
-}
-int packPosition(vec3 pos) {
-    return packPosition(ivec3(pos + 1000) - 1000);
-}
 uint posToHash(uvec3 pos) {
     // modified version of David Hoskins' hash without sine 2
     // https://www.shadertoy.com/view/XdGfRR -> common -> hash13
     // licensed as CC-BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)
     pos *= uvec3(1597334673U, 3812015801U, 2798796415U);
-	uint hash = (pos.x ^ pos.y ^ pos.z) * 1597334673U;
+    uint hash = (pos.x ^ pos.y ^ pos.z) * 1597334673U;
     return hash % uint(128*32);
 }
 
@@ -70,7 +63,7 @@ ivec2 getDispersePair(int index, int stage) {
            ivec2(index%groupSize, groupSize + index%groupSize);
 }
 
-void flipPair(int index, int stage, vec3 meanPos, vec3 meanNormal) {
+void flipPair(int index, int stage) {
     ivec2 indexPair = getFlipPair(index, stage);
     if (
         indexPair.y < lightCount && 
@@ -85,7 +78,7 @@ void flipPair(int index, int stage, vec3 meanPos, vec3 meanNormal) {
     }
 }
 
-void dispersePair(int index, int stage, vec3 meanPos, vec3 meanNormal) {
+void dispersePair(int index, int stage) {
     ivec2 indexPair = getDispersePair(index, stage);
     if (
         indexPair.y < lightCount &&
@@ -103,7 +96,7 @@ void dispersePair(int index, int stage, vec3 meanPos, vec3 meanNormal) {
 void main() {
     int index = int(gl_LocalInvocationID.x + gl_WorkGroupSize.x * gl_LocalInvocationID.y);
     float dither = nextFloat();
-    if (gl_LocalInvocationID.xy == uvec2(0)) {
+    if (index == 0) {
         lightCount = 0;
         cumulatedPos = ivec4(0);
         cumulatedNormal = ivec4(0);
@@ -154,7 +147,7 @@ void main() {
         }
     }
     barrier();
-        if (validData) {
+    if (validData) {
         vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
         playerPos /= playerPos.w;
         vxPos = playerPos.xyz + fract(cameraPosition) + max(1.5/(1<<VOXEL_DETAIL_AMOUNT), 2.5 * infnorm(playerPos.xyz/voxelVolumeSize)) * normalDepthData.xyz;
@@ -246,7 +239,6 @@ void main() {
         vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
         float ndotl0 = infnorm(vxPos - 0.5 * normalDepthData.xyz - lightPos) < 0.5 ? 1.0 : max(0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
         ivec3 lightCoords = positions[thisLightIndex].xyz + voxelVolumeSize / 2;
-        int lightData = imageLoad(occupancyVolume, lightCoords).r;
         vec3 dir = lightPos - vxPos;
         float dirLen = length(dir);
         if (dirLen < LIGHT_TRACE_LENGTH && ndotl0 > 0.001) {
@@ -279,4 +271,9 @@ void main() {
     ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
     imageStore(colorimg11, writeTexelCoord, lightPosToStore);
 }
+#else
+    const ivec3 workGroups = ivec3(1, 1, 1);
+    layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+    void main() {}
+#endif
 #endif
