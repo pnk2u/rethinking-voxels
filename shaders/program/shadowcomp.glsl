@@ -208,7 +208,8 @@ void main() {
         insideFrustrum = (insideFrustrum && dot(vxPos, frustrumSides[k]) > -10.0);
     }
     bool hasNeighbor = false;
-    if (insideFrustrum) {
+
+    if (insideFrustrum && int(gl_WorkGroupID.x + gl_WorkGroupID.y + gl_WorkGroupID.z) % 10 == frameCounter % 10) {
         anyInFrustrum = true;
         hasNeighbor = getDistanceField(vxPos) < 1;
         normal = hasNeighbor ? distanceFieldGradient(vxPos) : vec3(0);
@@ -230,9 +231,7 @@ void main() {
             }
         }
     }
-    if (int(gl_WorkGroupID.x + gl_WorkGroupID.y + gl_WorkGroupID.z) % 10 != frameCounter % 10) {
-        anyInFrustrum = false;
-    }
+
     barrier();
     memoryBarrierShared();
     if (index < MAX_LIGHT_COUNT && anyInFrustrum) {
