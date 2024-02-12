@@ -2,7 +2,7 @@
 
 #ifdef CSH
 
-layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 const vec2 workGroupsRender = vec2(0.5, 0.5);
 
 uniform int frameCounter;
@@ -157,7 +157,7 @@ void main() {
         if (validData) {
         vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
         playerPos /= playerPos.w;
-        vxPos = playerPos.xyz + fract(cameraPosition) + max(1.5/(1<<VOXEL_DETAIL_AMOUNT), 1.2 * infnorm(playerPos.xyz/voxelVolumeSize)) * normalDepthData.xyz;
+        vxPos = playerPos.xyz + fract(cameraPosition) + max(1.5/(1<<VOXEL_DETAIL_AMOUNT), 2.5 * infnorm(playerPos.xyz/voxelVolumeSize)) * normalDepthData.xyz;
         ivec4 discretizedVxPos = ivec4(100 * vxPos, 100);
         ivec4 discretizedNormal = ivec4(10 * normalDepthData.xyz, 10);
         for (int i = 0; i < 4; i++) {
@@ -240,6 +240,7 @@ void main() {
         }
     }
     barrier();
+
     vec3 writeColor = vec3(0);
     for (uint thisLightIndex = MAX_TRACE_COUNT * uint(!validData); thisLightIndex < min(lightCount, MAX_TRACE_COUNT); thisLightIndex++) {
         vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
@@ -262,7 +263,6 @@ void main() {
             }
         }
     }
-//    writeColor = meanNormal * 0.5 + 0.5;
     if (gl_LocalInvocationID == uvec3(0)) {
         finalLightCount = 0;
     }

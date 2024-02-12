@@ -254,6 +254,7 @@ void main() {
             ), 0);
         col.rgb *= glColorV[0].rgb;
         ivec3 coords = ivec3(center - 0.1 * cnormal + 0.5 * voxelVolumeSize);
+        if (correspondingBlockV[0] != ivec3(-1000)) coords = correspondingBlockV[0];
         ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
                                 int(20 * col.b) + (int(4.5 * (1 - col.a)) << 13) + (1<<23));
         imageAtomicAdd(voxelCols,

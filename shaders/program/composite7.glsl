@@ -49,8 +49,8 @@ void main() {
     #ifdef FXAA
         FXAA311(color);
     #endif
-    if (false && texCoord.x < 0.5) {
-		color = texelFetch(colortex12, texelCoord, 0).rgb;
+    if (texCoord.x < 0.5) {
+		//color = texelFetch(colortex12, texelCoord, 0).rgb;
     } else if (false) {
 //        color = texelFetch(colortex4, texelCoord, 0).gba;
         vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
