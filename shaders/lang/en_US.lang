@@ -1076,8 +1076,8 @@ value.DENOISING_DEFINE.2=On
 
 option.ACCUMULATION=Accumulation
 option.ACCUMULATION.comment=If enabled, block light data will be smoothed across multiple frames. Without this, lighting will look flickery and low-resolution.
-option.TRACE_ALL_LIGHTS=Trace to All Lights
-option.TRACE_ALL_LIGHTS.comment=If enabled, block light calculation will happen for all light sources in every frame, rather than only happening for a randomly selected one. [§c-§r] High performance impact.
+option.MAX_TRACE_COUNT=Max. Light Sample Count
+option.MAX_TRACE_COUNT.comment=This setting controls the maximum amount of nearby light sources that can cast light on an object.
 
 option.LIGHT_COLOR_SATURATION=Light Color Saturation
 
