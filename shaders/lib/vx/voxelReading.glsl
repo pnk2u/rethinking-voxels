@@ -63,7 +63,8 @@ vec4 coneTrace(vec3 start, vec3 dir, float angle, float dither) {
     dir /= dirLen;
     float w = 0.001 + dither * getDistanceField(start + 0.001 * dir);
     vec4 color = vec4(0.0);
-    for (int k = 0; k < 50; k++) {
+	int k;
+    for (k = 0; k < 50; k++) {
         vec3 thisPos = start + w * dir;
         float thisdist = getDistanceField(thisPos);
         if (thisdist < 0.75) {
@@ -78,7 +79,7 @@ vec4 coneTrace(vec3 start, vec3 dir, float angle, float dither) {
         angle > 0.01 * angle0 ?
         mix(vec3(1.0), color.rgb / max(color.a, 0.0001), min(1.0, color.a * 2)) :
         start + min(w, dirLen) * dir,
-        max(0, (angle/angle0 - 0.01) / 0.99));
+        max(0, float(k < 50) * (angle/angle0 - 0.01) / 0.99));
 }
 
 vec4 voxelTrace(vec3 start, vec3 dir, out vec3 normal) {
