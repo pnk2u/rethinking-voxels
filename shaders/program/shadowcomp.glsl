@@ -328,7 +328,6 @@ void main() {
             }
         }
     }
-    if (lightCount > MAX_LIGHT_COUNT*2/3) writeColor = vec3(1, 0, 1);
 
     ivec4 thisLight;
     if (index < lightCount && anyInFrustrum) {

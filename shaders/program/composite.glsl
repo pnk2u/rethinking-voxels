@@ -12,7 +12,7 @@ noperspective in vec2 texCoord;
 
 flat in vec3 upVec, sunVec;
 
-#ifdef LIGHTSHAFTS_ACTIVE
+#if defined LIGHTSHAFTS_ACTIVE || defined VOLUMETRIC_BLOCKLIGHT
     flat in float vlFactor;
 #endif
 
@@ -30,7 +30,7 @@ uniform sampler2D colortex0;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 
-#if defined LIGHTSHAFTS_ACTIVE || WATER_QUALITY >= 3 || defined NETHER_STORM || RAINBOWS > 0
+#if defined LIGHTSHAFTS_ACTIVE || WATER_QUALITY >= 3 || defined NETHER_STORM || RAINBOWS > 0 || defined VOLUMETRIC_BLOCKLIGHT
     uniform float frameTimeCounter;
 
     uniform mat4 gbufferProjection;
@@ -41,7 +41,7 @@ uniform sampler2D depthtex1;
     uniform sampler2D noisetex;
 #endif
 
-#if defined LIGHTSHAFTS_ACTIVE || defined NETHER_STORM || RAINBOWS > 0
+#if defined LIGHTSHAFTS_ACTIVE || defined NETHER_STORM || RAINBOWS > 0 || defined VOLUMETRIC_BLOCKLIGHT
     uniform int frameCounter;
 
     #ifndef LIGHT_COLORING
@@ -51,7 +51,7 @@ uniform sampler2D depthtex1;
     #endif
 #endif
 
-#ifdef LIGHTSHAFTS_ACTIVE
+#if defined LIGHTSHAFTS_ACTIVE || defined VOLUMETRIC_BLOCKLIGHT
     //uniform float viewWidth, viewHeight;
     uniform float blindness;
     uniform float darknessFactor;
@@ -118,6 +118,10 @@ vec2 view = vec2(viewWidth, viewHeight);
     #include "/lib/atmospherics/volumetricLight.glsl"
 #endif
 
+#ifdef VOLUMETRIC_BLOCKLIGHT
+    #include "/lib/atmospherics/volumetricBlocklight.glsl"
+#endif
+
 #if WATER_QUALITY >= 3 || defined NETHER_STORM
     #include "/lib/util/spaceConversion.glsl"
 #endif
@@ -147,7 +151,7 @@ void main() {
     float z0 = texelFetch(depthtex0, texelCoord, 0).r;
     float z1 = texelFetch(depthtex1, texelCoord, 0).r;
 
-    #if defined LIGHTSHAFTS_ACTIVE || WATER_QUALITY >= 3 || defined BLOOM_FOG_COMPOSITE || defined NETHER_STORM || RAINBOWS > 0 && defined OVERWORLD
+    #if defined LIGHTSHAFTS_ACTIVE || WATER_QUALITY >= 3 || defined BLOOM_FOG_COMPOSITE || defined NETHER_STORM || RAINBOWS > 0 && defined OVERWORLD || defined VOLUMETRIC_BLOCKLIGHT
         vec4 screenPos = vec4(texCoord, z0, 1.0);
         vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
         viewPos /= viewPos.w;
@@ -160,7 +164,7 @@ void main() {
 
     vec4 volumetricEffect = vec4(0.0);
 
-    #if defined LIGHTSHAFTS_ACTIVE || defined NETHER_STORM || RAINBOWS > 0 && defined OVERWORLD
+    #if defined LIGHTSHAFTS_ACTIVE || defined NETHER_STORM || RAINBOWS > 0 && defined OVERWORLD || defined VOLUMETRIC_BLOCKLIGHT
         /* The "1.0 - translucentMult" trick is done because of the default color attachment
         value being vec3(0.0). This makes it vec3(1.0) to avoid issues especially on improved glass */
         #ifndef LIGHT_COLORING
@@ -180,7 +184,7 @@ void main() {
         float lViewPos1 = length(viewPos1.xyz);
     #endif
 
-    #if defined LIGHTSHAFTS_ACTIVE || RAINBOWS > 0 && defined OVERWORLD
+    #if defined LIGHTSHAFTS_ACTIVE || RAINBOWS > 0 && defined OVERWORLD || defined VOLUMETRIC_BLOCKLIGHT
         vec3 nViewPos = normalize(viewPos.xyz);
         float VdotL = dot(nViewPos, lightVec);
     #endif
@@ -193,10 +197,14 @@ void main() {
         volumetricEffect = GetVolumetricLight(color, vlFactorM, translucentMult, lViewPos1, nViewPos, VdotL, VdotU, texCoord, z0, z1, dither);
     #endif
 
+    #ifdef VOLUMETRIC_BLOCKLIGHT
+        volumetricEffect += GetVolumetricBlocklight(color, vlFactorM, translucentMult, lViewPos1, nViewPos, texCoord, z0, z1, dither);
+    #endif
+
     #ifdef NETHER_STORM
         vec3 playerPos = ViewToPlayer(viewPos.xyz);
 
-        volumetricEffect = GetNetherStorm(color, translucentMult, playerPos, viewPos.xyz, lViewPos, lViewPos1, dither);
+        vec4 netherVolumetricEffect = GetNetherStorm(color, translucentMult, playerPos, viewPos.xyz, lViewPos, lViewPos1, dither);
     #endif
 
     #ifdef ATM_COLOR_MULTS
