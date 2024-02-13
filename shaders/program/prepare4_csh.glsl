@@ -119,6 +119,7 @@ void main() {
     ivec3 vxPosFrameOffset = ivec3((floor(previousCameraPosition) - floor(cameraPosition)) * 1.1);
     bool validData = (normalDepthData.a < 1.5 && length(normalDepthData.rgb) > 0.1 && all(lessThan(readTexelCoord, ivec2(view + 0.1))));
     vec3 vxPos = vec3(1000);
+    vec3 biasedVxPos = vec3(1000);
     ivec3 lightStorageCoords = ivec3(-1);
     #ifdef SCREENSPACE_LIGHT_DISCOVERY
         barrier();
@@ -150,8 +151,10 @@ void main() {
     if (validData) {
         vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
         playerPos /= playerPos.w;
-        vxPos = playerPos.xyz + fract(cameraPosition) + max(1.5/(1<<VOXEL_DETAIL_AMOUNT), 2.5 * infnorm(playerPos.xyz/voxelVolumeSize)) * normalDepthData.xyz;
-        lightStorageCoords = ivec3(vxPos + voxelVolumeSize/2)/8*8;
+        vxPos = playerPos.xyz + fract(cameraPosition);
+        biasedVxPos = vxPos + max(1.5/(1<<VOXEL_DETAIL_AMOUNT), 2.5 * infnorm(playerPos.xyz/voxelVolumeSize)) * normalDepthData.xyz;
+        vxPos = biasedVxPos;
+        lightStorageCoords = ivec3(biasedVxPos + voxelVolumeSize/2)/8*8;
         #ifdef SCREENSPACE_LIGHT_DISCOVERY
             ivec4 discretizedVxPos = ivec4(100 * vxPos, 100);
             ivec4 discretizedNormal = ivec4(10 * normalDepthData.xyz, 10);
@@ -164,7 +167,7 @@ void main() {
                 dir *= -1;
             }
             vec3 rayNormal0;
-            vec4 rayHit0 = voxelTrace(vxPos, LIGHT_TRACE_LENGTH * dir, rayNormal0);
+            vec4 rayHit0 = voxelTrace(biasedVxPos, LIGHT_TRACE_LENGTH * dir, rayNormal0);
             ivec3 rayHit0Coords = ivec3(rayHit0.xyz - 0.5 * rayNormal0 + 1000) - 1000;
             if (rayHit0.a > 16 && (imageLoad(occupancyVolume, rayHit0Coords + voxelVolumeSize/2).r >> 16 & 1) != 0) {
                 uint hash = posToHash(rayHit0.xyz - 0.5 * rayNormal0);
@@ -253,13 +256,13 @@ void main() {
             vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
         #endif
         float ndotl0 = infnorm(vxPos - 0.5 * normalDepthData.xyz - lightPos) < 0.5 ? 1.0 : max(0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
-        vec3 dir = lightPos - vxPos;
+        vec3 dir = lightPos - biasedVxPos;
         float dirLen = length(dir);
         if (dirLen < LIGHT_TRACE_LENGTH && ndotl0 > 0.001) {
             float lightBrightness = 1;//getLightLevel(ivec3(lightPos + 1000) - 1000 + voxelVolumeSize/2) * 0.04;
             lightBrightness *= lightBrightness;
             float ndotl = ndotl0 * lightBrightness;
-            vec4 rayHit1 = coneTrace(vxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.3 / dirLen, dither);
+            vec4 rayHit1 = coneTrace(biasedVxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.3 / dirLen, dither);
             if (rayHit1.w > 0.01) {
                 vec3 lightColor = getColor(lightPos).xyz;
                 float totalBrightness = ndotl * (sqrt(1 - dirLen / LIGHT_TRACE_LENGTH)) / (dirLen + 0.1);
