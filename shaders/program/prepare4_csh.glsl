@@ -143,10 +143,12 @@ void main() {
         vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
         playerPos /= playerPos.w;
         vxPos = playerPos.xyz + fract(cameraPosition);
-        biasedVxPos = vxPos + max(1.0/(1<<VOXEL_DETAIL_AMOUNT), 1.2 * infnorm(playerPos.xyz/voxelVolumeSize)) * normalDepthData.xyz;
-        vec3 dfGrad = normalize(distanceFieldGradient(biasedVxPos) + 3 * normalDepthData.xyz);
-        if (!(length(dfGrad) > 0.5)) dfGrad = vec3(0);
-        biasedVxPos += max(0.01, 0.03-getDistanceField(vxPos)) * dfGrad;
+        biasedVxPos = vxPos + max(0.03, 1.2 * infnorm(vxPos/voxelVolumeSize)) * normalDepthData.xyz;
+        for (int k = 0; k < 4; k++) {
+            float dfVal = getDistanceField(biasedVxPos);
+            if (dfVal > 0.01) break;
+            biasedVxPos += max(0.01, -dfVal) * normalDepthData.xyz;
+        }
         lightStorageCoords = ivec3(biasedVxPos + voxelVolumeSize/2)/8*8;
         ivec4 discretizedVxPos = ivec4(100 * vxPos, 100);
         ivec4 discretizedNormal = ivec4(10 * normalDepthData.xyz, 10);
@@ -234,7 +236,7 @@ void main() {
     vec3 writeColor = vec3(0);
     for (uint thisLightIndex = MAX_TRACE_COUNT * uint(!validData); thisLightIndex < min(lightCount, MAX_TRACE_COUNT); thisLightIndex++) {
         vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
-        float ndotl0 = infnorm(vxPos - 0.5 * normalDepthData.xyz - lightPos) < 0.5 ? 1.0 : max(0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
+        float ndotl0 = infnorm(vxPos - 0.1 * normalDepthData.xyz - lightPos) < 0.5 ? 1.0 : max(0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
         vec3 dir = lightPos - biasedVxPos;
         float dirLen = length(dir);
         if (dirLen < LIGHT_TRACE_LENGTH && ndotl0 > 0.001) {

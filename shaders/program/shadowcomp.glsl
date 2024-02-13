@@ -29,12 +29,21 @@ layout(rgba16i) uniform iimage3D lightStorage;
 
 void main() {
     ivec3 camOffset = ivec3(1.01 * (floor(cameraPosition) - floor(previousCameraPosition)));
-    // this actually works for having threads be executed in the correct order so that they don't read the output of other previously run threads.
     ivec3 coords = ivec3(gl_GlobalInvocationID);
     // this actually works for having threads be executed in the correct order so that they don't read the output of other previously run threads, so I should uncomment it if I need this program to offset data again
-//    coords = coords * ivec3(greaterThan(camOffset, ivec3(-1))) +
-//        (voxelVolumeSize - coords - 1) * ivec3(lessThan(camOffset, ivec3(0)));
+   coords = coords * ivec3(greaterThan(camOffset, ivec3(-1))) +
+        (voxelVolumeSize - coords - 1) * ivec3(lessThan(camOffset, ivec3(0)));
     ivec4 lightPos = imageLoad(lightStorage, coords);
+    ivec3 prevCoords = coords + camOffset;
+    vec4[2] writeColors;
+    for (int k = 0; k < 2; k++) {
+        writeColors[k] = (all(lessThan(prevCoords, voxelVolumeSize)) && all(greaterThanEqual(prevCoords, ivec3(0)))) ? imageLoad(irradianceCacheI, prevCoords + ivec3(0, k * voxelVolumeSize.y, 0)) : vec4(0);
+    }
+    barrier();
+    memoryBarrierImage();
+    for (int k = 0; k < 2; k++) {
+        imageStore(irradianceCacheI, coords + ivec3(0, k * voxelVolumeSize.y, 0), writeColors[k]);
+    }
     imageStore(lightStorage, coords, lightPos - ivec4(camOffset, 0));
 }
 #endif
