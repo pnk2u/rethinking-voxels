@@ -34,9 +34,9 @@ uniform float darknessLightFactor;
 #endif
 
 #ifdef PER_PIXEL_LIGHT
-	uniform sampler2D colortex12;
+    uniform sampler2D colortex12;
 #else
-	#include "/lib/vx/irradianceCache.glsl"
+    #include "/lib/vx/irradianceCache.glsl"
 #endif
 //
 vec3 highlightColor = normalize(pow(lightColor, vec3(0.37))) * (0.3 + 1.5 * sunVisibility2) * (1.0 - 0.85 * rainFactor);
@@ -442,15 +442,15 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Combine Lighting
-	#ifndef PER_PIXEL_LIGHT
-	vec3 vxPos = playerPos + fract(cameraPosition);
-	#endif
+    #ifndef PER_PIXEL_LIGHT
+    vec3 vxPos = playerPos + fract(cameraPosition);
+    #endif
     vec3 blockLighting = lightmapXM * blocklightCol +
-		#ifdef PER_PIXEL_LIGHT
-			4 * texelFetch(colortex12, ivec2(gl_FragCoord.xy), 0).rgb;
-		#else
-			4 * readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);
-		#endif
+        #ifdef PER_PIXEL_LIGHT
+            4 * texelFetch(colortex12, ivec2(gl_FragCoord.xy), 0).rgb;
+        #else
+            4 * readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);
+        #endif
     vec3 sceneLighting = lightColorM * shadowMult + ambientColorM * ambientMult;
     float dotSceneLighting = dot(sceneLighting, sceneLighting);
 

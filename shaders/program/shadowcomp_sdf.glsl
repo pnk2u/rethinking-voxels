@@ -39,7 +39,7 @@ void main() {
     ivec3 localCoord = ivec3(gl_LocalInvocationID) - 1;
     ivec3 texCoord = baseCoord + localCoord;
     float[8] theseDists;
-	for (int k = 0; k < 8; k++) theseDists[k] = 1000;
+    for (int k = 0; k < 8; k++) theseDists[k] = 1000;
     int thisOccupancy = imageLoad(occupancyVolume, texCoord).r;
     #define j 0
     #include "/program/shadowcomp_sdf_loop.glsl"
@@ -59,35 +59,35 @@ void main() {
         #include "/program/shadowcomp_sdf_loop.glsl"
         #undef j
     #endif
-	#if VOXEL_DETAIL_AMOUNT > 4
+    #if VOXEL_DETAIL_AMOUNT > 4
         #define j 4
         #include "/program/shadowcomp_sdf_loop.glsl"
         #undef j
     #endif
-	#if VOXEL_DETAIL_AMOUNT > 5
+    #if VOXEL_DETAIL_AMOUNT > 5
         #define j 5
         #include "/program/shadowcomp_sdf_loop.glsl"
         #undef j
     #endif
-	#if VOXEL_DETAIL_AMOUNT > 6
+    #if VOXEL_DETAIL_AMOUNT > 6
         #define j 6
         #include "/program/shadowcomp_sdf_loop.glsl"
         #undef j
     #endif
-	#if VOXEL_DETAIL_AMOUNT > 7
+    #if VOXEL_DETAIL_AMOUNT > 7
         #define j 7
         #include "/program/shadowcomp_sdf_loop.glsl"
         #undef j
     #endif
     if (all(greaterThanEqual(localCoord, ivec3(0))) && all(lessThan(localCoord, ivec3(8)))) {
         imageStore(
-			distanceFieldI,
-			texCoord + ivec3(0, (frameCounter+1)%2 * 2 * voxelVolumeSize.y, 0),
-			vec4(theseDists[0], theseDists[1], theseDists[2], theseDists[3]));
-		imageStore(
-			distanceFieldI,
-			texCoord + ivec3(0, ((frameCounter+1)%2 * 2 + 1) * voxelVolumeSize.y, 0),
-			vec4(theseDists[4], theseDists[5], theseDists[6], theseDists[7]));
+            distanceFieldI,
+            texCoord + ivec3(0, (frameCounter+1)%2 * 2 * voxelVolumeSize.y, 0),
+            vec4(theseDists[0], theseDists[1], theseDists[2], theseDists[3]));
+        imageStore(
+            distanceFieldI,
+            texCoord + ivec3(0, ((frameCounter+1)%2 * 2 + 1) * voxelVolumeSize.y, 0),
+            vec4(theseDists[4], theseDists[5], theseDists[6], theseDists[7]));
         ivec2 rawCol = ivec2(
             imageLoad(voxelCols, texCoord * ivec3(1, 2, 1)).r,
             imageLoad(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 1, 0)).r

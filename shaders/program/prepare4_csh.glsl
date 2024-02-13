@@ -251,7 +251,7 @@ void main() {
                 lightStorage,
                 lightStorageCoords + ivec3(thisLightIndex%8, thisLightIndex/8%8, thisLightIndex/64%8)
             );
-            if (lightPos0.w <= 0) continue;
+            if (lightPos0.w <= 0) break;
             if ((imageLoad(occupancyVolume, lightPos0.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0) continue;
             vec3 lightPos = lightPos0.xyz + 0.5;
         #else

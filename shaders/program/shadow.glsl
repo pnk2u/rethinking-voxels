@@ -295,7 +295,7 @@ void main() {
             position = positionV[i];
             glColor = glColorV[i];
             passType = 0;
-			correspondingBlock = correspondingBlockV[i];
+            correspondingBlock = correspondingBlockV[i];
             EmitVertex();
         }
         EndPrimitive();
@@ -364,14 +364,14 @@ void main() {
     matV = int(mc_Entity.x + 0.5);
 
     positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
-	correspondingBlockV = ivec3(-1000);
-	if (
-		renderStage == MC_RENDER_STAGE_TERRAIN_SOLID ||
-		renderStage == MC_RENDER_STAGE_TERRAIN_CUTOUT ||
-		renderStage == MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
-	) {
-		correspondingBlockV = ivec3(positionV.xyz + fract(cameraPosition) + at_midBlock/64 + 1000) - 1000 + voxelVolumeSize/2;
-	}
+    correspondingBlockV = ivec3(-1000);
+    if (
+        renderStage == MC_RENDER_STAGE_TERRAIN_SOLID ||
+        renderStage == MC_RENDER_STAGE_TERRAIN_CUTOUT ||
+        renderStage == MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
+    ) {
+        correspondingBlockV = ivec3(positionV.xyz + fract(cameraPosition) + at_midBlock/64 + 1000) - 1000 + voxelVolumeSize/2;
+    }
     #if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
         #ifdef NO_WAVING_INDOORS
             lmCoord = GetLightMapCoordinates();

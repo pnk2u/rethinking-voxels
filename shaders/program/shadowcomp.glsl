@@ -210,7 +210,7 @@ void main() {
 
     if (insideFrustrum && activeFrame) {
         anyInFrustrum = true;
-        hasNeighbor = getDistanceField(vxPos) < 1;
+        hasNeighbor = getDistanceField(vxPos) < 0.7;
         normal = hasNeighbor ? distanceFieldGradient(vxPos) : vec3(0);
         if (hasNeighbor) {
             normal = normalize(normal);
@@ -255,31 +255,33 @@ void main() {
             }
         }
     }
-    if (index < MAX_LIGHT_COUNT * 6 && anyInFrustrum) {
-        ivec3 offset = (index/3%2*2-1) * ivec3(equal(ivec3(index%3), ivec3(0, 1, 2)));
-        int otherLightIndex = index / 6;
-        ivec4 prevFrameLight = imageLoad(
-            lightStorage,
-            ivec3(gl_WorkGroupSize.xyz) * (ivec3(gl_WorkGroupID.xyz) + offset) +
-            ivec3(
-                otherLightIndex % gl_WorkGroupSize.x,
-                otherLightIndex / gl_WorkGroupSize.x % gl_WorkGroupSize.y,
-                otherLightIndex / (gl_WorkGroupSize.x * gl_WorkGroupSize.y)));
-        uint hash = posToHash(prevFrameLight.xyz);
-        bool known = (
-            prevFrameLight.w <= 0 ||
-            (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0
-        );
-        if (!known) {
-            known = (atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) != 0;
-        }
-        if (!known) {
-            int thisLightIndex = atomicAdd(lightCount, 1);
-            if (thisLightIndex < MAX_LIGHT_COUNT) {
-                positions[thisLightIndex] = ivec4(prevFrameLight.xyz, 0);
-                weights[thisLightIndex] = 0.0001 * prevFrameLight.w;
-            } else {
-                atomicMin(lightCount, MAX_LIGHT_COUNT);
+    if (index < MAX_LIGHT_COUNT && anyInFrustrum) {
+        for (int k = 0; k < 6; k++) {
+            ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
+            int otherLightIndex = index;
+            ivec4 prevFrameLight = imageLoad(
+                lightStorage,
+                ivec3(gl_WorkGroupSize.xyz) * (ivec3(gl_WorkGroupID.xyz) + offset) +
+                ivec3(
+                    otherLightIndex % gl_WorkGroupSize.x,
+                    otherLightIndex / gl_WorkGroupSize.x % gl_WorkGroupSize.y,
+                    otherLightIndex / (gl_WorkGroupSize.x * gl_WorkGroupSize.y)));
+            uint hash = posToHash(prevFrameLight.xyz);
+            bool known = (
+                prevFrameLight.w <= 0 ||
+                (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0
+            );
+            if (!known) {
+                known = (atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) != 0;
+            }
+            if (!known) {
+                int thisLightIndex = atomicAdd(lightCount, 1);
+                if (thisLightIndex < MAX_LIGHT_COUNT) {
+                    positions[thisLightIndex] = ivec4(prevFrameLight.xyz, 0);
+                    weights[thisLightIndex] = 0.0001 * prevFrameLight.w;
+                } else {
+                    atomicMin(lightCount, MAX_LIGHT_COUNT);
+                }
             }
         }
     }
@@ -327,6 +329,8 @@ void main() {
             }
         }
     }
+    if (lightCount == MAX_LIGHT_COUNT) writeColor = vec3(1, 0, 1);
+
     ivec4 thisLight;
     if (index < lightCount && anyInFrustrum) {
         thisLight = positions[index];
@@ -352,7 +356,6 @@ void main() {
 
     if (anyInFrustrum) {
         imageStore(irradianceCacheI, coords + ivec3(0, voxelVolumeSize.y, 0), vec4(writeColor, 1));
-
         ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
         imageStore(lightStorage, coords, lightPosToStore);
     }

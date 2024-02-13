@@ -3,8 +3,8 @@
     ivec3 prevTexCoord = prevTexCoord0 + ivec3(0, (frameCounter % 2 * 2 + j/4) * voxelVolumeSize.y, 0);
     ivec3 prevCoord = prevTexCoord0 / 2 + voxelVolumeSize / 4 + ivec3(0, (frameCounter % 2 * 2 + (j-1)/4) * voxelVolumeSize.y, 0);
     fullDist[localCoord.x+1][localCoord.y+1][localCoord.z+1] =
-		(thisOccupancy >> j & 1) == 1 ? (1.0-1.0/sqrt(3.0)) / (1<<j) : (
-		all(greaterThanEqual(prevTexCoord0, ivec3(0))) &&
+        (thisOccupancy >> j & 1) == 1 ? (1.0-1.0/sqrt(3.0)) / (1<<j) : (
+        all(greaterThanEqual(prevTexCoord0, ivec3(0))) &&
         all(lessThan(prevTexCoord0, voxelVolumeSize)) ?
         imageLoad(distanceFieldI, prevTexCoord)[j%4] + 1.0 / (1<<j) : (
             #if j > 0
@@ -31,7 +31,7 @@
                 ivec3 c2 = localCoord + ivec3(k%3, k/3%3, k/9%3);
                 ivec3 c3 = localCoord + 2 * ivec3(k%3, k/3%3, k/9%3) - 1;
                 theseDists[j] = min(theseDists[j], fullDist[c2.x][c2.y][c2.z]);
-				theseDists[j] = min(theseDists[j], all(greaterThanEqual(c3, ivec3(0))) && all(lessThan(c3, ivec3(10))) ? fullDist[c3.x][c3.y][c3.z] + 1.0/(1<<j) : 1000);
+                theseDists[j] = min(theseDists[j], all(greaterThanEqual(c3, ivec3(0))) && all(lessThan(c3, ivec3(10))) ? fullDist[c3.x][c3.y][c3.z] + 1.0/(1<<j) : 1000);
             }
         #if j > 0
             } else {
