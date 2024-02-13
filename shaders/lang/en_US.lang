@@ -1098,9 +1098,6 @@ value.FRACTAL_GALAXY.3=Julia Set
 option.PER_PIXEL_LIGHT=Per-Pixel Light Calculation
 option.PER_PIXEL_LIGHT.comment=If this is enabled, Light from Block Light sources will be calculated separately for each pixel on the screen. Otherwise, it will be calculated only once per block.
 
-option.SCREENSPACE_LIGHT_DISCOVERY=Screenspace Light Discovery
-option.SCREENSPACE_LIGHT_DISCOVERY.comment=When enabled, visible light sources are determined together for every group of 64x64 pixels on the screen. When disabled, visible light sources are determined together for every area of 8x8x8 blocks in the voxel volume. Each method may produce light edges on borders between neighboring groups.
-
 option.VOLUMETRIC_BLOCKLIGHT=Vol. Blocklight
 option.VBL_STRENGTH=Vol. Blocklight Strength
 option.VBL_NETHER_MULT=Vol. Blocklight Nether Multiplier
