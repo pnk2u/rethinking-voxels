@@ -152,8 +152,10 @@ void main() {
         vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
         playerPos /= playerPos.w;
         vxPos = playerPos.xyz + fract(cameraPosition);
-        biasedVxPos = vxPos + max(1.5/(1<<VOXEL_DETAIL_AMOUNT), 2.5 * infnorm(playerPos.xyz/voxelVolumeSize)) * normalDepthData.xyz;
-        vxPos = biasedVxPos;
+        biasedVxPos = vxPos + max(1.0/(1<<VOXEL_DETAIL_AMOUNT), 1.2 * infnorm(playerPos.xyz/voxelVolumeSize)) * normalDepthData.xyz;
+        vec3 dfGrad = normalize(distanceFieldGradient(biasedVxPos) + 3 * normalDepthData.xyz);
+        if (!(length(dfGrad) > 0.5)) dfGrad = vec3(0);
+        biasedVxPos += max(0.01, 0.03-getDistanceField(vxPos)) * dfGrad;
         lightStorageCoords = ivec3(biasedVxPos + voxelVolumeSize/2)/8*8;
         #ifdef SCREENSPACE_LIGHT_DISCOVERY
             ivec4 discretizedVxPos = ivec4(100 * vxPos, 100);
