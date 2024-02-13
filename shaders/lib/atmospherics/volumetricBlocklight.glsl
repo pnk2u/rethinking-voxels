@@ -13,10 +13,9 @@ vec4 GetVolumetricBlocklight(inout vec3 color, float vlFactor, vec3 translucentM
     if (max(blindness, darknessFactor) > 0.1) return vec4(0.0);
     vec4 volumetricLight = vec4(0.0);
 
+    float vlMult = VBL_STRENGTH;
     #ifdef OVERWORLD
         float vlSceneIntensity = isEyeInWater != 1 ? vlFactor : 1.0;
-        float vlMult = 1.0;
-
 
         if (sunVisibility < 0.5) {
             vlSceneIntensity = 0.0;
@@ -104,9 +103,12 @@ vec4 GetVolumetricBlocklight(inout vec3 color, float vlFactor, vec3 translucentM
             #define LIGHTSHAFT_RAIN_IM LIGHTSHAFT_RAIN_I * 0.01
             vlMult.rgb *= mix(1.0, LIGHTSHAFT_RAIN_IM, rainFactor);
         #endif
-
-        volumetricLight.rgb *= vlMult;
+    #elif defined NETHER
+        vlMult *= VBL_NETHER_MULT;
+    #elif defined END
+        vlMult *= VBL_END_MULT;
     #endif
+    volumetricLight.rgb *= vlMult;
 
     volumetricLight = max(volumetricLight, vec4(0.0));
     volumetricLight.a = min(volumetricLight.a, 1.0);
