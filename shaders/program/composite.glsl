@@ -198,7 +198,7 @@ void main() {
     #endif
 
     #ifdef VOLUMETRIC_BLOCKLIGHT
-        volumetricEffect += GetVolumetricBlocklight(color, vlFactorM, translucentMult, lViewPos1, nViewPos, texCoord, z0, z1, dither);
+        volumetricEffect += GetVolumetricBlocklight(vlFactorM, translucentMult, lViewPos1, nViewPos, texCoord, z0, z1, dither);
     #endif
 
     #ifdef NETHER_STORM

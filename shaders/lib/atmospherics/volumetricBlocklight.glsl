@@ -9,7 +9,7 @@
         return (far * (dist - near)) / (dist * (far - near));
     }
 #endif
-vec4 GetVolumetricBlocklight(inout vec3 color, float vlFactor, vec3 translucentMult, float lViewPos, vec3 nViewPos, vec2 texCoord, float z0, float z1, float dither) {
+vec4 GetVolumetricBlocklight(float vlFactor, vec3 translucentMult, float lViewPos, vec3 nViewPos, vec2 texCoord, float z0, float z1, float dither) {
     if (max(blindness, darknessFactor) > 0.1) return vec4(0.0);
     vec4 volumetricLight = vec4(0.0);
 
@@ -19,7 +19,7 @@ vec4 GetVolumetricBlocklight(inout vec3 color, float vlFactor, vec3 translucentM
 
         if (sunVisibility < 0.5) {
             vlSceneIntensity = 0.0;
-            vlMult = 0.6 + 0.4 * max0(far - lViewPos) / far;
+            vlMult *= 0.6 + 0.4 * max0(far - lViewPos) / far;
         }
 
     #endif
@@ -35,12 +35,14 @@ vec4 GetVolumetricBlocklight(inout vec3 color, float vlFactor, vec3 translucentM
     float addition = 1.0;
     float maxDist = mix(max(far, 96.0) * 0.55, 80.0, vlSceneIntensity);
 
-    #if WATER_FOG_MULT != 100
-        if (isEyeInWater == 1) {
+    if (isEyeInWater == 1) {
+        #if WATER_FOG_MULT != 100
             #define WATER_FOG_MULT_M WATER_FOG_MULT * 0.01;
             maxDist /= WATER_FOG_MULT_M;
-        }
-    #endif
+        #endif
+    } else {
+        vlMult *= 0.1;
+    }
 
     float distMult = maxDist / (sampleCount + addition);
     float sampleMultIntense = isEyeInWater != 1 ? 1.0 : 1.85;
@@ -71,7 +73,6 @@ vec4 GetVolumetricBlocklight(inout vec3 color, float vlFactor, vec3 translucentM
         vec3 playerPos = wpos.xyz / wpos.w;
         vec3 vxPos = playerPos + fract(cameraPosition);
 
-        float shadowSample = 1.0;
         vec3 vlSample = vec3(0.0);
         #ifdef REALTIME_SHADOWS
 
@@ -89,7 +90,7 @@ vec4 GetVolumetricBlocklight(inout vec3 color, float vlFactor, vec3 translucentM
 
         if (currentDist > depth0) vlSample *= translucentMult;
 
-        volumetricLight += vec4(vlSample, shadowSample) * sampleMult;
+        volumetricLight += vec4(vlSample, 1) * sampleMult;
     }
 
     #ifdef OVERWORLD
