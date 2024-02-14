@@ -223,6 +223,8 @@ flat out ivec3 correspondingBlock;
 
 uniform vec3 cameraPosition;
 uniform sampler2D tex;
+uniform sampler2D specular;
+uniform ivec2 atlasSize;
 
 layout(r32i) restrict uniform iimage3D voxelCols;
 layout(r32i) restrict uniform iimage3D occupancyVolume;
@@ -246,12 +248,39 @@ void main() {
     int bestNormalAxis = int(dot(vec3(greaterThanEqual(abs(cnormal), max(abs(cnormal).yzx, abs(cnormal.zxy)))), vec3(0.5, 1.5, 2.5)));
     int localResolution = min(VOXEL_DETAIL_AMOUNT, int(-log2(infnorm(minAbsPos / voxelVolumeSize))));
     if (localResolution > 0) {
-        vec4 col = textureLod(
-            tex,
-            0.5 * (
-                min(min(texCoordV[0], texCoordV[1]), texCoordV[2]) +
-                max(max(texCoordV[0], texCoordV[1]), texCoordV[2])
-            ), 0);
+        vec2 minTexCoord = min(min(texCoordV[0], texCoordV[1]), texCoordV[2]);
+        vec2 maxTexCoord = max(max(texCoordV[0], texCoordV[1]), texCoordV[2]);
+        int lodLevel = int(log2(max(1.1, 1.01 * min((maxTexCoord.x - minTexCoord.x) * atlasSize.x, (maxTexCoord.y - minTexCoord.y) * atlasSize.y))));
+        vec4 col = vec4(getLightCol(matV[0]), 1);
+        bool emissive = isEmissive(matV[0]);
+        int lightLevel = 0;
+        if (emissive) {
+            lightLevel = getLightLevel(matV[0]);
+        }
+        #if RP_MODE >= 2
+            #if RP_MODE == 2
+                #define EMISSION_CHANNEL a
+            #else
+                #define EMISSION_CHANNEL b
+            #endif
+            else {
+                for (int k = 0; k < 9; k++) {
+                    vec2 offset = (vec2(k%3, k/3) + 0.5)/3.0;
+                    vec4 s = textureLod(specular, mix(minTexCoord, maxTexCoord, offset), 0);
+                    if (
+                        #if RP_MODE == 3
+                            s.EMISSION_CHANNEL < 0.999 &&
+                        #endif
+                        s.EMISSION_CHANNEL > 0.2) {
+                        emissive = true;
+                        lightLevel = max(lightLevel, int(32 * s.EMISSION_CHANNEL));
+                    }
+                }
+            }
+        #endif
+        vec4 textureCol = textureLod(tex, 0.5 * (minTexCoord + maxTexCoord), lodLevel);
+        col.a = textureCol.a;
+        if (col.rgb == vec3(0)) col = textureCol;
         col.rgb *= glColorV[0].rgb;
         ivec3 coords = ivec3(center - 0.1 * cnormal + 0.5 * voxelVolumeSize);
         if (correspondingBlockV[0] != ivec3(-1000)) coords = correspondingBlockV[0];
@@ -264,8 +293,12 @@ void main() {
             coords * ivec3(1, 2, 1) + ivec3(0, 1, 0),
             packedCol.y);
 
-        if (isEmissive(matV[0])) {
-            imageAtomicOr(occupancyVolume, coords, 1<<16);
+        if (emissive) {
+            if ((imageAtomicOr(occupancyVolume, coords, 1<<16) >> 16 & 1) == 0) {
+                int lightLevel = getLightLevel(matV[0]);
+                if (lightLevel == 0) lightLevel = max(10, int(31 * lmCoordV[0].x));
+                imageAtomicOr(occupancyVolume, coords, lightLevel << 17);
+            }
         } else {
             for (int i = 0; i < 3; i++) {
                 vec2 relProjectedPos

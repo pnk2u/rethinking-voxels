@@ -70,6 +70,7 @@ bool isEmissive(int mat) {
         mat == 10688 || // pearlescent froglight
         mat == 10704 || // active sculk sensor
         mat == 10708 || // spawner
+        mat == 10852 || // copper bulb
         mat == 10996 || // light block
         //mat == 12740 || // lit candle cake
         mat == 30020 || // nether portal
@@ -443,18 +444,6 @@ vec3 getLightCol(int mat) {
             break;
     }
     return lightcol;
-}
-
-bool badPixel(vec4 color, vec4 glColor, int mat) {
-    switch(mat) {
-        case 10124:
-        case 10132:
-            if (color.g > max(color.r, color.b) + 0.05 && length(glColor.rgb - vec3(1)) < 0.1) {
-                return true;
-            }
-            break;
-    }
-    return false;
 }
 
 int getLightLevel(int mat) {

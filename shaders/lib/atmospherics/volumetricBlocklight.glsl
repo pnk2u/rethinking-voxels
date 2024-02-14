@@ -21,7 +21,8 @@ vec4 GetVolumetricBlocklight(float vlFactor, vec3 translucentMult, float lViewPo
             vlSceneIntensity = 0.0;
             vlMult *= 0.6 + 0.4 * max0(far - lViewPos) / far;
         }
-
+    #else
+        float vlSceneIntensity = 0.3;
     #endif
     #if LIGHTSHAFT_QUALI == 4
         int sampleCount = vlSceneIntensity < 0.5 ? 30 : 50;
@@ -76,12 +77,10 @@ vec4 GetVolumetricBlocklight(float vlFactor, vec3 translucentMult, float lViewPo
         vec3 vlSample = vec3(0.0);
         #ifdef REALTIME_SHADOWS
 
-            #ifdef OVERWORLD
-                float percentComplete = currentDist / maxDist;
-                float sampleMult = mix(percentComplete * 3.0, sampleMultIntense, max(rainFactor, vlSceneIntensity));
-                if (currentDist < 5.0) sampleMult *= smoothstep1(clamp(currentDist / 5.0, 0.0, 1.0));
-                sampleMult /= sampleCount;
-            #endif
+            float percentComplete = currentDist / maxDist;
+            float sampleMult = mix(percentComplete * 3.0, sampleMultIntense, max(rainFactor, vlSceneIntensity));
+            if (currentDist < 5.0) sampleMult *= smoothstep1(clamp(currentDist / 5.0, 0.0, 1.0));
+            sampleMult /= sampleCount;
 
             if (infnorm(vxPos/voxelVolumeSize) < 0.5) {
                 vlSample = readVolumetricBlocklight(vxPos);

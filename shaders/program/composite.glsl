@@ -189,16 +189,18 @@ void main() {
         float VdotL = dot(nViewPos, lightVec);
     #endif
 
-    #ifdef LIGHTSHAFTS_ACTIVE
+    #if defined LIGHTSHAFTS_ACTIVE || defined VOLUMETRIC_BLOCKLIGHT
         float vlFactorM = vlFactor;
 
-        float VdotU = dot(nViewPos, upVec);
+        #ifdef LIGHTSHAFTS_ACTIVE
+            float VdotU = dot(nViewPos, upVec);
 
-        volumetricEffect = GetVolumetricLight(color, vlFactorM, translucentMult, lViewPos1, nViewPos, VdotL, VdotU, texCoord, z0, z1, dither);
-    #endif
+            volumetricEffect = GetVolumetricLight(color, vlFactorM, translucentMult, lViewPos1, nViewPos, VdotL, VdotU, texCoord, z0, z1, dither);
+        #endif
 
-    #ifdef VOLUMETRIC_BLOCKLIGHT
-        volumetricEffect += GetVolumetricBlocklight(vlFactorM, translucentMult, lViewPos1, nViewPos, texCoord, z0, z1, dither);
+        #ifdef VOLUMETRIC_BLOCKLIGHT
+            volumetricEffect += GetVolumetricBlocklight(vlFactorM, translucentMult, lViewPos1, nViewPos, texCoord, z0, z1, dither);
+        #endif
     #endif
 
     #ifdef NETHER_STORM
