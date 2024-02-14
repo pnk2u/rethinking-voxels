@@ -294,6 +294,27 @@ void main() {
             packedCol.y);
 
         if (emissive) {
+            vec3[3] blockRelPos;
+            for (int i = 0; i < 3; i++) blockRelPos[i] = vxPos[i] - coords + voxelVolumeSize/2 + 1;
+            vec3 meanPos = 1.0/3.0*(blockRelPos[0] + blockRelPos[1] + blockRelPos[2]);
+            meanPos = clamp(meanPos, vec3(0), vec3(4));
+            vec3 meanSquarePos = 1.0/6.0*(
+                blockRelPos[0] * blockRelPos[0] +
+                blockRelPos[1] * blockRelPos[1] +
+                blockRelPos[2] * blockRelPos[2] +
+                blockRelPos[0] * blockRelPos[1] +
+                blockRelPos[1] * blockRelPos[2] +
+                blockRelPos[2] * blockRelPos[0]);
+            vec3 variance = meanSquarePos - meanPos * meanPos;
+            int packedMeanPos = int(meanPos.x * 10 + 0.5) | (int(meanPos.y * 10 + 0.5) << 10) | (int(meanPos.z * 10 + 0.5) << 20);
+            int packedStdev = int(10 * sqrt(max(max(variance.x, variance.y), variance.z))) | (1<<13);
+            imageAtomicAdd(voxelCols,
+                coords * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0),
+                packedMeanPos);
+            imageAtomicAdd(voxelCols,
+                coords * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0),
+                packedStdev);
+
             if ((imageAtomicOr(occupancyVolume, coords, 1<<16) >> 16 & 1) == 0) {
                 int lightLevel = getLightLevel(matV[0]);
                 if (lightLevel == 0) lightLevel = max(10, int(31 * lmCoordV[0].x));
@@ -352,6 +373,8 @@ flat out ivec3 correspondingBlockV;
 
 //Uniforms//
 uniform int renderStage;
+uniform int entityId;
+uniform int currentRenderedItemId;
 uniform vec3 cameraPosition;
 
 uniform mat4 shadowProjection, shadowProjectionInverse;
@@ -395,7 +418,8 @@ void main() {
     upVecV = normalize(gbufferModelView[1].xyz);
 
     matV = int(mc_Entity.x + 0.5);
-
+    if (entityId > 0) matV = entityId;
+    if (currentRenderedItemId > 0) matV = currentRenderedItemId;
     positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
     correspondingBlockV = ivec3(-1000);
     if (

@@ -240,8 +240,17 @@ void main() {
 
     vec3 writeColor = vec3(0);
     for (uint thisLightIndex = MAX_TRACE_COUNT * uint(!validData); thisLightIndex < min(lightCount, MAX_TRACE_COUNT); thisLightIndex++) {
-        vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
-        float ndotl0 = infnorm(vxPos - 0.1 * normalDepthData.xyz - lightPos) < 0.5 ? 1.0 : max(0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
+        int packedLightSubPos = imageLoad(
+            voxelCols,
+            (positions[thisLightIndex].xyz + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r;
+        int packedLightPosStdev = imageLoad(
+            voxelCols,
+            (positions[thisLightIndex].xyz + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0)).r;
+        vec3 subLightPos = 0.1 * vec3(packedLightSubPos & 0x3ff, packedLightSubPos>>10 & 0x3ff, packedLightSubPos>>20 & 0x3ff) / (packedLightPosStdev>>13) - 1;
+        float lightSize = 0.1 * (packedLightPosStdev & 0x1fff) / (packedLightPosStdev>>13);
+        vec3 lightPos = positions[thisLightIndex].xyz + subLightPos;
+        float ndotl0 = dot(normalize(lightPos - vxPos), normalDepthData.xyz);
+        ndotl0 = infnorm(vxPos - 0.1 * normalDepthData.xyz - lightPos) < 0.5 ? abs(ndotl0) : max(0, ndotl0);
         vec3 dir = lightPos - biasedVxPos;
         float dirLen = length(dir);
         float thisTraceLen = (extraData[thisLightIndex]>>17 & 31)/32.0;
@@ -249,7 +258,7 @@ void main() {
             float lightBrightness = 1.5 * thisTraceLen;
             lightBrightness *= lightBrightness;
             float ndotl = ndotl0 * lightBrightness;
-            vec4 rayHit1 = coneTrace(biasedVxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.3 / dirLen, dither);
+            vec4 rayHit1 = coneTrace(biasedVxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.5 * LIGHTSOURCE_SIZE_MULT / dirLen, dither);
             if (rayHit1.w > 0.01) {
                 vec3 lightColor = getColor(lightPos).xyz;
                 float totalBrightness = ndotl * (sqrt(1 - dirLen / (LIGHT_TRACE_LENGTH * thisTraceLen))) / (dirLen + 0.1);
