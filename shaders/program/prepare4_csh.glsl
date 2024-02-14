@@ -189,6 +189,43 @@ void main() {
     vec3 meanNormal = vec3(cumulatedNormal.xyz)/cumulatedNormal.w;
     meanNormal *= length(meanNormal);
 
+    if (index < 125) {
+        ivec3 lightPos0 = ivec3(index%5, index/5%5, index/25%5) - 2;
+        if ((imageLoad(occupancyVolume, lightPos0 + voxelVolumeSize/2).r >> 16 & 1) != 0) {
+            int packedLightSubPos = imageLoad(
+                voxelCols,
+                (lightPos0 + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r;
+            int packedLightPosStdev = imageLoad(
+                voxelCols,
+                (lightPos0 + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0)).r;
+            vec3 subLightPos = 0.1 * vec3(packedLightSubPos & 0x3ff, packedLightSubPos>>10 & 0x3ff, packedLightSubPos>>20 & 0x3ff) / (packedLightPosStdev>>13) - 1;
+            ivec3 offsetCandidateBlock = ivec3(greaterThan(subLightPos, vec3(0.8)));
+            bool hasGreaterLight = false;
+            for (int i = 0; i < 3; i++) {
+                if (
+                    offsetCandidateBlock[i] == 1 &&
+                    (imageLoad(occupancyVolume, lightPos0 + ivec3(equal(ivec3(i), ivec3(0, 1, 2))) + voxelVolumeSize/2).r >> 16 & 1) != 0) hasGreaterLight = true;
+            }
+            if (!hasGreaterLight) {
+                uint hash = posToHash(lightPos0);
+                if ((atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) == 0) {
+                    int lightIndex = atomicAdd(lightCount, 1);
+                    if (lightIndex < MAX_LIGHT_COUNT) {
+                        vec3 lightPos = lightPos0 + 0.5;
+                        float dirLen = length(lightPos - meanPos);
+                        positions[lightIndex] = ivec4(lightPos + 10, 0) - ivec2(10, 0).xxxy;
+                        weights[lightIndex] =
+                            length(getColor(lightPos).xyz) *
+                            (sqrt(1 - min(1.0, dirLen / LIGHT_TRACE_LENGTH))) /
+                            (dirLen + 0.1);
+                    } else {
+                        atomicMin(lightCount, MAX_LIGHT_COUNT);
+                    }
+                }
+            }
+        }
+    }
+
     if (index < 4 * MAX_LIGHT_COUNT) {
         ivec2 offset = (index%4/2*2-1) * ivec2(index%2, (index+1)%2);
         int otherLightIndex = index / 4;

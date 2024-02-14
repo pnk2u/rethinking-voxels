@@ -174,6 +174,7 @@ uniform mat4 gbufferProjectionInverse;
 void main() {
     gbufferPreviousModelViewInverse = gbufferModelViewInverse;
     gbufferPreviousProjectionInverse = gbufferProjectionInverse;
+
     gl_Position = ftransform();
     texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 }

@@ -221,7 +221,11 @@ flat out int passType;
 flat out ivec3 correspondingBlock;
 //Uniforms//
 
+uniform int entityId;
+uniform int currentRenderedItemId;
+
 uniform vec3 cameraPosition;
+uniform vec3 eyePosition;
 uniform sampler2D tex;
 uniform sampler2D specular;
 uniform ivec2 atlasSize;
@@ -230,32 +234,50 @@ layout(r32i) restrict uniform iimage3D voxelCols;
 layout(r32i) restrict uniform iimage3D occupancyVolume;
 
 //Includes//
+#define WRITE_TO_SSBOS
+#include "/lib/vx/SSBOs.glsl"
 #include "/lib/materials/shadowChecks.glsl"
 
 void main() {
+    int mat = matV[0];
+    if (entityId > 0) mat = entityId;
+    if (currentRenderedItemId > 0) mat = currentRenderedItemId;
+
     vec3 cnormal = normalize(cross(positionV[1].xyz - positionV[0].xyz, positionV[2].xyz - positionV[0].xyz));
     if (!(length(cnormal) > 0.5)) {
         cnormal = vec3(0,1,0);
     }
+
+    bool emissive = isEmissive(mat);
+
     vec3[3] vxPos;
+
     for (int i = 0; i < 3; i++) vxPos[i] = positionV[i].xyz + fract(cameraPosition);
-    vec3 lowerBound = floor(min(min(vxPos[0], vxPos[1]), vxPos[2]));
-    vec3 minAbsPos = min(min(abs(vxPos[0]), abs(vxPos[1])), abs(vxPos[2]));
     vec3 center = 0.5 * (
         min(min(vxPos[0], vxPos[1]), vxPos[2]) +
         max(max(vxPos[0], vxPos[1]), vxPos[2])
     );
+    bool isHeldLight = false;
+    if (entityId == 50016 && emissive && currentRenderedItemId > 0 && length(center) < 8) { // handheld item
+        isHeldLight = true;
+        vec3 offset = 0.5 * normalize((center - 0.025 * cnormal + (floor(cameraPosition) - eyePosition)) * vec3(1, 0, 1));
+        center += offset;
+        for (int i = 0; i < 3; i++) {
+            vxPos[i] += offset;
+        }
+    }
+    vec3 lowerBound = floor(min(min(vxPos[0], vxPos[1]), vxPos[2]));
+    vec3 minAbsPos = min(min(abs(vxPos[0]), abs(vxPos[1])), abs(vxPos[2]));
     int bestNormalAxis = int(dot(vec3(greaterThanEqual(abs(cnormal), max(abs(cnormal).yzx, abs(cnormal.zxy)))), vec3(0.5, 1.5, 2.5)));
     int localResolution = min(VOXEL_DETAIL_AMOUNT, int(-log2(infnorm(minAbsPos / voxelVolumeSize))));
     if (localResolution > 0) {
         vec2 minTexCoord = min(min(texCoordV[0], texCoordV[1]), texCoordV[2]);
         vec2 maxTexCoord = max(max(texCoordV[0], texCoordV[1]), texCoordV[2]);
         int lodLevel = int(log2(max(1.1, 1.01 * min((maxTexCoord.x - minTexCoord.x) * atlasSize.x, (maxTexCoord.y - minTexCoord.y) * atlasSize.y))));
-        vec4 col = vec4(getLightCol(matV[0]), 1);
-        bool emissive = isEmissive(matV[0]);
+        vec4 col = vec4(getLightCol(mat), 1);
         int lightLevel = 0;
         if (emissive) {
-            lightLevel = getLightLevel(matV[0]);
+            lightLevel = getLightLevel(mat);
         }
         #if RP_MODE >= 2
             #if RP_MODE == 2
@@ -292,6 +314,9 @@ void main() {
         imageAtomicAdd(voxelCols,
             coords * ivec3(1, 2, 1) + ivec3(0, 1, 0),
             packedCol.y);
+        #if HELD_LIGHTING_MODE == 0
+            if (isHeldLight) emissive = false;
+        #endif
 
         if (emissive) {
             vec3[3] blockRelPos;
@@ -316,7 +341,12 @@ void main() {
                 packedStdev);
 
             if ((imageAtomicOr(occupancyVolume, coords, 1<<16) >> 16 & 1) == 0) {
-                int lightLevel = getLightLevel(matV[0]);
+                int lightLevel = getLightLevel(mat);
+                #if HELD_LIGHTING_MODE == 1
+                    if (isHeldLight) {
+                        lightLevel /= 2;
+                    }
+                #endif
                 if (lightLevel == 0) lightLevel = max(10, int(31 * lmCoordV[0].x));
                 imageAtomicOr(occupancyVolume, coords, lightLevel << 17);
             }
@@ -373,8 +403,6 @@ flat out ivec3 correspondingBlockV;
 
 //Uniforms//
 uniform int renderStage;
-uniform int entityId;
-uniform int currentRenderedItemId;
 uniform vec3 cameraPosition;
 
 uniform mat4 shadowProjection, shadowProjectionInverse;
@@ -418,8 +446,6 @@ void main() {
     upVecV = normalize(gbufferModelView[1].xyz);
 
     matV = int(mc_Entity.x + 0.5);
-    if (entityId > 0) matV = entityId;
-    if (currentRenderedItemId > 0) matV = currentRenderedItemId;
     positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
     correspondingBlockV = ivec3(-1000);
     if (
