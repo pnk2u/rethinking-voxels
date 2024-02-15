@@ -239,7 +239,7 @@ void main() {
             int thisLightIndex = atomicAdd(lightCount, 1);
             if (thisLightIndex < MAX_LIGHT_COUNT) {
                 positions[thisLightIndex] = ivec4(prevFrameLight.xyz, 0);
-                weights[thisLightIndex] = 0.0001 * prevFrameLight.w;
+                weights[thisLightIndex] = 0.000005/(index%8/4+1) * prevFrameLight.w;
             } else {
                 atomicMin(lightCount, MAX_LIGHT_COUNT);
             }
