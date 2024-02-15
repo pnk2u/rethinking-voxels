@@ -260,7 +260,7 @@ void main() {
     bool isHeldLight = false;
     if (entityId == 50016 && emissive && currentRenderedItemId > 0 && length(center) < 8) { // handheld item
         isHeldLight = true;
-        vec3 offset = 0.5 * normalize((center - 0.025 * cnormal + (floor(cameraPosition) - eyePosition)) * vec3(1, 0, 1));
+        vec3 offset = 0.8 * normalize((center - 0.025 * cnormal + (floor(cameraPosition) - eyePosition)) * vec3(1, 0, 1));
         center += offset;
         for (int i = 0; i < 3; i++) {
             vxPos[i] += offset;
@@ -320,8 +320,13 @@ void main() {
 
         if (emissive) {
             vec3[3] blockRelPos;
-            for (int i = 0; i < 3; i++) blockRelPos[i] = vxPos[i] - coords + voxelVolumeSize/2 + 1;
-            vec3 meanPos = 1.0/3.0*(blockRelPos[0] + blockRelPos[1] + blockRelPos[2]);
+            for (int i = 0; i < 3; i++) {
+                blockRelPos[i] = vxPos[i] - coords + voxelVolumeSize/2 - 0.5;
+                if (correspondingBlockV[0] != ivec3(-1000)) {
+                    blockRelPos[i] = clamp(blockRelPos[i] + 0.5 * cnormal, vec3(-0.5), vec3(0.5));
+                }
+            }
+            vec3 meanPos = 1.0/3.0*(blockRelPos[0] + blockRelPos[1] + blockRelPos[2]) + 1.5;
             meanPos = clamp(meanPos, vec3(0), vec3(4));
             vec3 meanSquarePos = 1.0/6.0*(
                 blockRelPos[0] * blockRelPos[0] +
@@ -330,7 +335,7 @@ void main() {
                 blockRelPos[0] * blockRelPos[1] +
                 blockRelPos[1] * blockRelPos[2] +
                 blockRelPos[2] * blockRelPos[0]);
-            vec3 variance = meanSquarePos - meanPos * meanPos;
+            vec3 variance = meanSquarePos - (meanPos - 1.5) * (meanPos - 1.5);
             int packedMeanPos = int(meanPos.x * 10 + 0.5) | (int(meanPos.y * 10 + 0.5) << 10) | (int(meanPos.z * 10 + 0.5) << 20);
             int packedStdev = int(10 * sqrt(max(max(variance.x, variance.y), variance.z))) | (1<<13);
             imageAtomicAdd(voxelCols,

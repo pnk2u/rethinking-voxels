@@ -284,8 +284,9 @@ void main() {
             voxelCols,
             (positions[thisLightIndex].xyz + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0)).r;
         vec3 subLightPos = 0.1 * vec3(packedLightSubPos & 0x3ff, packedLightSubPos>>10 & 0x3ff, packedLightSubPos>>20 & 0x3ff) / (packedLightPosStdev>>13) - 1;
-        float lightSize = 0.1 * (packedLightPosStdev & 0x1fff) / (packedLightPosStdev>>13);
+        float lightSize = 0.5;//0.1 * (packedLightPosStdev & 0x1fff) / (packedLightPosStdev>>13);
         vec3 lightPos = positions[thisLightIndex].xyz + subLightPos;
+        lightSize = clamp(lightSize, 0.01, getDistanceField(lightPos));
         float ndotl0 = dot(normalize(lightPos - vxPos), normalDepthData.xyz);
         ndotl0 = infnorm(vxPos - 0.1 * normalDepthData.xyz - lightPos) < 0.5 ? abs(ndotl0) : max(0, ndotl0);
         vec3 dir = lightPos - biasedVxPos;
@@ -295,9 +296,9 @@ void main() {
             float lightBrightness = 1.5 * thisTraceLen;
             lightBrightness *= lightBrightness;
             float ndotl = ndotl0 * lightBrightness;
-            vec4 rayHit1 = coneTrace(biasedVxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.5 * LIGHTSOURCE_SIZE_MULT / dirLen, dither);
+            vec4 rayHit1 = coneTrace(biasedVxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, lightSize * LIGHTSOURCE_SIZE_MULT / dirLen, dither);
             if (rayHit1.w > 0.01) {
-                vec3 lightColor = getColor(lightPos).xyz;
+                vec3 lightColor = getColor(positions[thisLightIndex].xyz + 0.5).xyz;
                 float totalBrightness = ndotl * (sqrt(1 - dirLen / (LIGHT_TRACE_LENGTH * thisTraceLen))) / (dirLen + 0.1);
                 writeColor += lightColor * rayHit1.w * totalBrightness;
                 int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);

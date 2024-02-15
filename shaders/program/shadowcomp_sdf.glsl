@@ -88,6 +88,7 @@ void main() {
             distanceFieldI,
             texCoord + ivec3(0, ((frameCounter+1)%2 * 2 + 1) * voxelVolumeSize.y, 0),
             vec4(theseDists[4], theseDists[5], theseDists[6], theseDists[7]));
+
         ivec2 rawCol = ivec2(
             imageLoad(voxelCols, texCoord * ivec3(1, 2, 1)).r,
             imageLoad(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 1, 0)).r
@@ -107,6 +108,29 @@ void main() {
             if ((rawCol.g >> 23) > 0) {
                 imageStore(voxelCols, texCoord * ivec3(1, 2, 1), ivec4(rawCol.r));
                 imageStore(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 1, 0), ivec4(rawCol.g));
+            }
+        }
+        if ((thisOccupancy >> 16 & 1) != 0) {
+            ivec2 rawLightPos = ivec2(
+                imageLoad(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r,
+                imageLoad(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 1, 0) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r
+            );
+            vec3 relLightPos = 0.1 * vec3(rawLightPos.x & 0x3ff, rawLightPos.x >> 10 & 0x3ff, rawLightPos.x >> 20 & 0x3ff) / (rawLightPos.y >> 13);
+            if (any(greaterThan(relLightPos, vec3(0.6)))) {
+                for (int k = 1; k < 8; k++) {
+                    ivec3 offset = ivec3(k%2, k/2%2, k/4%2);
+                    if ((imageLoad(occupancyVolume, texCoord + offset).r >> 16 & 1) != 0) {
+                        ivec2 otherRawPos = ivec2(
+                            imageLoad(voxelCols, (texCoord + offset) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r,
+                            imageLoad(voxelCols, (texCoord + offset) * ivec3(1, 2, 1) + ivec3(0, 1, 0) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r
+                        );
+                        vec3 otherRelLightPos = 0.1 * vec3(otherRawPos.x & 0x3ff, otherRawPos.x >> 10 & 0x3ff, otherRawPos.x >> 20 & 0x3ff) / (otherRawPos.y >> 13);
+                        if (length(offset + otherRelLightPos - relLightPos) < 0.8) {
+                            imageAtomicAnd(occupancyVolume, texCoord, ~(1<<16));
+                            break;
+                        }
+                    }
+                }
             }
         }
     }

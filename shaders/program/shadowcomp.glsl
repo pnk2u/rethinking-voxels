@@ -221,7 +221,7 @@ void main() {
                 int lightIndex = atomicAdd(lightCount, 1);
                 if (lightIndex < MAX_LIGHT_COUNT) {
                     positions[lightIndex] = ivec4(coords - voxelVolumeSize / 2, 0);
-                    weights[lightIndex] = length(getColor(positions[lightIndex].xyz));
+                    weights[lightIndex] = length(getColor(positions[lightIndex].xyz + 0.5));
                 } else {
                     atomicMin(lightCount, MAX_LIGHT_COUNT);
                 }
