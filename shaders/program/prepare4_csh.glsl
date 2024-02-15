@@ -195,43 +195,36 @@ void main() {
     if (index < 125) {
         ivec3 lightPos0 = ivec3(index%5, index/5%5, index/25%5) - 2;
         if ((imageLoad(occupancyVolume, lightPos0 + voxelVolumeSize/2).r >> 16 & 1) != 0) {
-            int packedLightSubPos = imageLoad(
-                voxelCols,
-                (lightPos0 + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r;
-            int packedLightPosStdev = imageLoad(
-                voxelCols,
-                (lightPos0 + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0)).r;
-            vec3 subLightPos = 0.1 * vec3(packedLightSubPos & 0x3ff, packedLightSubPos>>10 & 0x3ff, packedLightSubPos>>20 & 0x3ff) / (packedLightPosStdev>>13) - 1;
-            ivec3 offsetCandidateBlock = ivec3(greaterThan(subLightPos, vec3(0.8)));
-            bool hasGreaterLight = false;
-            for (int i = 0; i < 3; i++) {
-                if (
-                    offsetCandidateBlock[i] == 1 &&
-                    (imageLoad(occupancyVolume, lightPos0 + ivec3(equal(ivec3(i), ivec3(0, 1, 2))) + voxelVolumeSize/2).r >> 16 & 1) != 0) hasGreaterLight = true;
-            }
-            if (!hasGreaterLight) {
-                uint hash = posToHash(lightPos0);
-                if ((atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) == 0) {
-                    int lightIndex = atomicAdd(lightCount, 1);
-                    if (lightIndex < MAX_LIGHT_COUNT) {
-                        vec3 lightPos = lightPos0 + 0.5;
-                        float dirLen = length(lightPos - meanPos);
-                        positions[lightIndex] = ivec4(lightPos + 10, 0) - ivec2(10, 0).xxxy;
-                        weights[lightIndex] =
-                            length(getColor(lightPos).xyz) *
-                            (sqrt(1 - min(1.0, dirLen / LIGHT_TRACE_LENGTH))) /
-                            (dirLen + 0.1);
-                    } else {
-                        atomicMin(lightCount, MAX_LIGHT_COUNT);
-                    }
+            ivec2 packedLightSubPos = ivec2(
+                imageLoad(
+                    voxelCols,
+                    (lightPos0 + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r,
+                imageLoad(
+                    voxelCols,
+                    (lightPos0 + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0)).r
+            );
+            vec3 subLightPos = 0.1 * vec3(packedLightSubPos.x & 0x7fff, packedLightSubPos.x>>15 & 0x7fff, packedLightSubPos.y & 0x7fff) / (packedLightSubPos.y >>25) - 1;
+            uint hash = posToHash(lightPos0);
+            if ((atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) == 0) {
+                int lightIndex = atomicAdd(lightCount, 1);
+                if (lightIndex < MAX_LIGHT_COUNT) {
+                    vec3 lightPos = lightPos0 + 0.5;
+                    float dirLen = length(lightPos - meanPos);
+                    positions[lightIndex] = ivec4(lightPos + 10, 0) - ivec2(10, 0).xxxy;
+                    weights[lightIndex] =
+                        length(getColor(lightPos).xyz) *
+                        (sqrt(1 - min(1.0, dirLen / LIGHT_TRACE_LENGTH))) /
+                        (dirLen + 0.1);
+                } else {
+                    atomicMin(lightCount, MAX_LIGHT_COUNT);
                 }
             }
         }
     }
 
-    if (index < 4 * MAX_LIGHT_COUNT) {
-        ivec2 offset = (index%4/2*2-1) * ivec2(index%2, (index+1)%2);
-        int otherLightIndex = index / 4;
+    if (index < 8 * MAX_LIGHT_COUNT) {
+        ivec2 offset = (1 + index%8/4*3) * (index%4/2*2-1) * ivec2(index%2, (index+1)%2);
+        int otherLightIndex = index / 8;
         ivec4 prevFrameLight = imageLoad(colorimg11, ivec2(gl_WorkGroupSize.xy) * (ivec2(gl_WorkGroupID.xy) + offset) + ivec2(otherLightIndex % gl_WorkGroupSize.x, otherLightIndex / gl_WorkGroupSize.x));
         prevFrameLight.xyz += vxPosFrameOffset;
         uint hash = posToHash(prevFrameLight.xyz);
@@ -280,13 +273,15 @@ void main() {
 
     vec3 writeColor = vec3(0);
     for (uint thisLightIndex = MAX_TRACE_COUNT * uint(!validData); thisLightIndex < min(lightCount, MAX_TRACE_COUNT); thisLightIndex++) {
-        int packedLightSubPos = imageLoad(
-            voxelCols,
-            (positions[thisLightIndex].xyz + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r;
-        int packedLightPosStdev = imageLoad(
-            voxelCols,
-            (positions[thisLightIndex].xyz + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0)).r;
-        vec3 subLightPos = 0.1 * vec3(packedLightSubPos & 0x3ff, packedLightSubPos>>10 & 0x3ff, packedLightSubPos>>20 & 0x3ff) / (packedLightPosStdev>>13) - 1;
+        ivec2 packedLightSubPos = ivec2(
+            imageLoad(
+                voxelCols,
+                (positions[thisLightIndex].xyz + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r,
+            imageLoad(
+                voxelCols,
+                (positions[thisLightIndex].xyz + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0)).r
+        );
+        vec3 subLightPos = 0.1 * vec3(packedLightSubPos.x & 0x7fff, packedLightSubPos.x>>15 & 0x7fff, packedLightSubPos.y & 0x7fff) / (packedLightSubPos.y >> 25) - 1;
         float lightSize = 0.5;//0.1 * (packedLightPosStdev & 0x1fff) / (packedLightPosStdev>>13);
         vec3 lightPos = positions[thisLightIndex].xyz + subLightPos;
         lightSize = clamp(lightSize, 0.01, getDistanceField(lightPos));

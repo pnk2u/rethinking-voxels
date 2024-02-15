@@ -336,8 +336,8 @@ void main() {
                 blockRelPos[1] * blockRelPos[2] +
                 blockRelPos[2] * blockRelPos[0]);
             vec3 variance = meanSquarePos - (meanPos - 1.5) * (meanPos - 1.5);
-            int packedMeanPos = int(meanPos.x * 10 + 0.5) | (int(meanPos.y * 10 + 0.5) << 10) | (int(meanPos.z * 10 + 0.5) << 20);
-            int packedStdev = int(10 * sqrt(max(max(variance.x, variance.y), variance.z))) | (1<<13);
+            int packedMeanPos = int(meanPos.x * 10 + 0.5) | (int(meanPos.y * 10 + 0.5) << 15);
+            int packedStdev = int(meanPos.z * 10 + 0.5) | (int(10 * sqrt(max(max(variance.x, variance.y), variance.z))) << 15) | (1<<25);
             imageAtomicAdd(voxelCols,
                 coords * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0),
                 packedMeanPos);

@@ -115,7 +115,7 @@ void main() {
                 imageLoad(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r,
                 imageLoad(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 1, 0) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r
             );
-            vec3 relLightPos = 0.1 * vec3(rawLightPos.x & 0x3ff, rawLightPos.x >> 10 & 0x3ff, rawLightPos.x >> 20 & 0x3ff) / (rawLightPos.y >> 13);
+            vec3 relLightPos = 0.1 * vec3(rawLightPos.x & 0x7fff, rawLightPos.x >> 15 & 0x7fff, rawLightPos.y & 0x7fff) / (rawLightPos.y >> 25);
             if (any(greaterThan(relLightPos, vec3(0.6)))) {
                 ivec3[13] lightMergeOffsets = ivec3[13](
                     ivec3(1, 1, 1),
@@ -139,8 +139,8 @@ void main() {
                             imageLoad(voxelCols, (texCoord + offset) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r,
                             imageLoad(voxelCols, (texCoord + offset) * ivec3(1, 2, 1) + ivec3(0, 1, 0) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r
                         );
-                        vec3 otherRelLightPos = 0.1 * vec3(otherRawPos.x & 0x3ff, otherRawPos.x >> 10 & 0x3ff, otherRawPos.x >> 20 & 0x3ff) / (otherRawPos.y >> 13);
-                        if (length(offset + otherRelLightPos - relLightPos) < 0.8) {
+                        vec3 otherRelLightPos = 0.1 * vec3(otherRawPos.x & 0x7fff, otherRawPos.x >> 15 & 0x7fff, otherRawPos.y & 0x7fff) / (otherRawPos.y >> 25);
+                        if (infnorm(offset + otherRelLightPos - relLightPos) < 0.95) {
                             imageAtomicAnd(occupancyVolume, texCoord, ~(1<<16));
                             break;
                         }
