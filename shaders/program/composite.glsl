@@ -211,13 +211,16 @@ void main() {
 
     #ifdef ATM_COLOR_MULTS
         volumetricEffect.rgb *= GetAtmColorMult();
+        #ifdef NETHER_STORM
+            netherVolumetricEffect.rgb *= GetAtmColorMult();
+        #endif
     #endif
     #ifdef MOON_PHASE_INF_ATMOSPHERE
         volumetricEffect.rgb *= moonPhaseInfluence;
     #endif
 
     #ifdef NETHER_STORM
-        if (isEyeInWater == 0) color = mix(color, volumetricEffect.rgb, volumetricEffect.a);
+        if (isEyeInWater == 0) color = mix(color, netherVolumetricEffect.rgb, netherVolumetricEffect.a);
     #endif
 
     #if RAINBOWS > 0 && defined OVERWORLD
@@ -235,6 +238,9 @@ void main() {
             if (z1 == 1.0) color.rgb = fogColor * 5.0;
 
             volumetricEffect.rgb *= 0.0;
+            #ifdef NETHER_STORM
+                netherVolumetricEffect.rgb *= 0.0;
+            #endif
         }
     }
 
@@ -245,7 +251,11 @@ void main() {
             volumetricEffect.rgb *= volumetricEffect.rgb;
         #endif
 
-        color += volumetricEffect.rgb;
+        color += volumetricEffect.rgb
+        #ifdef NETHER_STORM
+            + netherVolumetricEffect.rgb
+        #endif
+        ;
     #endif
 
     #ifdef BLOOM_FOG_COMPOSITE
