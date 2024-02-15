@@ -260,7 +260,7 @@ void main() {
     bool isHeldLight = false;
     if (entityId == 50016 && emissive && currentRenderedItemId > 0 && length(center) < 8) { // handheld item
         isHeldLight = true;
-        vec3 offset = 0.8 * normalize((center - 0.025 * cnormal + (floor(cameraPosition) - eyePosition)) * vec3(1, 0, 1));
+        vec3 offset = 0.5 * normalize((center - 0.025 * cnormal + (floor(cameraPosition) - eyePosition)) * vec3(1, 0, 1));
         center += offset;
         for (int i = 0; i < 3; i++) {
             vxPos[i] += offset;

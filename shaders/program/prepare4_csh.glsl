@@ -144,6 +144,9 @@ void main() {
         vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
         playerPos /= playerPos.w;
         vxPos = playerPos.xyz + fract(cameraPosition);
+        #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
+            vxPos = floor(vxPos * PIXEL_SHADOW + 0.5 * normalDepthData.xyz) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
+        #endif
         biasedVxPos = vxPos + max(0.03, 1.2 * infnorm(vxPos/voxelVolumeSize)) * normalDepthData.xyz;
         for (int k = 0; k < 4; k++) {
             float dfVal = getDistanceField(biasedVxPos);

@@ -321,6 +321,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Blocklight
+    /*
     lightmap.x = 0;
     #if HELD_LIGHTING_MODE >= 1
         float heldLight = max(heldBlockLightValue, heldBlockLightValue2);
@@ -345,6 +346,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         vec2 flickerNoise = texture2D(noisetex, vec2(frameTimeCounter * 0.06)).rb;
         lightmapXM *= mix(1.0, min1(max(flickerNoise.r, flickerNoise.g) * 1.7), pow2(BLOCKLIGHT_FLICKERING * 0.1));
     #endif
+    */
 
     // Minimum Light
     #if !defined END && MINIMUM_LIGHT_MODE > 0
@@ -386,7 +388,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
             float lxFactor = (sunVisibility2 * 0.4 + (0.6 - 0.6 * pow2(invNoonFactor))) * (6.0 - 5.0 * rainFactor);
             lxFactor *= lightmapY2 + lightmapY2 * 2.0 * pow2(shadowMult.r);
             lxFactor = max0(lxFactor - emission * 1000000.0);
-            lightmapXM *= pow(max(lightmap.x, 0.001), lxFactor);
+            //lightmapXM *= pow(max(lightmap.x, 0.001), lxFactor);
 
             // Less light in the distance / more light closer to the camera during rain or night to simulate thicker fog
             float rainLF = 0.1 * rainFactor;
@@ -444,8 +446,11 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     // Combine Lighting
     #ifndef PER_PIXEL_LIGHT
     vec3 vxPos = playerPos + fract(cameraPosition);
+        #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
+            vxPos = floor(vxPos * PIXEL_SHADOW + 0.001) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
+        #endif
     #endif
-    vec3 blockLighting = lightmapXM * blocklightCol +
+    vec3 blockLighting = //lightmapXM * blocklightCol +
         #ifdef PER_PIXEL_LIGHT
             4 * texelFetch(colortex12, ivec2(gl_FragCoord.xy), 0).rgb;
         #else
