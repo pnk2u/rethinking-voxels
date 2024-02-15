@@ -384,3 +384,19 @@ void main() {
         #endif
         */
 #endif
+
+// This program calculates GI
+#ifdef CSH_C
+#if VX_VOL_SIZE == 0
+    const ivec3 workGroups = ivec3(12, 8, 12);
+#elif VX_VOL_SIZE == 1
+    const ivec3 workGroups = ivec3(16, 12, 16);
+#elif VX_VOL_SIZE == 2
+    const ivec3 workGroups = ivec3(32, 16, 32);
+#elif VX_VOL_SIZE == 3
+    const ivec3 workGroups = ivec3(64, 16, 64);
+#endif
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+
+#endif

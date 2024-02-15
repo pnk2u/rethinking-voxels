@@ -33,7 +33,7 @@ uniform float darknessLightFactor;
     #include "/lib/colors/moonPhaseInfluence.glsl"
 #endif
 
-#ifdef PER_PIXEL_LIGHT
+#if defined PER_PIXEL_LIGHT && !defined GBUFFERS_WATER
     uniform sampler2D colortex12;
 #else
     #include "/lib/vx/irradianceCache.glsl"
@@ -444,14 +444,14 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Combine Lighting
-    #ifndef PER_PIXEL_LIGHT
+    #if !defined PER_PIXEL_LIGHT || defined GBUFFERS_WATER
     vec3 vxPos = playerPos + fract(cameraPosition);
         #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
             vxPos = floor(vxPos * PIXEL_SHADOW + 0.001) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
         #endif
     #endif
     vec3 blockLighting = //lightmapXM * blocklightCol +
-        #ifdef PER_PIXEL_LIGHT
+        #if defined PER_PIXEL_LIGHT && !defined GBUFFERS_WATER
             4 * texelFetch(colortex12, ivec2(gl_FragCoord.xy), 0).rgb;
         #else
             4 * readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);

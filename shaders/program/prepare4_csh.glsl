@@ -291,7 +291,7 @@ void main() {
         vec3 lightPos = positions[thisLightIndex].xyz + subLightPos;
         lightSize = clamp(lightSize, 0.01, getDistanceField(lightPos));
         float ndotl0 = dot(normalize(lightPos - vxPos), normalDepthData.xyz);
-        ndotl0 = infnorm(vxPos - 0.1 * normalDepthData.xyz - lightPos) < 0.5 ? abs(ndotl0) : max(0, ndotl0);
+        ndotl0 = infnorm(vxPos - 0.1 * normalDepthData.xyz - positions[thisLightIndex].xyz - 0.5) < 0.5 ? abs(ndotl0) : max(0, ndotl0);
         vec3 dir = lightPos - biasedVxPos;
         float dirLen = length(dir);
         float thisTraceLen = (extraData[thisLightIndex]>>17 & 31)/32.0;
