@@ -408,6 +408,7 @@ flat out ivec3 correspondingBlockV;
 
 //Uniforms//
 uniform int renderStage;
+uniform int blockEntityId;
 uniform vec3 cameraPosition;
 
 uniform mat4 shadowProjection, shadowProjectionInverse;
@@ -450,15 +451,16 @@ void main() {
     sunVecV = GetSunVector();
     upVecV = normalize(gbufferModelView[1].xyz);
 
-    matV = int(mc_Entity.x + 0.5);
     positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
     correspondingBlockV = ivec3(-1000);
+    matV = blockEntityId;
     if (
         renderStage == MC_RENDER_STAGE_TERRAIN_SOLID ||
         renderStage == MC_RENDER_STAGE_TERRAIN_CUTOUT ||
         renderStage == MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
     ) {
         correspondingBlockV = ivec3(positionV.xyz + fract(cameraPosition) + at_midBlock/64 + 1000) - 1000 + voxelVolumeSize/2;
+        matV = int(mc_Entity.x + 0.5);
     }
     #if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
         #ifdef NO_WAVING_INDOORS
