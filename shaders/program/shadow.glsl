@@ -27,6 +27,7 @@ uniform vec3 cameraPosition;
 uniform sampler2D tex;
 uniform sampler2D noisetex;
 
+layout(r32i) restrict uniform iimage3D voxelCols;
 layout(r32i) restrict uniform iimage3D occupancyVolume;
 
 #if WATER_CAUSTIC_STYLE >= 3
@@ -52,6 +53,8 @@ void DoNaturalShadowCalculation(inout vec4 color1, inout vec4 color2) {
 }
 
 //Includes//
+#define WRITE_TO_SSBOS
+#include "/lib/vx/SSBOs.glsl"
 
 //Program//
 void main() {
@@ -181,13 +184,23 @@ void main() {
         col.rgb *= glColor.rgb;
         if (col.a > 0.1) {
             vec3 vxPos = position.xyz + fract(cameraPosition);
-            for (int k = 0; k < passType >> 1; k++) {
-                vec3 position2 = vxPos * (1<<k) - 0.15 * upVec + voxelVolumeSize * 0.5;
-                if (any(lessThan(position2, vec3(0))) || any(greaterThanEqual(position2, voxelVolumeSize - 0.01))) {
-                    break;
+            if ((passType & (1<<4)) != 0) {
+                ivec4 subPosToAdd = ivec4((vxPos - correspondingBlock + 1) * 64, 1);
+                ivec4 colToAdd = ivec4(col.rgb * 64, 1);
+                int lightIndex = imageAtomicMax(voxelCols, (correspondingBlock + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0), 0);
+                for (int k = 0; k < 4; k++) {
+                    atomicAdd(globalLightList[lightIndex].subPos[k], subPosToAdd[k]);
+                    atomicAdd(globalLightList[lightIndex].col[k], colToAdd[k]);
                 }
-                ivec3 coords2 = ivec3(position2);
-                imageAtomicOr(occupancyVolume, coords2, 1<<(k + 8 * int(col.a < 0.9)));
+            } else {
+                for (int k = 0; k < (passType >> 1 & 7); k++) {
+                    vec3 position2 = vxPos * (1<<k) - 0.15 * upVec + voxelVolumeSize * 0.5;
+                    if (any(lessThan(position2, vec3(0))) || any(greaterThanEqual(position2, voxelVolumeSize - 0.01))) {
+                        break;
+                    }
+                    ivec3 coords2 = ivec3(position2);
+                    imageAtomicOr(occupancyVolume, coords2, 1<<(k + 8 * int(col.a < 0.9)));
+                }
             }
         }
         discard;
@@ -239,16 +252,18 @@ layout(r32i) restrict uniform iimage3D occupancyVolume;
 #include "/lib/materials/shadowChecks.glsl"
 
 void main() {
-    int mat = matV[0];
-    if (entityId > 0) mat = entityId;
-    if (currentRenderedItemId > 0) mat = currentRenderedItemId;
+    int localMat = matV[0];
+    if (entityId > 0) localMat = entityId;
+    if (currentRenderedItemId > 0) localMat = currentRenderedItemId;
 
-    vec3 cnormal = normalize(cross(positionV[1].xyz - positionV[0].xyz, positionV[2].xyz - positionV[0].xyz));
-    if (!(length(cnormal) > 0.5)) {
+    vec3 cnormal = cross(positionV[1].xyz - positionV[0].xyz, positionV[2].xyz - positionV[0].xyz);
+    float area = length(cnormal);
+    cnormal /= area;
+    if (area == 0) {
         cnormal = vec3(0,1,0);
     }
 
-    bool emissive = isEmissive(mat);
+    bool emissive = isEmissive(localMat);
 
     vec3[3] vxPos;
 
@@ -271,19 +286,20 @@ void main() {
     int bestNormalAxis = int(dot(vec3(greaterThanEqual(abs(cnormal), max(abs(cnormal).yzx, abs(cnormal.zxy)))), vec3(0.5, 1.5, 2.5)));
     int localResolution = min(VOXEL_DETAIL_AMOUNT, int(-log2(infnorm(minAbsPos / voxelVolumeSize))));
     if (localResolution > 0) {
+        if (emissive) localResolution = VOXEL_DETAIL_AMOUNT;
         vec2 minTexCoord = min(min(texCoordV[0], texCoordV[1]), texCoordV[2]);
         vec2 maxTexCoord = max(max(texCoordV[0], texCoordV[1]), texCoordV[2]);
         int lodLevel = int(log2(max(1.1, 1.01 * min((maxTexCoord.x - minTexCoord.x) * atlasSize.x, (maxTexCoord.y - minTexCoord.y) * atlasSize.y))));
-        vec4 col = vec4(getLightCol(mat), 1);
+        vec4 col = vec4(getLightCol(localMat), 1);
         int lightLevel = 0;
         if (emissive) {
-            lightLevel = getLightLevel(mat);
+            lightLevel = getLightLevel(localMat);
         }
         #if RP_MODE >= 2
             #if RP_MODE == 2
-                #define EMISSION_CHANNEL a
-            #else
                 #define EMISSION_CHANNEL b
+            #else
+                #define EMISSION_CHANNEL a
             #endif
             else {
                 for (int k = 0; k < 9; k++) {
@@ -315,38 +331,13 @@ void main() {
             coords * ivec3(1, 2, 1) + ivec3(0, 1, 0),
             packedCol.y);
         #if HELD_LIGHTING_MODE == 0
-            if (isHeldLight) emissive = false;
+            emissive = emissive && (!isHeldLight);
         #endif
 
         if (emissive) {
             vec3[3] blockRelPos;
-            for (int i = 0; i < 3; i++) {
-                blockRelPos[i] = vxPos[i] - coords + voxelVolumeSize/2 - 0.5;
-                if (correspondingBlockV[0] != ivec3(-1000)) {
-                    blockRelPos[i] = clamp(blockRelPos[i] + 0.5 * cnormal, vec3(-0.5), vec3(0.5));
-                }
-            }
-            vec3 meanPos = 1.0/3.0*(blockRelPos[0] + blockRelPos[1] + blockRelPos[2]) + 1.5;
-            meanPos = clamp(meanPos, vec3(0), vec3(4));
-            vec3 meanSquarePos = 1.0/6.0*(
-                blockRelPos[0] * blockRelPos[0] +
-                blockRelPos[1] * blockRelPos[1] +
-                blockRelPos[2] * blockRelPos[2] +
-                blockRelPos[0] * blockRelPos[1] +
-                blockRelPos[1] * blockRelPos[2] +
-                blockRelPos[2] * blockRelPos[0]);
-            vec3 variance = meanSquarePos - (meanPos - 1.5) * (meanPos - 1.5);
-            int packedMeanPos = int(meanPos.x * 10 + 0.5) | (int(meanPos.y * 10 + 0.5) << 15);
-            int packedStdev = int(meanPos.z * 10 + 0.5) | (int(10 * sqrt(max(max(variance.x, variance.y), variance.z))) << 15) | (1<<25);
-            imageAtomicAdd(voxelCols,
-                coords * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0),
-                packedMeanPos);
-            imageAtomicAdd(voxelCols,
-                coords * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0),
-                packedStdev);
-
             if ((imageAtomicOr(occupancyVolume, coords, 1<<16) >> 16 & 1) == 0) {
-                int lightLevel = getLightLevel(mat);
+                int lightLevel = getLightLevel(localMat);
                 #if HELD_LIGHTING_MODE == 1
                     if (isHeldLight) {
                         lightLevel /= 2;
@@ -354,25 +345,32 @@ void main() {
                 #endif
                 if (lightLevel == 0) lightLevel = max(10, int(31 * lmCoordV[0].x));
                 imageAtomicOr(occupancyVolume, coords, lightLevel << 17);
+                int lightIndex = atomicAdd(globalLightCount, 1);
+                if (lightIndex < 262144) {
+                    imageAtomicExchange(voxelCols,
+                        coords * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0),
+                        lightIndex);
+                    globalLightList[lightIndex].mat = localMat;
+                    globalLightList[lightIndex].blockPos = coords - voxelVolumeSize/2;
+                }
             }
-        } else {
-            for (int i = 0; i < 3; i++) {
-                vec2 relProjectedPos
-                    = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])
-                    - vec2(lowerBound[(bestNormalAxis+1)%3], lowerBound[(bestNormalAxis+2)%3]);
-                gl_Position = vec4(relProjectedPos * (1<<localResolution) / shadowMapResolution - 0.5, 0.5, 1.0);
-                mat = matV[i];
-                texCoord = texCoordV[i];
-                sunVec = sunVecV[i];
-                upVec = cnormal;
-                position = positionV[i];
-                glColor = glColorV[i];
-                passType = 1 + (localResolution << 1);
-                correspondingBlock = correspondingBlockV[i];
-                EmitVertex();
-            }
-            EndPrimitive();
         }
+        for (int i = 0; i < 3; i++) {
+            vec2 relProjectedPos
+                = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])
+                - vec2(lowerBound[(bestNormalAxis+1)%3], lowerBound[(bestNormalAxis+2)%3]);
+            gl_Position = vec4(relProjectedPos * (1<<localResolution) / shadowMapResolution - 0.5, 0.5, 1.0);
+            mat = matV[i];
+            texCoord = texCoordV[i];
+            sunVec = sunVecV[i];
+            upVec = cnormal;
+            position = positionV[i];
+            glColor = glColorV[i];
+            passType = 1 + (localResolution << 1) + (int(emissive) << 4);
+            correspondingBlock = coords - voxelVolumeSize/2;
+            EmitVertex();
+        }
+        EndPrimitive();
     }
     #if (defined OVERWORLD || defined END) && defined REALTIME_SHADOWS
         for (int i = 0; i < 3; i++) {

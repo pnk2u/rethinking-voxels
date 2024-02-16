@@ -66,6 +66,9 @@ uniform sampler2D shadowcolor0;
     }
 #endif
 
+#define WRITE_TO_SSBOS
+#include "/lib/vx/SSBOs.glsl"
+
 //Program//
 void main() {
     vec2 texCoordM = texCoord;
@@ -146,6 +149,15 @@ void main() {
     if (gl_FragCoord.x < 0) color = texture(shadowcolor0, texCoord).rgb;
     /* DRAWBUFFERS:0 */
     gl_FragData[0] = vec4(color, 1.0);
+
+    // clear light list
+    int index = int(gl_FragCoord.x) + int(gl_FragCoord.y) * int(viewWidth + 0.5);
+    if (index < 262144) {
+        globalLightList[index].mat = 0;
+        globalLightList[index].blockPos = ivec3(0);
+        globalLightList[index].subPos = ivec4(0);
+        globalLightList[index].col = ivec4(0);
+    }
 }
 
 #endif
@@ -174,7 +186,7 @@ uniform mat4 gbufferProjectionInverse;
 void main() {
     gbufferPreviousModelViewInverse = gbufferModelViewInverse;
     gbufferPreviousProjectionInverse = gbufferProjectionInverse;
-
+    globalLightCount = 1;
     gl_Position = ftransform();
     texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 }
