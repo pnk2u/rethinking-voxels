@@ -2,4 +2,4 @@
 
 #define NETHER
 #define CSH
-#include "/program/shadowcomp.glsl"
+#include "/program/shadowcomp1.glsl"

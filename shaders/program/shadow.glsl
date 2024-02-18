@@ -240,16 +240,16 @@ layout(r32i) restrict uniform iimage3D occupancyVolume;
 #include "/lib/vx/positionHashing.glsl"
 
 void main() {
-    int mat = matV[0];
-    if (entityId > 0) mat = entityId;
-    if (currentRenderedItemId > 0) mat = currentRenderedItemId;
+    int localMat = matV[0];
+    if (entityId > 0) localMat = entityId;
+    if (currentRenderedItemId > 0) localMat = currentRenderedItemId;
 
     vec3 cnormal = normalize(cross(positionV[1].xyz - positionV[0].xyz, positionV[2].xyz - positionV[0].xyz));
     if (!(length(cnormal) > 0.5)) {
         cnormal = vec3(0,1,0);
     }
 
-    bool emissive = isEmissive(mat);
+    bool emissive = isEmissive(localMat);
 
     vec3[3] vxPos;
 
@@ -275,10 +275,10 @@ void main() {
         vec2 minTexCoord = min(min(texCoordV[0], texCoordV[1]), texCoordV[2]);
         vec2 maxTexCoord = max(max(texCoordV[0], texCoordV[1]), texCoordV[2]);
         int lodLevel = int(log2(max(1.1, 1.01 * min((maxTexCoord.x - minTexCoord.x) * atlasSize.x, (maxTexCoord.y - minTexCoord.y) * atlasSize.y))));
-        vec4 col = vec4(getLightCol(mat), 1);
+        vec4 col = vec4(getLightCol(localMat), 1);
         int lightLevel = 0;
         if (emissive) {
-            lightLevel = getLightLevel(mat);
+            lightLevel = getLightLevel(localMat);
         }
         #if RP_MODE >= 2
             #if RP_MODE == 2
@@ -351,7 +351,7 @@ void main() {
             atomicAdd(globalLightHashMap[hash*4+2], packedCol2.x);
             atomicAdd(globalLightHashMap[hash*4+3], packedCol2.y);
             if ((imageAtomicOr(occupancyVolume, coords, 1<<16) >> 16 & 1) == 0) {
-                int lightLevel = getLightLevel(mat);
+                int lightLevel = getLightLevel(localMat);
                 #if HELD_LIGHTING_MODE == 1
                     if (isHeldLight) {
                         lightLevel /= 2;
@@ -359,6 +359,7 @@ void main() {
                 #endif
                 if (lightLevel == 0) lightLevel = max(10, int(31 * lmCoordV[0].x));
                 imageAtomicOr(occupancyVolume, coords, lightLevel << 17);
+                atomicOr(globalLightHashMap[hash*4+3], localMat << 16);
             }
         } else {
             for (int i = 0; i < 3; i++) {

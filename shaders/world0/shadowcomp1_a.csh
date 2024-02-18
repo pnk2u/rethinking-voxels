@@ -2,4 +2,4 @@
 
 #define OVERWORLD
 #define CSH_A
-#include "/program/shadowcomp.glsl"
+#include "/program/shadowcomp1.glsl"
