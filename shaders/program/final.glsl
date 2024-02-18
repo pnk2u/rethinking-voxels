@@ -65,6 +65,8 @@ uniform sampler2D shadowcolor0;
         text.bgCol = vec4(0.0);
     }
 #endif
+#define WRITE_TO_SSBOS
+#include "/lib/vx/SSBOs.glsl"
 
 //Program//
 void main() {
@@ -146,6 +148,14 @@ void main() {
     if (gl_FragCoord.x < 0) color = texture(shadowcolor0, texCoord).rgb;
     /* DRAWBUFFERS:0 */
     gl_FragData[0] = vec4(color, 1.0);
+
+    int index = int(gl_FragCoord.x) + int(viewWidth + 0.5) * int(gl_FragCoord.y);
+    int clearPerFragment = 1 + 4 * (1<<18) / int(viewWidth * viewHeight + 0.5);
+    if (index < 4 * (1<<18) / clearPerFragment) {
+        for (int j = 0; j < clearPerFragment; j++) {
+            globalLightHashMap[index * clearPerFragment + j] = 0;
+        }
+    }
 }
 
 #endif
