@@ -4,7 +4,7 @@
 /*
 This program offsets irradiance cache data to account for camera movement, and handles its temporal accumulation falloff
 */
-#ifdef CSH_A
+#ifdef CSH
 
 #if VX_VOL_SIZE == 0
     const ivec3 workGroups = ivec3(12, 8, 12);
@@ -52,7 +52,7 @@ void main() {
 /*
 this program calculates volumetric block lighting
 */
-#ifdef CSH_B
+#ifdef CSH_A
 #if VX_VOL_SIZE == 0
     const ivec3 workGroups = ivec3(12, 8, 12);
 #elif VX_VOL_SIZE == 1
@@ -371,7 +371,7 @@ void main() {
 #endif
 
 // This program calculates GI
-#ifdef CSH_C
+#ifdef CSH_B
 #if VX_VOL_SIZE == 0
     const ivec3 workGroups = ivec3(12, 8, 12);
 #elif VX_VOL_SIZE == 1

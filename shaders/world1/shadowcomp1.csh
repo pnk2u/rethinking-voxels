@@ -1,5 +1,5 @@
 #version 430
 
-#define OVERWORLD
-#define CSH_B
+#define END
+#define CSH
 #include "/program/shadowcomp.glsl"
