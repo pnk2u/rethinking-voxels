@@ -237,6 +237,7 @@ layout(r32i) restrict uniform iimage3D occupancyVolume;
 #define WRITE_TO_SSBOS
 #include "/lib/vx/SSBOs.glsl"
 #include "/lib/materials/shadowChecks.glsl"
+#include "/lib/vx/positionHashing.glsl"
 
 void main() {
     int mat = matV[0];
@@ -319,6 +320,7 @@ void main() {
         #endif
 
         if (emissive) {
+            uint hash = posToHash(coords - voxelVolumeSize/2) % uint(1<<18);
             vec3[3] blockRelPos;
             for (int i = 0; i < 3; i++) {
                 blockRelPos[i] = vxPos[i] - coords + voxelVolumeSize/2 - 0.5;
@@ -336,15 +338,18 @@ void main() {
                 blockRelPos[1] * blockRelPos[2] +
                 blockRelPos[2] * blockRelPos[0]);
             vec3 variance = meanSquarePos - (meanPos - 1.5) * (meanPos - 1.5);
-            int packedMeanPos = int(meanPos.x * 10 + 0.5) | (int(meanPos.y * 10 + 0.5) << 15);
-            int packedStdev = int(meanPos.z * 10 + 0.5) | (int(10 * sqrt(max(max(variance.x, variance.y), variance.z))) << 15) | (1<<25);
-            imageAtomicAdd(voxelCols,
-                coords * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0),
-                packedMeanPos);
-            imageAtomicAdd(voxelCols,
-                coords * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0),
-                packedStdev);
-
+            ivec2 packedMeanPos = ivec2(
+                int(meanPos.x * 32 + 0.5) | (int(meanPos.y * 32 + 0.5) << 16),
+                int(meanPos.z * 32 + 0.5) | (1<<16)
+            );
+            ivec2 packedCol2 = ivec2(
+                int(col.x * 32 + 0.5) | (int(col.y * 32 + 0.5) << 16),
+                int(col.z * 32 + 0.5)
+            );
+            atomicAdd(globalLightHashMap[hash*4], packedMeanPos.x);
+            atomicAdd(globalLightHashMap[hash*4+1], packedMeanPos.y);
+            atomicAdd(globalLightHashMap[hash*4+2], packedCol2.x);
+            atomicAdd(globalLightHashMap[hash*4+3], packedCol2.y);
             if ((imageAtomicOr(occupancyVolume, coords, 1<<16) >> 16 & 1) == 0) {
                 int lightLevel = getLightLevel(mat);
                 #if HELD_LIGHTING_MODE == 1

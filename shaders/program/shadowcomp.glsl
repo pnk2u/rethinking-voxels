@@ -96,6 +96,7 @@ layout(rgba16f) uniform image3D irradianceCacheI;
 layout(rgba16i) uniform iimage3D lightStorage;
 #include "/lib/vx/voxelReading.glsl"
 #include "/lib/util/random.glsl"
+#include "/lib/vx/positionHashing.glsl"
 
 #if MAX_TRACE_COUNT < 128
     #define MAX_LIGHT_COUNT 128
@@ -111,22 +112,6 @@ shared uint[128] lightHashMap;
 shared vec3[5] frustrumSides;
 
 const vec2[4] squareCorners = vec2[4](vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1));
-uint posToHash(uvec3 pos) {
-    // modified version of David Hoskins' hash without sine 2
-    // https://www.shadertoy.com/view/XdGfRR -> common -> hash13
-    // licensed as CC-BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)
-    pos *= uvec3(1597334673U, 3812015801U, 2798796415U);
-    uint hash = (pos.x ^ pos.y ^ pos.z) * 1597334673U;
-    return hash % uint(128*32);
-}
-
-uint posToHash(vec3 pos) {
-    return posToHash(uvec3(pos + 1000));
-}
-
-uint posToHash(ivec3 pos) {
-    return posToHash(uvec3(pos + 1000));
-}
 
 ivec2 getFlipPair(int index, int stage) {
     int groupSize = 1<<stage;
@@ -216,7 +201,7 @@ void main() {
         }
 
         if ((imageLoad(occupancyVolume, coords).r & 1<<16) > 0) {
-            uint hash = posToHash(coords - voxelVolumeSize/2);
+            uint hash = posToHash(coords - voxelVolumeSize/2) % uint(128*32);
             if ((atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) == 0) {
                 int lightIndex = atomicAdd(lightCount, 1);
                 if (lightIndex < MAX_LIGHT_COUNT) {
@@ -234,7 +219,7 @@ void main() {
     if (index < MAX_LIGHT_COUNT && anyInFrustrum) {
         ivec4 prevFrameLight = imageLoad(lightStorage, coords);
 
-        uint hash = posToHash(prevFrameLight.xyz);
+        uint hash = posToHash(prevFrameLight.xyz) % uint(128*32);
         bool known = (
             prevFrameLight.w <= 0 ||
             (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0
@@ -263,7 +248,7 @@ void main() {
                     index % gl_WorkGroupSize.x,
                     index / gl_WorkGroupSize.x % gl_WorkGroupSize.y,
                     index / (gl_WorkGroupSize.x * gl_WorkGroupSize.y)));
-            uint hash = posToHash(prevFrameLight.xyz);
+            uint hash = posToHash(prevFrameLight.xyz) % uint(128*32);
             bool known = (
                 prevFrameLight.w <= 0 ||
                 (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0

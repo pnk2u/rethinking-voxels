@@ -19,8 +19,10 @@ uniform sampler2D colortex8;
 layout(rgba16f) uniform image2D colorimg10;
 layout(rgba16i) uniform iimage2D colorimg11;
 
+#include "/lib/vx/SSBOs.glsl"
 #include "/lib/vx/voxelReading.glsl"
 #include "/lib/util/random.glsl"
+#include "/lib/vx/positionHashing.glsl"
 
 #if MAX_TRACE_COUNT < 128
     #define MAX_LIGHT_COUNT 128
@@ -34,23 +36,6 @@ shared ivec4[MAX_LIGHT_COUNT] positions;
 shared int[MAX_LIGHT_COUNT] extraData;
 shared float[MAX_LIGHT_COUNT] weights;
 shared uint[128] lightHashMap;
-
-uint posToHash(uvec3 pos) {
-    // modified version of David Hoskins' hash without sine 2
-    // https://www.shadertoy.com/view/XdGfRR -> common -> hash13
-    // licensed as CC-BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)
-    pos *= uvec3(1597334673U, 3812015801U, 2798796415U);
-    uint hash = (pos.x ^ pos.y ^ pos.z) * 1597334673U;
-    return hash % uint(128*32);
-}
-
-uint posToHash(vec3 pos) {
-    return posToHash(uvec3(pos + 1000));
-}
-
-uint posToHash(ivec3 pos) {
-    return posToHash(uvec3(pos + 1000));
-}
 
 ivec2 getFlipPair(int index, int stage) {
     int groupSize = 1<<stage;
@@ -119,7 +104,7 @@ void main() {
         ivec4 prevFrameLight = imageLoad(colorimg11, writeTexelCoord);
         prevFrameLight.xyz += vxPosFrameOffset;
 
-        uint hash = posToHash(prevFrameLight.xyz);
+        uint hash = posToHash(prevFrameLight.xyz) % uint(128*32);
         bool known = (
             prevFrameLight.w <= 0 ||
             (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0
@@ -168,7 +153,7 @@ void main() {
         vec4 rayHit0 = voxelTrace(biasedVxPos, LIGHT_TRACE_LENGTH * dir, rayNormal0);
         ivec3 rayHit0Coords = ivec3(rayHit0.xyz - 0.5 * rayNormal0 + 1000) - 1000;
         if (rayHit0.a > 16 && (imageLoad(occupancyVolume, rayHit0Coords + voxelVolumeSize/2).r >> 16 & 1) != 0) {
-            uint hash = posToHash(rayHit0.xyz - 0.5 * rayNormal0);
+            uint hash = posToHash(rayHit0.xyz - 0.5 * rayNormal0) % uint(128*32);
             if ((atomicOr(lightHashMap[hash/32], 1<<hash%32) & uint(1)<<hash%32) == 0) {
                 int lightIndex = atomicAdd(lightCount, 1);
                 if (lightIndex < MAX_LIGHT_COUNT) {
@@ -204,7 +189,7 @@ void main() {
                     (lightPos0 + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0)).r
             );
             vec3 subLightPos = 0.1 * vec3(packedLightSubPos.x & 0x7fff, packedLightSubPos.x>>15 & 0x7fff, packedLightSubPos.y & 0x7fff) / (packedLightSubPos.y >>25) - 1;
-            uint hash = posToHash(lightPos0);
+            uint hash = posToHash(lightPos0) % uint(128*32);
             if ((atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) == 0) {
                 int lightIndex = atomicAdd(lightCount, 1);
                 if (lightIndex < MAX_LIGHT_COUNT) {
@@ -227,7 +212,7 @@ void main() {
         int otherLightIndex = index / 8;
         ivec4 prevFrameLight = imageLoad(colorimg11, ivec2(gl_WorkGroupSize.xy) * (ivec2(gl_WorkGroupID.xy) + offset) + ivec2(otherLightIndex % gl_WorkGroupSize.x, otherLightIndex / gl_WorkGroupSize.x));
         prevFrameLight.xyz += vxPosFrameOffset;
-        uint hash = posToHash(prevFrameLight.xyz);
+        uint hash = posToHash(prevFrameLight.xyz) % uint(128*32);
         bool known = (
             prevFrameLight.w <= 0 ||
             (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0
@@ -273,16 +258,11 @@ void main() {
 
     vec3 writeColor = vec3(0);
     for (uint thisLightIndex = MAX_TRACE_COUNT * uint(!validData); thisLightIndex < min(lightCount, MAX_TRACE_COUNT); thisLightIndex++) {
-        ivec2 packedLightSubPos = ivec2(
-            imageLoad(
-                voxelCols,
-                (positions[thisLightIndex].xyz + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r,
-            imageLoad(
-                voxelCols,
-                (positions[thisLightIndex].xyz + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0)).r
-        );
-        vec3 subLightPos = 0.1 * vec3(packedLightSubPos.x & 0x7fff, packedLightSubPos.x>>15 & 0x7fff, packedLightSubPos.y & 0x7fff) / (packedLightSubPos.y >> 25) - 1;
-        float lightSize = 0.5;//0.1 * (packedLightPosStdev & 0x1fff) / (packedLightPosStdev>>13);
+        uint hash = posToHash(positions[thisLightIndex].xyz) % uint(1<<18);
+        ivec2 packedLightSubPos = ivec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
+        ivec2 packedLightCol = ivec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
+        vec3 subLightPos = 1.0/32.0 * vec3(packedLightSubPos.x & 0xffff, packedLightSubPos.x>>16, packedLightSubPos.y & 0xffff) / (packedLightSubPos.y >> 16) - 1;
+        float lightSize = 0.5;
         vec3 lightPos = positions[thisLightIndex].xyz + subLightPos;
         lightSize = clamp(lightSize, 0.01, getDistanceField(lightPos));
         float ndotl0 = dot(normalize(lightPos - vxPos), normalDepthData.xyz);
@@ -296,7 +276,7 @@ void main() {
             float ndotl = ndotl0 * lightBrightness;
             vec4 rayHit1 = coneTrace(biasedVxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, lightSize * LIGHTSOURCE_SIZE_MULT / dirLen, dither);
             if (rayHit1.w > 0.01) {
-                vec3 lightColor = getColor(positions[thisLightIndex].xyz + 0.5).xyz;
+                vec3 lightColor = 1.0/32.0 * vec3(packedLightCol.x & 0xffff, packedLightCol.x>>16, packedLightCol.y & 0xffff) / (packedLightSubPos.y >> 16);
                 float totalBrightness = ndotl * (sqrt(1 - dirLen / (LIGHT_TRACE_LENGTH * thisTraceLen))) / (dirLen + 0.1);
                 writeColor += lightColor * rayHit1.w * totalBrightness;
                 int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);
@@ -306,7 +286,6 @@ void main() {
     }
     barrier();
     memoryBarrierShared();
-    //if (index < lightCount) writeColor = vec3(10 * weights[index]);
     imageStore(colorimg10, writeTexelCoord, vec4(writeColor, 1));
     ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
     imageStore(colorimg11, writeTexelCoord, lightPosToStore);
