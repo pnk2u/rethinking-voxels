@@ -46,7 +46,11 @@ void main() {
     if (validData) {
         vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
         playerPos /= playerPos.w;
-        vxPos = playerToVx(playerPos.xyz) + max(0.1, 0.005 * length(playerPos.xyz)) * normalDepthData.xyz;
+        #if PIXEL_SHADOW > 0
+            vxPos = floor(playerToVx(playerPos.xyz) * (PIXEL_SHADOW) + 0.005 * normalDepthData.xyz) / (PIXEL_SHADOW) + max(0.1, 0.005 * length(playerPos.xyz)) * normalDepthData.xyz;
+        #else
+            vxPos = playerToVx(playerPos.xyz) + max(0.1, 0.005 * length(playerPos.xyz)) * normalDepthData.xyz;
+        #endif
         vec3 dir = randomSphereSample();
         if (dot(dir, normalDepthData.xyz) < 0) dir *= -1;
         ray_hit_t rayHit0 = raytrace(vxPos, LIGHT_TRACE_LENGTH * dir);
