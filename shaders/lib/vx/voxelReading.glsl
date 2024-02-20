@@ -85,22 +85,20 @@ vec4 coneTrace(vec3 start, vec3 dir, float angle, float dither) {
 vec4 voxelTrace(vec3 start, vec3 dir, out vec3 normal) {
     dir += 0.000001 * vec3(equal(dir, vec3(0)));
     vec3 stp = 1.0 / abs(dir);
-    float hit = 0;
     vec3 dirsgn = sign(dir);
     vec3 progress = (0.5 + 0.5 * dirsgn - fract(start)) * stp * dirsgn;
     float w = 0.000001;
     normal = vec3(0);
     for (int k = 0; k < 2000; k++) {
-        ivec3 thisVoxelPos = ivec3(start + w * dir + 0.5 * normal * dirsgn + voxelVolumeSize/2);
-        int thisVoxelData = imageLoad(occupancyVolume, thisVoxelPos).r;
-        if ((thisVoxelData & (1<<16|1)) != 0 || w > 1) {
-            hit = thisVoxelData & (1<<16|1);
-            break;
+        vec3 thisVoxelPos = start + w * dir;
+        ivec3 thisVoxelCoord = ivec3(thisVoxelPos + 0.5 * normal * dirsgn + voxelVolumeSize/2);
+        int thisVoxelData = imageLoad(occupancyVolume, thisVoxelCoord).r;
+        if (w > 1 || (thisVoxelData & (1<<16)) != 0) {
+            normal *= -dirsgn;
+            return vec4(start + w * dir, thisVoxelData & (1<<16));
         }
         w = min(min(progress.x, progress.y), progress.z);
         normal = vec3(equal(progress, vec3(w)));
         progress += normal * stp;
     }
-    normal *= -dirsgn;
-    return vec4(start + w * dir, hit);
 }
