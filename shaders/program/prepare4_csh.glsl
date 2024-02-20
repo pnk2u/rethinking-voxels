@@ -259,8 +259,8 @@ void main() {
     vec3 writeColor = vec3(0);
     for (uint thisLightIndex = MAX_TRACE_COUNT * uint(!validData); thisLightIndex < min(lightCount, MAX_TRACE_COUNT); thisLightIndex++) {
         uint hash = posToHash(positions[thisLightIndex].xyz) % uint(1<<18);
-        ivec2 packedLightSubPos = ivec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
-        ivec2 packedLightCol = ivec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
+        uvec2 packedLightSubPos = uvec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
+        uvec2 packedLightCol = uvec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
         vec3 subLightPos = 1.0/32.0 * vec3(packedLightSubPos.x & 0xffff, packedLightSubPos.x>>16, packedLightSubPos.y & 0xffff) / (packedLightSubPos.y >> 16) - 1;
         float lightSize = 0.5;
         vec3 lightPos = positions[thisLightIndex].xyz + subLightPos;

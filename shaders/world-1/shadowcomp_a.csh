@@ -1,4 +1,4 @@
 #version 430
 
-#define CSH
+#define CSH_A
 #include "/program/shadowcomp.glsl"

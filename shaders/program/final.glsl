@@ -153,7 +153,7 @@ void main() {
     int clearPerFragment = 1 + 4 * (1<<18) / int(viewWidth * viewHeight + 0.5);
     if (index < 4 * (1<<18) / clearPerFragment) {
         for (int j = 0; j < clearPerFragment; j++) {
-            globalLightHashMap[index * clearPerFragment + j] = 0;
+            globalLightHashMap[index * clearPerFragment + j] = uint(0);
         }
     }
 }

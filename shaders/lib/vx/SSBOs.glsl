@@ -9,7 +9,7 @@
         mat4 gbufferPreviousModelViewInverse;
         mat4 gbufferPreviousProjectionInverse;
         mat4 reprojectionMatrix;
-        int[] globalLightHashMap;
+        uint globalLightHashMap[];
     };
     #ifdef READONLY
         #undef WRITE_TO_SSBOS

@@ -338,13 +338,13 @@ void main() {
                 blockRelPos[1] * blockRelPos[2] +
                 blockRelPos[2] * blockRelPos[0]);
             vec3 variance = meanSquarePos - (meanPos - 1.5) * (meanPos - 1.5);
-            ivec2 packedMeanPos = ivec2(
-                int(meanPos.x * 32 + 0.5) | (int(meanPos.y * 32 + 0.5) << 16),
-                int(meanPos.z * 32 + 0.5) | (1<<16)
+            uvec2 packedMeanPos = uvec2(
+                uint(meanPos.x * 32 + 0.5) | (uint(meanPos.y * 32 + 0.5) << 16),
+                uint(meanPos.z * 32 + 0.5) | uint(1<<16)
             );
-            ivec2 packedCol2 = ivec2(
-                int(col.x * 32 + 0.5) | (int(col.y * 32 + 0.5) << 16),
-                int(col.z * 32 + 0.5)
+            uvec2 packedCol2 = uvec2(
+                uint(col.x * 32 + 0.5) | (uint(col.y * 32 + 0.5) << 16),
+                uint(col.z * 32 + 0.5)
             );
             atomicAdd(globalLightHashMap[hash*4], packedMeanPos.x);
             atomicAdd(globalLightHashMap[hash*4+1], packedMeanPos.y);
@@ -359,7 +359,10 @@ void main() {
                 #endif
                 if (lightLevel == 0) lightLevel = max(10, int(31 * lmCoordV[0].x));
                 imageAtomicOr(occupancyVolume, coords, lightLevel << 17);
-                atomicOr(globalLightHashMap[hash*4+3], localMat << 16);
+                imageAtomicOr(occupancyVolume, coords, localMat/4%32 << 22);
+                if (entityId > 0) {
+                    imageAtomicOr(occupancyVolume, coords, 1<<27);
+                }
             }
         } else {
             for (int i = 0; i < 3; i++) {
