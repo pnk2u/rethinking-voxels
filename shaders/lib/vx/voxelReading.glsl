@@ -93,7 +93,7 @@ vec4 voxelTrace(vec3 start, vec3 dir, out vec3 normal) {
         vec3 thisVoxelPos = start + w * dir;
         ivec3 thisVoxelCoord = ivec3(thisVoxelPos + 0.5 * normal * dirsgn + voxelVolumeSize/2);
         int thisVoxelData = imageLoad(occupancyVolume, thisVoxelCoord).r;
-        if (w > 1 || (thisVoxelData & (1<<16)) != 0) {
+        if (w > 1 || (thisVoxelData & (1<<16|1)) != 0) {
             normal *= -dirsgn;
             return vec4(start + w * dir, thisVoxelData & (1<<16));
         }

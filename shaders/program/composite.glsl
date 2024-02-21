@@ -199,7 +199,7 @@ void main() {
         #endif
 
         #ifdef VOLUMETRIC_BLOCKLIGHT
-            volumetricEffect += GetVolumetricBlocklight(vlFactorM, translucentMult, lViewPos1, nViewPos, texCoord, z0, z1, dither);
+            volumetricEffect += GetVolumetricBlocklight(translucentMult, lViewPos1, nViewPos, texCoord, z0, z1, dither);
         #endif
     #endif
 
@@ -246,7 +246,7 @@ void main() {
 
     color = pow(color, vec3(2.2));
 
-    #ifdef LIGHTSHAFTS_ACTIVE
+    #if defined LIGHTSHAFTS_ACTIVE || defined VOLUMETRIC_BLOCKLIGHT
         #ifdef END
             volumetricEffect.rgb *= volumetricEffect.rgb;
         #endif

@@ -446,11 +446,12 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         vxPos = floor(vxPos * PIXEL_SHADOW + 0.001) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
     #endif
     float voxelFactor = pow(min(1, 2 * infnorm(vxPos/voxelVolumeSize)), 10);
+
     vec3 voxelBlockLighting =
         #if defined PER_PIXEL_LIGHT && !defined GBUFFERS_WATER
-            8 * texelFetch(colortex12, ivec2(gl_FragCoord.xy), 0).rgb;
+            4 * texelFetch(colortex12, ivec2(gl_FragCoord.xy), 0).rgb;
         #else
-            8 * readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);
+            4 * readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);
         #endif
     vec3 blockLighting = mix(voxelBlockLighting, lightmapXM * blocklightCol, voxelFactor);
     vec3 sceneLighting = lightColorM * shadowMult + ambientColorM * ambientMult;

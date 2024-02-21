@@ -9,20 +9,17 @@
         return (far * (dist - near)) / (dist * (far - near));
     }
 #endif
-vec4 GetVolumetricBlocklight(float vlFactor, vec3 translucentMult, float lViewPos, vec3 nViewPos, vec2 texCoord, float z0, float z1, float dither) {
+vec4 GetVolumetricBlocklight(vec3 translucentMult, float lViewPos, vec3 nViewPos, vec2 texCoord, float z0, float z1, float dither) {
     if (max(blindness, darknessFactor) > 0.1) return vec4(0.0);
     vec4 volumetricLight = vec4(0.0);
 
     float vlMult = VBL_STRENGTH;
     #ifdef OVERWORLD
-        float vlSceneIntensity = isEyeInWater != 1 ? vlFactor : 1.0;
-
-        if (sunVisibility < 0.5) {
-            vlSceneIntensity = 0.0;
-            vlMult *= 0.6 + 0.4 * max0(far - lViewPos) / far;
-        }
-    #else
-        float vlSceneIntensity = 0.3;
+        float vlSceneIntensity = 0.3 + 0.6 * rainFactor;
+    #elif defined NETHER
+        float vlSceneIntensity = 0.9;
+    #elif defined END
+        float vlSceneIntensity = 0.5;
     #endif
     #if LIGHTSHAFT_QUALI == 4
         int sampleCount = vlSceneIntensity < 0.5 ? 30 : 50;
@@ -69,23 +66,21 @@ vec4 GetVolumetricBlocklight(float vlFactor, vec3 translucentMult, float lViewPo
         if (currentDist > maxCurrentDist) break;
 
         vec4 viewPos = gbufferProjectionInverse * (vec4(texCoord, GetDistX(currentDist), 1.0) * 2.0 - 1.0);
-        viewPos /= viewPos.w;
+        //viewPos /= viewPos.w;
         vec4 wpos = gbufferModelViewInverse * viewPos;
         vec3 playerPos = wpos.xyz / wpos.w;
         vec3 vxPos = playerPos + fract(cameraPosition);
 
         vec3 vlSample = vec3(0.0);
-        #ifdef REALTIME_SHADOWS
 
-            float percentComplete = currentDist / maxDist;
-            float sampleMult = mix(percentComplete * 3.0, sampleMultIntense, max(rainFactor, vlSceneIntensity));
-            if (currentDist < 5.0) sampleMult *= smoothstep1(clamp(currentDist / 5.0, 0.0, 1.0));
-            sampleMult /= sampleCount;
+        float percentComplete = currentDist / maxDist;
+        float sampleMult = mix(percentComplete * 3.0, sampleMultIntense, max(rainFactor, vlSceneIntensity));
+        if (currentDist < 5.0) sampleMult *= smoothstep1(clamp(currentDist / 5.0, 0.0, 1.0));
+        sampleMult /= sampleCount;
 
-            if (infnorm(vxPos/voxelVolumeSize) < 0.5) {
-                vlSample = readVolumetricBlocklight(vxPos);
-            }
-        #endif
+        if (infnorm(vxPos/voxelVolumeSize) < 0.5) {
+            vlSample = readVolumetricBlocklight(vxPos);
+        }
 
         if (currentDist > depth0) vlSample *= translucentMult;
 
