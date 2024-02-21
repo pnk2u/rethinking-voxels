@@ -129,6 +129,155 @@ void main() {
 
 
 #ifdef CSH_A
+#if VX_VOL_SIZE == 0
+    const ivec3 workGroups = ivec3(3, 2, 3);
+#elif VX_VOL_SIZE == 1
+    const ivec3 workGroups = ivec3(4, 3, 4);
+#elif VX_VOL_SIZE == 2
+    const ivec3 workGroups = ivec3(8, 4, 8);
+#elif VX_VOL_SIZE == 3
+    const ivec3 workGroups = ivec3(16, 4, 16);
+#endif
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+
+layout(r32i) uniform restrict iimage3D occupancyVolume;
+
+uniform vec3 cameraPosition;
+
+#include "/lib/vx/positionHashing.glsl"
+#define WRITE_TO_SSBOS
+#include "/lib/vx/SSBOs.glsl"
+shared int lights[512][7];
+shared int lightCount;
+shared ivec4 lightLocs[512];
+void main() {
+    int index = int(gl_LocalInvocationID.x) + 8 * int(gl_LocalInvocationID.y) + 64 * int(gl_LocalInvocationID.z);
+    if (index == 0) {
+        lightCount = 0;
+    }
+    barrier();
+    memoryBarrierShared();
+    for (int k = 0; k < 64; k++) {
+        ivec3 offset = ivec3(k%4, k/4%4, k/16%4);
+        ivec3 coord = ivec3(gl_GlobalInvocationID) * 4 + ivec3(mod(cameraPosition + 1, vec3(2))) + offset;
+        int thisOccupancy = imageLoad(occupancyVolume, coord).r;
+        if ((thisOccupancy >> 27 & 1) != 0) {
+            int lightIndex = atomicAdd(lightCount, 1);
+            if (lightIndex < 512) {
+                lightLocs[lightIndex] = ivec4(coord, thisOccupancy >> 22 & 31);
+                for (int k = 0; k < 7; k++) {
+                    lights[lightIndex][k] = 0;
+                }
+            } else {
+                atomicMin(lightCount, 512);
+            }
+        }
+    }
+    barrier();
+    memoryBarrierShared();
+    int aroundLightCount = 1;
+    for (int k = index + 1; k < lightCount; k++) {
+        if (length(lightLocs[k] - lightLocs[index]) < 1.1) {
+            lights[index][aroundLightCount++] = k;
+            atomicMin(lights[k][0], -1);
+        }
+    }
+    barrier();
+    memoryBarrierShared();
+    bool restoreEmissiveness = false;
+    ivec3 coord;
+    uvec4 packedLightDataToWrite;
+    int maxLightLevel = 0;
+    if (index < lightCount) {
+        coord = lightLocs[index].xyz;
+        imageAtomicAnd(occupancyVolume, coord, ~(1<<16));
+        if (lights[index][0] == 0) {
+            int thisOccupancy = imageLoad(occupancyVolume, coord).r;
+            int linkedLightCount = 1;
+            ivec3 linkedLights[512];
+            linkedLights[0] = coord;
+            for (int j = 0; j < min(512, linkedLightCount); j++) {
+                if (linkedLightCount >= 512) break;
+                for (int i = 0; i < 6; i++) {
+                    ivec3 offset = (i/3*2-1)*ivec3(equal(ivec3(i%3), ivec3(0, 1, 2)));
+                    ivec3 thisLight = linkedLights[j] + offset;
+                    int aroundOccupancy = imageLoad(occupancyVolume, thisLight).r;
+                    if ((aroundOccupancy >> 22 & 63) != (thisOccupancy >> 22 & 63)) continue;
+                    bool known = false;
+                    for (int n = 0; n < linkedLightCount; n++) {
+                        if (linkedLights[n] == thisLight) {
+                            known = true;
+                            break;
+                        }
+                    }
+                    if (known || linkedLightCount >= 512) {
+                        continue;
+                    }
+                    linkedLights[linkedLightCount++] = thisLight;
+                    maxLightLevel = max(maxLightLevel, aroundOccupancy >> 17 & 31);
+                }
+            }
+            ivec4 meanPos = ivec4(0);
+            ivec3 meanCol = ivec3(0);
+            for (int k = 0; k < linkedLightCount; k++) {
+                restoreEmissiveness = true;
+                ivec3 otherLightCoord = linkedLights[k];
+                uint hash = posToHash(otherLightCoord - voxelVolumeSize/2) % uint(1<<18);
+                uvec4 packedLightData = uvec4(
+                    globalLightHashMap[4 * hash],
+                    globalLightHashMap[4 * hash + 1],
+                    globalLightHashMap[4 * hash + 2],
+                    globalLightHashMap[4 * hash + 3]
+                );
+                ivec4 otherPos = ivec4(packedLightData.x & 0xffffu, packedLightData.x >> 16, packedLightData.y & 0xffffu, packedLightData.y >> 16);
+                ivec4 otherCol = ivec4(packedLightData.z & 0xffffu, packedLightData.z >> 16, packedLightData.w & 0xffffu, packedLightData.w >> 16);
+                ivec4 offset = ivec4(otherLightCoord - coord, 0);
+                meanPos += otherPos + offset * 32 * otherPos.w;
+                meanCol += otherCol.xyz;
+                if (otherCol.w == 0xffff) {
+                    restoreEmissiveness = false;
+                    break;
+                }
+            }
+            if (restoreEmissiveness) {
+                meanCol /= meanPos.w;
+                meanPos /= meanPos.w;
+                vec3 probePos = coord + meanPos.xyz/32.0 - vec3(0.991775521, 1.0061213, 1.000062142);
+                float minLen = 1000000.0;
+                int bestFitIndex = 0;
+                for (int k = 0; k < linkedLightCount; k++) {
+                    float thisLen = length(probePos - linkedLights[k]);
+                    if (thisLen < minLen) {
+                        bestFitIndex = k;
+                        minLen = thisLen;
+                    }
+                }
+                meanPos.xyz += 32 * (coord - linkedLights[bestFitIndex]);
+                coord = linkedLights[bestFitIndex];
+                packedLightDataToWrite = uvec4(
+                    uint(meanPos.x) | uint(meanPos.y) << 16,
+                    uint(meanPos.z) | uint(1) << 16,
+                    uint(meanCol.x) | uint(meanCol.y) << 16,
+                    uint(meanCol.z) | 0xffff0000u
+                );
+            }
+        }
+    }
+    barrier();
+    if (restoreEmissiveness) {
+        imageAtomicAnd(occupancyVolume, coord, 63<<16);
+        imageAtomicOr(occupancyVolume, coord, (1 + (maxLightLevel << 1)) << 16);
+        uint hash = posToHash(coord - voxelVolumeSize/2) % uint(1<<18);
+        for (int k = 3; k >= 0; k--) {
+            atomicExchange(globalLightHashMap[4 * hash + k], packedLightDataToWrite[k]);
+        }
+    }
+}
+#endif
+
+
+#ifdef CSH_B
 #ifdef LIGHT_CLUMPING
 #if VX_VOL_SIZE == 0
     const ivec3 workGroups = ivec3(12, 8, 12);
@@ -267,130 +416,4 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 layout(local_size_x = 1) in;
 void main() {}
 #endif
-#endif
-
-#ifdef CSH_B
-#if VX_VOL_SIZE == 0
-    const ivec3 workGroups = ivec3(12, 8, 12);
-#elif VX_VOL_SIZE == 1
-    const ivec3 workGroups = ivec3(16, 12, 16);
-#elif VX_VOL_SIZE == 2
-    const ivec3 workGroups = ivec3(32, 16, 32);
-#elif VX_VOL_SIZE == 3
-    const ivec3 workGroups = ivec3(64, 16, 64);
-#endif
-
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-
-layout(r32i) uniform restrict iimage3D occupancyVolume;
-
-uniform vec3 cameraPosition;
-
-#include "/lib/vx/positionHashing.glsl"
-#define WRITE_TO_SSBOS
-#include "/lib/vx/SSBOs.glsl"
-shared int lights[512][7];
-shared int lightCount;
-shared ivec3 lightLocs[512];
-void main() {
-    int index = int(gl_LocalInvocationID.x) + 8 * int(gl_LocalInvocationID.y) + 64 * int(gl_LocalInvocationID.z);
-    if (index == 0) {
-        lightCount = 0;
-    }
-    barrier();
-    memoryBarrierShared();
-    ivec3 coord = ivec3(gl_GlobalInvocationID);
-    if ((imageLoad(occupancyVolume, coord).r >> 27 & 1) != 0) {
-        int lightIndex = atomicAdd(lightCount, 1);
-        lightLocs[lightIndex] = coord;
-        for (int k = 0; k < 7; k++) {
-            lights[lightIndex][k] = 0;
-        }
-    }
-    barrier();
-    memoryBarrierShared();
-    int aroundLightCount = 1;
-    for (int k = index + 1; k < lightCount; k++) {
-        if (length(lightLocs[k] - lightLocs[index]) < 1.1) {
-            lights[index][aroundLightCount++] = k;
-            atomicMin(lights[k][0], -1);
-        }
-    }
-    barrier();
-    memoryBarrierShared();
-    bool restoreEmissiveness = false;
-    if (index < lightCount) {
-        coord = lightLocs[index];
-        imageAtomicAnd(occupancyVolume, coord, ~(1<<16));
-        if (lights[index][0] == 0) {
-            int linkedLightCount = 1;
-            ivec3 linkedLights[512];
-            linkedLights[0] = coord;
-            for (int j = 0; j < min(512, linkedLightCount); j++) {
-                for (int i = 0; i < 6; i++) {
-                    ivec3 offset = (i/3*2-1)*ivec3(equal(ivec3(i%3), ivec3(0, 1, 2)));
-                    ivec3 thisLight = linkedLights[j] + offset;
-                    if ((imageLoad(occupancyVolume, thisLight).r >> 27 & 1) == 0) continue;
-                    bool known = false;
-                    for (int n = 0; n < linkedLightCount; n++) {
-                        if (linkedLights[n] == thisLight) {
-                            known = true;
-                            break;
-                        }
-                    }
-                    if (known) {
-                        continue;
-                    }
-                    linkedLights[linkedLightCount++] = thisLight;
-                }
-            }
-            ivec4 meanPos = ivec4(0);
-            ivec3 meanCol = ivec3(0);
-            for (int k = 0; k < linkedLightCount; k++) {
-                ivec3 otherLightCoord = linkedLights[k];
-                uint hash = posToHash(otherLightCoord - voxelVolumeSize/2) % uint(1<<18);
-                uvec4 packedLightData = uvec4(
-                    globalLightHashMap[4 * hash],
-                    globalLightHashMap[4 * hash + 1],
-                    globalLightHashMap[4 * hash + 2],
-                    globalLightHashMap[4 * hash + 3]
-                );
-                ivec4 otherPos = ivec4(packedLightData.x & 0xffffu, packedLightData.x >> 16, packedLightData.y & 0xffffu, packedLightData.y >> 16);
-                ivec3 otherCol = ivec3(packedLightData.z & 0xffffu, packedLightData.z >> 16, packedLightData.w & 0xffffu);
-                ivec4 offset = ivec4(otherLightCoord - coord, 0);
-                meanPos += otherPos + offset * 32 * otherPos.w;
-                meanCol += otherCol;
-            }
-            meanCol /= meanPos.w;
-            meanPos /= meanPos.w;
-            vec3 probePos = coord + meanPos.xyz/32.0 - vec3(0.991775521, 1.061213, 1.000062142) - 0.5;
-            float minLen = 1000000.0;
-            int bestFitIndex = 0;
-            for (int k = 0; k < linkedLightCount; k++) {
-                float thisLen = length(probePos - linkedLights[k]);
-                if (thisLen < minLen) {
-                    bestFitIndex = k;
-                    minLen = thisLen;
-                }
-            }
-            restoreEmissiveness = ivec3(probePos)/8 == coord/8;
-            meanPos.xyz += 32 * (coord - linkedLights[bestFitIndex]);
-            coord = linkedLights[bestFitIndex];
-            uvec4 packedLightData = uvec4(
-                uint(meanPos.x) | uint(meanPos.y) << 16,
-                uint(meanPos.z) | uint(1) << 16,
-                uint(meanCol.x) | uint(meanCol.y) << 16,
-                uint(meanCol.z)
-            );
-            uint hash = posToHash(coord - voxelVolumeSize/2) % uint(1<<18);
-            for (int k = 0; k < 4; k++) {
-                globalLightHashMap[4 * hash + k] = packedLightData[k];
-            }
-        }
-    }
-    barrier();
-    if (restoreEmissiveness) {
-        imageAtomicOr(occupancyVolume, coord, 1<<16);
-    }
-}
 #endif

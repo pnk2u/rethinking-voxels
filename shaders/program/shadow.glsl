@@ -358,8 +358,7 @@ void main() {
                     }
                 #endif
                 if (lightLevel == 0) lightLevel = max(10, int(31 * lmCoordV[0].x));
-                imageAtomicOr(occupancyVolume, coords, lightLevel << 17);
-                imageAtomicOr(occupancyVolume, coords, localMat/4%32 << 22);
+                imageAtomicOr(occupancyVolume, coords, (lightLevel + (localMat/4%32 << 5) << 17));
                 if (entityId > 0) {
                     imageAtomicOr(occupancyVolume, coords, 1<<27);
                 }
