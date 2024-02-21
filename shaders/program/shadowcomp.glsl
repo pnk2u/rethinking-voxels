@@ -160,7 +160,7 @@ void main() {
     memoryBarrierShared();
     for (int k = 0; k < 64; k++) {
         ivec3 offset = ivec3(k%4, k/4%4, k/16%4);
-        ivec3 coord = ivec3(gl_GlobalInvocationID) * 4 + ivec3(mod(cameraPosition + 1, vec3(2))) + offset;
+        ivec3 coord = ivec3(gl_GlobalInvocationID) * 4 + 3 + offset;
         int thisOccupancy = imageLoad(occupancyVolume, coord).r;
         if ((thisOccupancy >> 27 & 1) != 0) {
             int lightIndex = atomicAdd(lightCount, 1);
