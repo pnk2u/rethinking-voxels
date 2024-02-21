@@ -368,7 +368,7 @@ void main() {
                 vec2 relProjectedPos
                     = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])
                     - vec2(lowerBound[(bestNormalAxis+1)%3], lowerBound[(bestNormalAxis+2)%3]);
-                gl_Position = vec4(relProjectedPos * (1<<localResolution) / shadowMapResolution - 0.5, 0.5, 1.0);
+                gl_Position = vec4(relProjectedPos * (1<<localResolution) / shadowMapResolution - 0.5 + 0.49/shadowMapResolution, 0.5, 1.0);
                 mat = matV[i];
                 texCoord = texCoordV[i];
                 sunVec = sunVecV[i];
@@ -477,22 +477,22 @@ void main() {
 
         DoWave(positionV.xyz, matV);
     #endif
-
+    vec4 position = positionV;
     #ifdef PERPENDICULAR_TWEAKS
         if (matV == 10004 || matV == 10016) { // Foliage
             vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
             vec2 texMinMidCoord = texCoordV - midCoord;
             if (texMinMidCoord.y < 0.0) {
                 vec3 normal = gl_NormalMatrix * gl_Normal;
-                positionV.xyz += normal * 0.35;
+                position.xyz += normal * 0.35;
             }
         }
     #endif
 
     if (matV == 31000) { // Water
-        positionV.y += 0.015 * max0(length(positionV.xyz) - 50.0);
+        position.y += 0.015 * max0(length(position.xyz) - 50.0);
     }
-    gl_Position = shadowProjection * shadowModelView * positionV;
+    gl_Position = shadowProjection * shadowModelView * position;
 
     float lVertexPos = sqrt(gl_Position.x * gl_Position.x + gl_Position.y * gl_Position.y);
     float distortFactor = lVertexPos * shadowMapBias + (1.0 - shadowMapBias);
