@@ -251,11 +251,7 @@ void main() {
             volumetricEffect.rgb *= volumetricEffect.rgb;
         #endif
 
-        color += volumetricEffect.rgb
-        #ifdef NETHER_STORM
-            + netherVolumetricEffect.rgb
-        #endif
-        ;
+        color += volumetricEffect.rgb;
     #endif
 
     #ifdef BLOOM_FOG_COMPOSITE
