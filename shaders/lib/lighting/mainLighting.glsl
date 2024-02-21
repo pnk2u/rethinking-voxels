@@ -321,8 +321,6 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Blocklight
-    /*
-    lightmap.x = 0;
     #if HELD_LIGHTING_MODE >= 1
         float heldLight = max(heldBlockLightValue, heldBlockLightValue2);
         float lViewPosL = lViewPos;
@@ -346,7 +344,6 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         vec2 flickerNoise = texture2D(noisetex, vec2(frameTimeCounter * 0.06)).rb;
         lightmapXM *= mix(1.0, min1(max(flickerNoise.r, flickerNoise.g) * 1.7), pow2(BLOCKLIGHT_FLICKERING * 0.1));
     #endif
-    */
 
     // Minimum Light
     #if !defined END && MINIMUM_LIGHT_MODE > 0
@@ -444,18 +441,18 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Combine Lighting
-    #if !defined PER_PIXEL_LIGHT || defined GBUFFERS_WATER
     vec3 vxPos = playerPos + fract(cameraPosition);
-        #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
-            vxPos = floor(vxPos * PIXEL_SHADOW + 0.001) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
-        #endif
+    #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
+        vxPos = floor(vxPos * PIXEL_SHADOW + 0.001) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
     #endif
-    vec3 blockLighting = //lightmapXM * blocklightCol +
+    float voxelFactor = pow(min(1, 2 * infnorm(vxPos/voxelVolumeSize)), 10);
+    vec3 voxelBlockLighting =
         #if defined PER_PIXEL_LIGHT && !defined GBUFFERS_WATER
-            4 * texelFetch(colortex12, ivec2(gl_FragCoord.xy), 0).rgb;
+            8 * texelFetch(colortex12, ivec2(gl_FragCoord.xy), 0).rgb;
         #else
-            4 * readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);
+            8 * readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);
         #endif
+    vec3 blockLighting = mix(voxelBlockLighting, lightmapXM * blocklightCol, voxelFactor);
     vec3 sceneLighting = lightColorM * shadowMult + ambientColorM * ambientMult;
     float dotSceneLighting = dot(sceneLighting, sceneLighting);
 
