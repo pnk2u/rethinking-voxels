@@ -80,11 +80,13 @@ bool isEmissive(int mat) {
         mat == 60020 || // conduit
         mat == 50000 || // end crystal
         mat == 50004 || // lightning bolt
-        mat == 50012 || // glow item frame
+        mat == 50010 || // glow item frame
         mat == 50020 || // blaze
         mat == 50048 || // glow squid
         mat == 50052 || // magma cube
+        mat == 50072 || // experience orb
         mat == 50080 || // allay
+        mat == 50088 || // entity flame
         mat == 50116 || // TNT and TNT minecart
         mat == 35917    // everything else
     );
@@ -417,7 +419,7 @@ vec3 getLightCol(int mat) {
             lightcol = vec3(LIGHTNING_COL_R, LIGHTNING_COL_G, LIGHTNING_COL_B);
             #endif
             break;
-        case 50012: // glow item frame
+        case 50010: // glow item frame
             #ifdef HARDCODED_ITEMFRAME_COL
             lightcol = vec3(ITEMFRAME_COL_R, ITEMFRAME_COL_G, ITEMFRAME_COL_B);
             #endif
@@ -676,7 +678,7 @@ int getLightLevel(int mat) {
         case 50004: // lightning bolt
             lightlevel = BRIGHTNESS_LIGHTNING;
             break;
-        case 50012: // glow item frame
+        case 50010: // glow item frame
             lightlevel = BRIGHTNESS_ITEMFRAME;
             break;
         case 50020: // blaze
@@ -684,6 +686,9 @@ int getLightLevel(int mat) {
             break;
         case 50048: // glow squid
             lightlevel = BRIGHTNESS_SQUID;
+            break;
+        case 50072:
+            lightlevel = BRIGHTNESS_XP;
             break;
         case 50080: // allay
             lightlevel = BRIGHTNESS_ALLAY;

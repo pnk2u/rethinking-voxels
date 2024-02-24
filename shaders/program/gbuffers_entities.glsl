@@ -309,7 +309,7 @@ void main() {
     #endif
 
     #ifdef FLICKERING_FIX
-        if (entityId == 50008 || entityId == 50012) { // Item Frame, Glow Item Frame
+        if (entityId == 50008 || entityId == 50010) { // Item Frame, Glow Item Frame
             if (dot(normal, upVec) > 0.99) {
                 vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
                 vec3 comPos = fract(position.xyz + cameraPosition);

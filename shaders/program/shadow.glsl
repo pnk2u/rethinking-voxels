@@ -221,6 +221,7 @@ flat out int passType;
 flat out ivec3 correspondingBlock;
 //Uniforms//
 
+uniform int renderStage;
 uniform int entityId;
 uniform int currentRenderedItemId;
 
@@ -244,16 +245,23 @@ void main() {
     if (entityId > 0) localMat = entityId;
     if (currentRenderedItemId > 0) localMat = currentRenderedItemId;
 
-    vec3 cnormal = normalize(cross(positionV[1].xyz - positionV[0].xyz, positionV[2].xyz - positionV[0].xyz));
-    if (!(length(cnormal) > 0.5)) {
+    vec3 cnormal = cross(positionV[1].xyz - positionV[0].xyz, positionV[2].xyz - positionV[0].xyz);
+    float area = length(cnormal);
+
+    if (area == 0) {
         cnormal = vec3(0,1,0);
+    } else {
+        cnormal = normalize(cnormal);
     }
 
-    bool emissive = isEmissive(localMat);
+    bool emissive = isEmissive(localMat) || (lmCoordV[0].x > 0.99 && localMat == 0);
 
     vec3[3] vxPos;
 
     for (int i = 0; i < 3; i++) vxPos[i] = positionV[i].xyz + fract(cameraPosition);
+    if (localMat == 50088) { // entity flame needs to be moved outside of entity it belongs to or it will glitch out
+        for (int i = 0; i < 3; i++) vxPos[i].y += 0.5 * sqrt(area);
+    }
     vec3 center = 0.5 * (
         min(min(vxPos[0], vxPos[1]), vxPos[2]) +
         max(max(vxPos[0], vxPos[1]), vxPos[2])
@@ -282,9 +290,9 @@ void main() {
         }
         #if RP_MODE >= 2
             #if RP_MODE == 2
-                #define EMISSION_CHANNEL a
-            #else
                 #define EMISSION_CHANNEL b
+            #else
+                #define EMISSION_CHANNEL a
             #endif
             else {
                 for (int k = 0; k < 9; k++) {
@@ -296,7 +304,7 @@ void main() {
                         #endif
                         s.EMISSION_CHANNEL > 0.2) {
                         emissive = true;
-                        lightLevel = max(lightLevel, int(32 * s.EMISSION_CHANNEL));
+                        lightLevel = max(lightLevel, int(31.9 * s.EMISSION_CHANNEL));
                     }
                 }
             }
@@ -359,7 +367,11 @@ void main() {
                 #endif
                 if (lightLevel == 0) lightLevel = max(10, int(31 * lmCoordV[0].x));
                 imageAtomicOr(occupancyVolume, coords, (lightLevel + (localMat/4%32 << 5) << 17));
-                if (entityId > 0) {
+                if (
+                renderStage != MC_RENDER_STAGE_TERRAIN_SOLID &&
+                renderStage != MC_RENDER_STAGE_TERRAIN_CUTOUT &&
+                renderStage != MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
+                ) {
                     imageAtomicOr(occupancyVolume, coords, 1<<27);
                 }
             }
