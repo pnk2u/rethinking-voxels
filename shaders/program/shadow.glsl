@@ -311,8 +311,8 @@ void main() {
         #endif
         vec4 textureCol = textureLod(tex, 0.5 * (minTexCoord + maxTexCoord), lodLevel);
         col.a = textureCol.a;
-        if (col.rgb == vec3(0)) col = textureCol;
         col.rgb *= glColorV[0].rgb;
+        if (col.rgb == vec3(0)) col = textureCol;
         ivec3 coords = ivec3(center - 0.1 * cnormal + 0.5 * voxelVolumeSize);
         if (correspondingBlockV[0] != ivec3(-1000)) coords = correspondingBlockV[0];
         ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
