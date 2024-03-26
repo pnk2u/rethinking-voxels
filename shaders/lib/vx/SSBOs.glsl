@@ -9,6 +9,7 @@
         mat4 gbufferPreviousModelViewInverse;
         mat4 gbufferPreviousProjectionInverse;
         mat4 reprojectionMatrix;
+        int hasRVFeatures;
         uint globalLightHashMap[];
     };
     #ifdef READONLY

@@ -11,6 +11,8 @@
 noperspective in vec2 texCoord;
 
 //Uniforms//
+uniform int frameCounter;
+
 uniform float viewWidth, viewHeight;
 
 uniform sampler2D shadowcolor0;
@@ -57,14 +59,12 @@ uniform sampler2D shadowcolor0;
 #endif
 
 //Includes//
-#ifdef MC_ANISOTROPIC_FILTERING
-    #include "/lib/util/textRendering.glsl"
+#include "/lib/util/textRendering.glsl"
 
-    void beginTextM(int textSize, vec2 offset) {
-        beginText(ivec2(vec2(viewWidth, viewHeight) * texCoord) / textSize, ivec2(0 + offset.x, viewHeight / textSize - offset.y));
-        text.bgCol = vec4(0.0);
-    }
-#endif
+void beginTextM(int textSize, vec2 offset) {
+    beginText(ivec2(vec2(viewWidth, viewHeight) * texCoord) / textSize, ivec2(0 + offset.x, viewHeight / textSize - offset.y));
+    text.bgCol = vec4(0.0);
+}
 #define WRITE_TO_SSBOS
 #include "/lib/vx/SSBOs.glsl"
 
@@ -116,33 +116,30 @@ void main() {
         if (max(texCoordM.x, texCoordM.y) < 0.25) color = texture2D(colortex3, texCoordM * 4.0).rgb;
     #endif
 
-    #ifdef MC_ANISOTROPIC_FILTERING
-        color.rgb = mix(color.rgb, vec3(0.0), 0.75);
-
-        beginTextM(8, vec2(6, 10));
-        text.fgCol = vec4(1.0, 0.0, 0.0, 1.0);
-        printString((_I, _m, _p, _o, _r, _t, _a, _n, _t, _space, _I, _s, _s, _u, _e, _space));
-        endText(color.rgb);
-
-        beginTextM(4, vec2(15, 30));
-        printLine();
-        text.fgCol = vec4(1.0, 1.0, 1.0, 1.0);
-        printString((
-            _P, _l, _e, _a, _s, _e, _space, _g, _o, _space, _t, _o, _space,
-            _E, _S, _C, _space, _minus, _space, _O, _p, _t, _i, _o, _n, _s, _space, _minus, _space
-        ));
-        printLine();
-        printString((
-            _V, _i, _d, _e, _o, _space, _S, _e, _t, _t, _i, _n, _g, _s, _space, _minus, _space,
-            _Q, _u, _a, _l, _i, _t, _y, _space, _minus, _space
-        ));
-        printLine();
-        printString((
-            _a, _n, _d, _space, _d, _i, _s, _a, _b, _l, _e, _space,
-            _A, _n, _i, _s, _o, _t, _r, _o, _p, _i, _c, _space, _F, _i, _l, _t, _e, _r, _i, _n, _g, _dot
-        ));
-        endText(color.rgb);
-    #endif
+    //#ifdef MC_ANISOTROPIC_FILTERING
+        //color.rgb = mix(color.rgb, vec3(0.0), 0.75);
+        if ((hasRVFeatures & (1<<(frameCounter%2))) == 0) {
+            beginTextM(2, vec2(6, 10));
+            text.fgCol = vec4(0.5, 0.5, 0.5, 1.0);
+            printString((
+                _T, _h, _i, _s, _space,
+                _V, _i, _e, _w, _space,
+                _C, _o, _n, _t, _a, _i, _n, _s, _space,
+                _n, _o, _space,
+                _R, _e, _t, _h, _i, _n, _k, _i, _n, _g, _space,
+                _V, _o, _x, _e, _l, _s, _space,
+                _f, _e, _a, _t, _u, _r, _e, _s
+            ));
+            printLine();
+            printString((
+                _C, _o, _n, _s, _i, _d, _e, _r, _space,
+                _u, _s, _i, _n, _g, _space,
+                _C, _o, _m, _p, _l, _e, _m, _e, _n, _t, _a, _r, _y, _space,
+                _i, _n, _s, _t, _e, _a, _d
+            ));
+            endText(color.rgb);
+        }
+    //#endif
 
     //if (gl_FragCoord.x < 479 || gl_FragCoord.x > 1441) color = vec3(0.0);
     if (gl_FragCoord.x < 0) color = texture(shadowcolor0, texCoord).rgb;
@@ -167,6 +164,7 @@ noperspective out vec2 texCoord;
 
 //Uniforms//
 
+uniform int frameCounter;
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
 
@@ -184,7 +182,7 @@ uniform mat4 gbufferProjectionInverse;
 void main() {
     gbufferPreviousModelViewInverse = gbufferModelViewInverse;
     gbufferPreviousProjectionInverse = gbufferProjectionInverse;
-
+    atomicAnd(hasRVFeatures, ~(1<<((frameCounter+1)&1)));
     gl_Position = ftransform();
     texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 }
