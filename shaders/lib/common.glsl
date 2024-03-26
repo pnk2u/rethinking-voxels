@@ -17,17 +17,14 @@
 
     #define VOXEL_DETAIL_AMOUNT 5 //[1 2 3 4 5 6 7 8]
     #define VX_VOL_SIZE 1 //[0 1 2 3]
+    const float voxelDistance = 32;
     #if VX_VOL_SIZE == 0
-        const float voxelDistance = 48;
         const ivec3 voxelVolumeSize = ivec3(96, 64, 96);
     #elif VX_VOL_SIZE == 1
-        const float voxelDistance = 64;
         const ivec3 voxelVolumeSize = ivec3(128, 96, 128);
     #elif VX_VOL_SIZE == 2
-        const float voxelDistance = 128;
         const ivec3 voxelVolumeSize = ivec3(256, 128, 256);
     #elif VX_VOL_SIZE == 3
-        const float voxelDistance = 256;
         const ivec3 voxelVolumeSize = ivec3(512, 128, 512);
     #endif
 
