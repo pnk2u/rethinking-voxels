@@ -2,6 +2,7 @@
     ivec3 prevTexCoord0 = texCoord + (1<<j) * camOffset;
     ivec3 prevTexCoord = prevTexCoord0 + ivec3(0, (frameCounter % 2 * 2 + j/4) * voxelVolumeSize.y, 0);
     ivec3 prevCoord = prevTexCoord0 / 2 + voxelVolumeSize / 4 + ivec3(0, (frameCounter % 2 * 2 + (j-1)/4) * voxelVolumeSize.y, 0);
+    ivec3 prevFractCoord = prevTexCoord0 % 2 + 1;
     fullDist[localCoord.x+1][localCoord.y+1][localCoord.z+1] =
         (thisOccupancy >> j & 1) == 1 ? (1.0-1.0/sqrt(3.0)) / (1<<j) : (
         all(greaterThanEqual(prevTexCoord0, ivec3(0))) &&
@@ -17,7 +18,15 @@
     memoryBarrierShared();
     if (all(greaterThanEqual(localCoord, ivec3(0))) && all(lessThan(localCoord, ivec3(8)))) {
         #if j > 0
-            float prevDist = imageLoad(distanceFieldI, prevCoord)[(j-1)%4];
+            float invTotalWeight = 1.0 / (prevFractCoord.x * prevFractCoord.y * prevFractCoord.z);
+            float prevDist = 0.0;
+            for (int dx = 0; dx < prevFractCoord.x; dx++) {
+                for (int dy = 0; dy < prevFractCoord.y; dy++) {
+                    for (int dz = 0; dz < prevFractCoord.z; dz++) {
+                        prevDist += invTotalWeight * imageLoad(distanceFieldI, prevCoord + ivec3(dx, dy, dz))[(j-1)%4];
+                    }
+                }
+            }
             if (prevDist < 3.0/(1<<j)) {
             #endif
             theseDists[j] = (thisOccupancy >> j & 1) == 1 ? -1.0/sqrt(3.0) / (1<<j) : ((thisOccupancy >> j+8 & 1) == 1 ? 0.5 : 1000);
@@ -35,7 +44,7 @@
             }
         #if j > 0
             } else {
-                theseDists[j] = prevDist - 0.5/(1<<j);
+                theseDists[j] = prevDist;// - 0.5/(1<<j);
             }
         #endif
     }

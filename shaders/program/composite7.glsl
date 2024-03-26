@@ -50,7 +50,7 @@ void main() {
         FXAA311(color);
     #endif
     if (texCoord.x < 0.5) {
-        //color = texelFetch(colortex12, texelCoord, 0).rgb;
+//        color = getDistanceField(vec3(texCoord.xy * 10 - 5, 0)).xxx;
     } else if (false) {
 //        color = texelFetch(colortex4, texelCoord, 0).gba;
         vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
