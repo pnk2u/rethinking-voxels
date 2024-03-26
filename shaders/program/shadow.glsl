@@ -21,6 +21,7 @@ flat in int passType;
 flat in ivec3 correspondingBlock;
 //Uniforms//
 uniform int isEyeInWater;
+uniform int renderStage;
 
 uniform vec3 cameraPosition;
 
@@ -324,6 +325,7 @@ void main() {
         imageAtomicAdd(voxelCols,
             coords * ivec3(1, 2, 1) + ivec3(0, 1, 0),
             packedCol.y);
+
         #if HELD_LIGHTING_MODE == 0
             if (isHeldLight) emissive = false;
         #endif

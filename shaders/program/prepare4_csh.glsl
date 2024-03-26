@@ -268,7 +268,7 @@ void main() {
         float ndotl0;
         uvec2 packedLightCol;
         uvec2 packedLightSubPos;
-        while (true) {
+        while (thisLightIndex < lightCount) {
             uint hash = posToHash(positions[thisLightIndex].xyz) % uint(1<<18);
             packedLightSubPos = uvec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
             packedLightCol = uvec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
@@ -284,7 +284,6 @@ void main() {
             validTrace = dirLen < thisTraceLen * LIGHT_TRACE_LENGTH && ndotl0 > 0.001;
             if (validTrace) break;
             thisLightIndex++;
-            if (thisLightIndex >= lightCount) break;
         }
         if (validTrace) {
             float lightBrightness = 1.5 * thisTraceLen;
@@ -294,7 +293,7 @@ void main() {
             if (rayHit1.w > 0.01) {
                 vec3 lightColor = 1.0/32.0 * vec3(packedLightCol.x & 0xffff, packedLightCol.x>>16, packedLightCol.y & 0xffff) / (packedLightSubPos.y >> 16);
                 float totalBrightness = ndotl * (sqrt(1 - dirLen / (LIGHT_TRACE_LENGTH * thisTraceLen))) / (dirLen + 0.1);
-                writeColor += lightColor * rayHit1.w * totalBrightness;
+                writeColor += lightColor * rayHit1.rgb * rayHit1.w * totalBrightness;
                 int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);
                 atomicMax(positions[thisLightIndex].w, thisWeight);
             }

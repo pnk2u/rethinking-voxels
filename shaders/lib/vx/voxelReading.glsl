@@ -33,7 +33,7 @@ vec4 getColor(vec3 pos) {
         rawCol.g % (1<<13),
         rawCol.g >> 13 & 0x3ff
     );
-    col /= max(vec2(20, 4).xxxy * (rawCol.g >> 23), max(max(col.r, col.g), col.b) * vec2(1, 4.0/20.0).xxxy);
+    col /= max(vec2(20, 4).xxxy * (rawCol.g >> 23), max(max(max(col.r, col.g), col.b), 1) * vec2(1, 4.0/20.0).xxxy);
     col.a = 1.0 - col.a;
     return col;
 }
@@ -68,8 +68,11 @@ vec4 coneTrace(vec3 start, vec3 dir, float angle, float dither) {
         vec3 thisPos = start + w * dir;
         float thisdist = getDistanceField(thisPos);
         if (thisdist < 0.75) {
-            vec4 localCol = getColor(thisPos);
-            color += vec4(localCol.rgb, 1.0) * max(0.0, 1.2 * min(2 * localCol.a, 2 - 2 * localCol.a) - 0.2);
+            ivec3 coords = ivec3(thisPos + 1000) - 1000 + voxelVolumeSize/2;
+            if ((imageLoad(occupancyVolume, coords).r >> 8 & 1) == 1) {
+                vec4 localCol = getColor(thisPos);
+                color += vec4(localCol.rgb, 1.0) * max(0.0, 1.2 * min(2 * localCol.a, 2 - 2 * localCol.a) - 0.2);
+            }
         }
         angle = min(angle, thisdist / w);
         w += thisdist;
