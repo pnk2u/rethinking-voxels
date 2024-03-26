@@ -284,10 +284,6 @@ void main() {
             }
         }
     }
-    if (infnorm(writeColor) > 0.01 && gl_LocalInvocationID == uvec3(4, 4, 0)) {
-        atomicOr(hasRVFeatures, 1<<(frameCounter%2));
-    }
-
     barrier();
     memoryBarrierShared();
     imageStore(colorimg10, writeTexelCoord, vec4(writeColor, 1));

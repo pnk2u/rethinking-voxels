@@ -116,31 +116,6 @@ void main() {
         if (max(texCoordM.x, texCoordM.y) < 0.25) color = texture2D(colortex3, texCoordM * 4.0).rgb;
     #endif
 
-    //#ifdef MC_ANISOTROPIC_FILTERING
-        //color.rgb = mix(color.rgb, vec3(0.0), 0.75);
-        if ((hasRVFeatures & (1<<(frameCounter%2))) == 0) {
-            beginTextM(2, vec2(6, 10));
-            text.fgCol = vec4(0.5, 0.5, 0.5, 1.0);
-            printString((
-                _T, _h, _i, _s, _space,
-                _V, _i, _e, _w, _space,
-                _C, _o, _n, _t, _a, _i, _n, _s, _space,
-                _n, _o, _space,
-                _R, _e, _t, _h, _i, _n, _k, _i, _n, _g, _space,
-                _V, _o, _x, _e, _l, _s, _space,
-                _f, _e, _a, _t, _u, _r, _e, _s
-            ));
-            printLine();
-            printString((
-                _C, _o, _n, _s, _i, _d, _e, _r, _space,
-                _u, _s, _i, _n, _g, _space,
-                _C, _o, _m, _p, _l, _e, _m, _e, _n, _t, _a, _r, _y, _space,
-                _i, _n, _s, _t, _e, _a, _d
-            ));
-            endText(color.rgb);
-        }
-    //#endif
-
     //if (gl_FragCoord.x < 479 || gl_FragCoord.x > 1441) color = vec3(0.0);
     if (gl_FragCoord.x < 0) color = texture(shadowcolor0, texCoord).rgb;
     /* DRAWBUFFERS:0 */
@@ -182,7 +157,6 @@ uniform mat4 gbufferProjectionInverse;
 void main() {
     gbufferPreviousModelViewInverse = gbufferModelViewInverse;
     gbufferPreviousProjectionInverse = gbufferProjectionInverse;
-    atomicAnd(hasRVFeatures, ~(1<<((frameCounter+1)&1)));
     gl_Position = ftransform();
     texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 }
