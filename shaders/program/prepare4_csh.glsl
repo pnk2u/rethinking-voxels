@@ -257,20 +257,36 @@ void main() {
     memoryBarrierShared();
 
     vec3 writeColor = vec3(0);
-    for (uint thisLightIndex = MAX_TRACE_COUNT * uint(!validData); thisLightIndex < min(lightCount, MAX_TRACE_COUNT); thisLightIndex++) {
-        uint hash = posToHash(positions[thisLightIndex].xyz) % uint(1<<18);
-        uvec2 packedLightSubPos = uvec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
-        uvec2 packedLightCol = uvec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
-        vec3 subLightPos = 1.0/32.0 * vec3(packedLightSubPos.x & 0xffff, packedLightSubPos.x>>16, packedLightSubPos.y & 0xffff) / (packedLightSubPos.y >> 16) - 1;
-        float lightSize = 0.5;
-        vec3 lightPos = positions[thisLightIndex].xyz + subLightPos;
-        lightSize = clamp(lightSize, 0.01, getDistanceField(lightPos));
-        float ndotl0 = dot(normalize(lightPos - vxPos), normalDepthData.xyz);
-        ndotl0 = infnorm(vxPos - 0.1 * normalDepthData.xyz - positions[thisLightIndex].xyz - 0.5) < 0.5 ? abs(ndotl0) : max(0, ndotl0);
-        vec3 dir = lightPos - biasedVxPos;
-        float dirLen = length(dir);
-        float thisTraceLen = (extraData[thisLightIndex]>>17 & 31)/32.0;
-        if (dirLen < thisTraceLen * LIGHT_TRACE_LENGTH && ndotl0 > 0.001) {
+    uint thisLightIndex = MAX_LIGHT_COUNT * uint(!validData);
+    for (uint traceNum = 0; thisLightIndex < lightCount && traceNum < MAX_TRACE_COUNT; traceNum++) {
+        bool validTrace;
+        float lightSize;
+        vec3 lightPos;
+        float dirLen;
+        float thisTraceLen;
+        vec3 dir;
+        float ndotl0;
+        uvec2 packedLightCol;
+        uvec2 packedLightSubPos;
+        while (true) {
+            uint hash = posToHash(positions[thisLightIndex].xyz) % uint(1<<18);
+            packedLightSubPos = uvec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
+            packedLightCol = uvec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
+            vec3 subLightPos = 1.0/32.0 * vec3(packedLightSubPos.x & 0xffff, packedLightSubPos.x>>16, packedLightSubPos.y & 0xffff) / (packedLightSubPos.y >> 16) - 1;
+            lightSize = 0.5;
+            lightPos = positions[thisLightIndex].xyz + subLightPos;
+            lightSize = clamp(lightSize, 0.01, getDistanceField(lightPos));
+            ndotl0 = dot(normalize(lightPos - vxPos), normalDepthData.xyz);
+            ndotl0 = infnorm(vxPos - 0.1 * normalDepthData.xyz - positions[thisLightIndex].xyz - 0.5) < 0.5 ? abs(ndotl0) : max(0, ndotl0);
+            dir = lightPos - biasedVxPos;
+            dirLen = length(dir);
+            thisTraceLen = (extraData[thisLightIndex]>>17 & 31)/32.0;
+            validTrace = dirLen < thisTraceLen * LIGHT_TRACE_LENGTH && ndotl0 > 0.001;
+            if (validTrace) break;
+            thisLightIndex++;
+            if (thisLightIndex >= lightCount) break;
+        }
+        if (validTrace) {
             float lightBrightness = 1.5 * thisTraceLen;
             lightBrightness *= lightBrightness;
             float ndotl = ndotl0 * lightBrightness;
@@ -283,6 +299,7 @@ void main() {
                 atomicMax(positions[thisLightIndex].w, thisWeight);
             }
         }
+        thisLightIndex++;
     }
     barrier();
     memoryBarrierShared();
