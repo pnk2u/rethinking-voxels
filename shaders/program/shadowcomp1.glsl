@@ -195,8 +195,10 @@ void main() {
     if (insideFrustrum && activeFrame) {
         anyInFrustrum = true;
         hasNeighbor = getDistanceField(vxPos) < 0.7;
-        normal = hasNeighbor ? distanceFieldGradient(vxPos) : vec3(0);
         if (hasNeighbor) {
+            for (int k = 0; k < 3; k++) {
+                normal[k] = getDistanceField(vxPos + mat3(0.5)[k]) - getDistanceField(vxPos - mat3(0.5)[k]);
+            }
             normal = normalize(normal);
             vxPos -= 0.3 * normal;
         }
