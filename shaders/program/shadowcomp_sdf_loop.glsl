@@ -43,8 +43,8 @@
                 theseDists[j] = min(theseDists[j], all(greaterThanEqual(c3, ivec3(0))) && all(lessThan(c3, ivec3(10))) ? fullDist[c3.x][c3.y][c3.z] + 1.0/(1<<j) : 1000);
             }
         #if j > 0
-            if (prevDist > 1.0/(1<<j)) {
-                theseDists[j] = mix(theseDists[j], prevDist,  prevDist * ((1<<j) / 2.0) - 0.5);
+            if (prevDist > 2.0/(1<<j)) {
+                theseDists[j] = mix(theseDists[j], prevDist,  prevDist * (1<<j) - 2.0);
             }
             } else {
                 theseDists[j] = prevDist;// - 0.5/(1<<j);
