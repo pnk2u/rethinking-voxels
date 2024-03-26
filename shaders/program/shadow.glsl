@@ -246,6 +246,7 @@ void main() {
     if (currentRenderedItemId > 0) localMat = currentRenderedItemId;
 
     vec3 cnormal = cross(positionV[1].xyz - positionV[0].xyz, positionV[2].xyz - positionV[0].xyz);
+    cnormal += vec3(0.000001, 0.00021, -0.0000391);
     float area = length(cnormal);
 
     if (area == 0) {
@@ -368,9 +369,9 @@ void main() {
                 if (lightLevel == 0) lightLevel = max(10, int(31 * lmCoordV[0].x));
                 imageAtomicOr(occupancyVolume, coords, (lightLevel + (localMat/4%32 << 5) << 17));
                 if (
-                renderStage != MC_RENDER_STAGE_TERRAIN_SOLID &&
-                renderStage != MC_RENDER_STAGE_TERRAIN_CUTOUT &&
-                renderStage != MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
+                    renderStage != MC_RENDER_STAGE_TERRAIN_SOLID &&
+                    renderStage != MC_RENDER_STAGE_TERRAIN_CUTOUT &&
+                    renderStage != MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
                 ) {
                     imageAtomicOr(occupancyVolume, coords, 1<<27);
                 }
@@ -471,7 +472,7 @@ void main() {
     sunVecV = GetSunVector();
     upVecV = normalize(gbufferModelView[1].xyz);
 
-    positionV = shadowModelViewInverse * shadowProjectionInverse * ftransform();
+    positionV = shadowModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
     correspondingBlockV = ivec3(-1000);
     matV = blockEntityId;
     if (
@@ -479,17 +480,17 @@ void main() {
         renderStage == MC_RENDER_STAGE_TERRAIN_CUTOUT ||
         renderStage == MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
     ) {
-        correspondingBlockV = ivec3(positionV.xyz + fract(cameraPosition) + at_midBlock/64 + 1000) - 1000 + voxelVolumeSize/2;
+        correspondingBlockV = ivec3(floor(positionV.xyz + fract(cameraPosition) + at_midBlock/64) + 1000.5) - 1000 + voxelVolumeSize/2;
         matV = int(mc_Entity.x + 0.5);
     }
+    vec4 position = positionV;
     #if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
         #ifdef NO_WAVING_INDOORS
             lmCoord = GetLightMapCoordinates();
         #endif
 
-        DoWave(positionV.xyz, matV);
+        DoWave(position.xyz, matV);
     #endif
-    vec4 position = positionV;
     #ifdef PERPENDICULAR_TWEAKS
         if (matV == 10004 || matV == 10016) { // Foliage
             vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
