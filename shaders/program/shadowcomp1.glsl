@@ -312,7 +312,7 @@ void main() {
             if (rayHit1.w > 0.01) {
                 vec3 lightColor = 1.0/32.0 * vec3(packedLightCol.x & 0xffff, packedLightCol.x>>16, packedLightCol.y & 0xffff) / (packedLightSubPos.y >> 16);
                 float totalBrightness = ndotl * (sqrt(1 - dirLen / LIGHT_TRACE_LENGTH)) / (dirLen + 0.1);
-                writeColor += lightColor * rayHit1.w * totalBrightness;
+                writeColor += lightColor * rayHit1.rgb * rayHit1.w * totalBrightness;
                 int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);
                 atomicMax(positions[thisLightIndex].w, thisWeight);
             }
