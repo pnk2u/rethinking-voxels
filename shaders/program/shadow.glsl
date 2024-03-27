@@ -330,6 +330,9 @@ void main() {
             if (isHeldLight) emissive = false;
         #endif
 
+        int skyLight = int(5.49 * lmCoordV[0].y + 0.5);
+        int writeSkyLight = (1<<skyLight/2) | (1<<(skyLight-1)/2);
+        imageAtomicOr(occupancyVolume, coords, writeSkyLight << 28);
         if (emissive) {
             uint hash = posToHash(coords - voxelVolumeSize/2) % uint(1<<18);
             vec3[3] blockRelPos;

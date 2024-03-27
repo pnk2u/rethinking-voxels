@@ -1,3 +1,5 @@
+#ifndef IRRADIANCECACHE
+#define IRRADIANCECACHE
 bool isInRange(vec3 vxPos) {
     return all(greaterThan(vxPos, -0.5*voxelVolumeSize)) && all(lessThan(vxPos, 0.5*voxelVolumeSize));
 }
@@ -24,3 +26,4 @@ vec3 readVolumetricBlocklight(vec3 vxPos) {
     vec4 color = textureLod(irradianceCache, vxPos, 0);
     return color.rgb / max(color.a, 0.0001);
 }
+#endif

@@ -1,5 +1,7 @@
 uniform sampler2D shadowcolor0;
-uniform sampler2DShadow shadowtex0;
+#if !defined DEFERRED1 || !defined VL_CLOUDS_ACTIVE
+    uniform sampler2DShadow shadowtex0;
+#endif
 uniform sampler2DShadow shadowtex1;
 
 vec3 GetShadowPos(vec3 playerPos) {

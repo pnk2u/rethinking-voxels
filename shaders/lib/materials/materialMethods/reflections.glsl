@@ -11,6 +11,14 @@
 #ifdef MOON_PHASE_INF_ATMOSPHERE
     #include "/lib/colors/moonPhaseInfluence.glsl"
 #endif
+#ifdef VOXEL_RT_REFLECTIONS
+    #include "/lib/vx/voxelReading.glsl"
+    #include "/lib/vx/irradianceCache.glsl"
+    #include "/lib/colors/lightAndAmbientColors.glsl"
+    #if defined DEFERRED1 && defined REALTIME_SHADOWS && defined OVERWORLD
+        #include "/lib/lighting/shadowSampling.glsl"
+    #endif
+#endif
 
 vec3 nvec3(vec4 pos) {
     return pos.xyz/pos.w;
@@ -143,6 +151,39 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
         reflection.a *= clamp01((dot(nViewPos, nViewPosR) - 0.45) * 10.0); // Fixes perpendicular ref
     #endif
     // End Step 2
+
+    #ifdef VOXEL_RT_REFLECTIONS
+        // Step 2.5: fill missing reflections with voxel data
+        if (reflection.a < 1.0) {
+            vec3 voxelVector = mat3(gbufferModelViewInverse) * normalize(vector);
+            vec4 voxelStart = gbufferModelViewInverse * vec4(start, 1.0);
+            voxelStart.xyz += fract(cameraPosition);
+            vec3 hitPos = rayTrace(voxelStart.xyz + 0.1 * voxelVector, 50.0 * voxelVector, dither);
+            if (length(voxelStart.xyz - hitPos) < 49.0 && getDistanceField(hitPos) < 0.1) {
+                // do lighting on the reflected surface
+                vec3 hitNormal = normalize(distanceFieldGradient(hitPos) + vec3(0.000001, -0.0000041, 0.0000003));
+                int occupancyData = imageLoad(occupancyVolume, ivec3(hitPos + 0.5 * voxelVolumeSize - 0.1 * hitNormal)).r;
+                vec4 voxelCol = getColor(hitPos - 0.1 * hitNormal);
+                vec3 shadowHitPos = GetShadowPos(hitPos - fract(cameraPosition) + 0.2 * hitNormal);
+                float skyLight = 0.0;
+                int liveBitCount = 0;
+                for (int k = 0; k < 3; k++) {
+                    skyLight += 0.33 * ((occupancyData >> (28 + k)) & 1) * (k+1);
+                    liveBitCount += ((occupancyData >> (28 + k)) & 1);
+                }
+                skyLight /= max(1, liveBitCount);
+                skyLight *= 0.5 * hitNormal.y + 0.5;
+                vec3 sunShadow = SampleShadow(shadowHitPos, 1.2 + 3.8 * skyLight, 1.1 - 0.6 * skyLight);
+                vec3 blockLight = readSurfaceVoxelBlocklight(hitPos, hitNormal);
+                float lBlockLight = length(blockLight);
+                if (lBlockLight > 0.01) blockLight *= log(lBlockLight + 1) / lBlockLight;
+                voxelCol.rgb *= skyLight * ambientColor + sunShadow * lightColor + 4 * blockLight;
+                reflection.rgb = mix(voxelCol.rgb, reflection.rgb, reflection.a);
+                reflection.a += (1.0 - reflection.a) * voxelCol.a;
+            }
+        }
+        // End Step 2.5
+    #endif
 
     // Step 3: Add Sky Reflection
     if (reflection.a < 1.0) {
