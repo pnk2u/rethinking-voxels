@@ -173,11 +173,18 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
                 }
                 skyLight /= max(1, liveBitCount);
                 skyLight *= 0.5 * hitNormal.y + 0.5;
-                vec3 sunShadow = SampleShadow(shadowHitPos, 1.2 + 3.8 * skyLight, 1.1 - 0.6 * skyLight);
+                #if defined REALTIME_SHADOWS && defined OVERWORLD
+                    vec3 sunShadow = SampleShadow(shadowHitPos, 1.2 + 3.8 * skyLight, 1.1 - 0.6 * skyLight);
+                #else
+                    vec3 sunShadow = vec3(skyLight * skyLight);
+                #endif
                 vec3 blockLight = readSurfaceVoxelBlocklight(hitPos, hitNormal);
-                float lBlockLight = length(blockLight);
-                if (lBlockLight > 0.01) blockLight *= log(lBlockLight + 1) / lBlockLight;
-                voxelCol.rgb *= skyLight * ambientColor + sunShadow * lightColor + 4 * blockLight;
+                #ifdef GI
+                    vec3 giLight = readSurfaceGiLight(hitPos, hitNormal);
+                #else
+                    const float  giLight = 0.0;
+                #endif
+                voxelCol.rgb *= skyLight * ambientColor + sunShadow * lightColor + 4.0 * blockLight + giLight;
                 reflection.rgb = mix(voxelCol.rgb, reflection.rgb, reflection.a);
                 reflection.a += (1.0 - reflection.a) * voxelCol.a;
             }
