@@ -18,15 +18,11 @@
     memoryBarrierShared();
     if (all(greaterThanEqual(localCoord, ivec3(0))) && all(lessThan(localCoord, ivec3(8)))) {
         #if j > 0
-            float invTotalWeight = 1.0 / (prevFractCoord.x * prevFractCoord.y * prevFractCoord.z);
-            float prevDist = 0.0;
-            for (int dx = 0; dx < prevFractCoord.x; dx++) {
-                for (int dy = 0; dy < prevFractCoord.y; dy++) {
-                    for (int dz = 0; dz < prevFractCoord.z; dz++) {
-                        prevDist += invTotalWeight * imageLoad(distanceFieldI, prevCoord + ivec3(dx, dy, dz))[(j-1)%4];
-                    }
-                }
-            }
+            float prevDist = mix(
+                imageLoad(distanceFieldI, prevCoord)[(j-1)%4],
+                imageLoad(distanceFieldI, prevCoord + 2 * prevFractCoord - 1)[(j-1)%4],
+                0.25
+            );
             if (prevDist < 3.0/(1<<j)) {
             #endif
             theseDists[j] = (thisOccupancy >> j & 1) == 1 ? -1.0/sqrt(3.0) / (1<<j) : ((thisOccupancy >> j+8 & 1) == 1 ? 0.5 : 1000);
@@ -44,10 +40,10 @@
             }
         #if j > 0
             if (prevDist > 2.0/(1<<j)) {
-                theseDists[j] = mix(theseDists[j], prevDist,  prevDist * (1<<j) - 2.0);
+                theseDists[j] = mix(theseDists[j], prevDist - 0.5 / (1<<j),  prevDist * (1<<j) - 2.0);
             }
             } else {
-                theseDists[j] = prevDist;// - 0.5/(1<<j);
+                theseDists[j] = prevDist - 0.5/(1<<j);
             }
         #endif
     }
