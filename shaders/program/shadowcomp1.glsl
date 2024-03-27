@@ -39,6 +39,7 @@ void main() {
     for (int k = 0; k < 2; k++) {
         writeColors[k] = (all(lessThan(prevCoords, voxelVolumeSize)) && all(greaterThanEqual(prevCoords, ivec3(0)))) ? imageLoad(irradianceCacheI, prevCoords + ivec3(0, k * voxelVolumeSize.y, 0)) : vec4(0);
     }
+    writeColors[0] *= 0.99; // GI accumulation falloff
     barrier();
     memoryBarrierImage();
     for (int k = 0; k < 2; k++) {
@@ -69,27 +70,6 @@ uniform int frameCounter;
 uniform vec3 cameraPosition;
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
-#if defined REALTIME_SHADOWS && defined GI && defined OVERWORLD
-    uniform mat4 gbufferModelView;
-    uniform mat4 shadowModelView;
-    uniform mat4 shadowProjection;
-    uniform vec3 skyColor;
-    uniform ivec2 eyeBrightness;
-
-    const vec2 sunRotationData = vec2(cos(sunPathRotation * 0.01745329251994), -sin(sunPathRotation * 0.01745329251994));
-    float ang = (fract(timeAngle - 0.25) + (cos(fract(timeAngle - 0.25) * 3.14159265358979) * -0.5 + 0.5 - fract(timeAngle - 0.25)) / 3.0) * 6.28318530717959;
-    vec3 sunVec = vec3(-sin(ang), cos(ang) * sunRotationData);
-    vec3 lightVec = sunVec * ((timeAngle < 0.5325 || timeAngle > 0.9675) ? 1.0 : -1.0);
-    float SdotU = sunVec.y;
-    float sunFactor = SdotU < 0.0 ? clamp(SdotU + 0.375, 0.0, 0.75) / 0.75 : clamp(SdotU + 0.03125, 0.0, 0.0625) / 0.0625;
-    float sunVisibility = clamp(SdotU + 0.0625, 0.0, 0.125) / 0.125;
-    float sunVisibility2 = sunVisibility * sunVisibility;
-
-    #define NOT_IN_FRAGMENT
-    #include "/lib/util/spaceConversion.glsl"
-    #include "/lib/lighting/shadowSampling.glsl"
-    #include "/lib/colors/lightAndAmbientColors.glsl"
-#endif
 
 layout(rgba16f) uniform image3D irradianceCacheI;
 layout(rgba16i) uniform iimage3D lightStorage;
@@ -376,6 +356,27 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
     shared vec3[5] frustrumSides;
 
     const vec2[4] squareCorners = vec2[4](vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1));
+    #if defined REALTIME_SHADOWS && defined OVERWORLD
+        uniform mat4 gbufferModelView;
+        uniform mat4 shadowModelView;
+        uniform mat4 shadowProjection;
+        uniform vec3 skyColor;
+        uniform ivec2 eyeBrightness;
+
+        const vec2 sunRotationData = vec2(cos(sunPathRotation * 0.01745329251994), -sin(sunPathRotation * 0.01745329251994));
+        float ang = (fract(timeAngle - 0.25) + (cos(fract(timeAngle - 0.25) * 3.14159265358979) * -0.5 + 0.5 - fract(timeAngle - 0.25)) / 3.0) * 6.28318530717959;
+        vec3 sunVec = vec3(-sin(ang), cos(ang) * sunRotationData);
+        vec3 lightVec = sunVec * ((timeAngle < 0.5325 || timeAngle > 0.9675) ? 1.0 : -1.0);
+        float SdotU = sunVec.y;
+        float sunFactor = SdotU < 0.0 ? clamp(SdotU + 0.375, 0.0, 0.75) / 0.75 : clamp(SdotU + 0.03125, 0.0, 0.0625) / 0.0625;
+        float sunVisibility = clamp(SdotU + 0.0625, 0.0, 0.125) / 0.125;
+        float sunVisibility2 = sunVisibility * sunVisibility;
+
+        #define gl_FragCoord vec4(632.5, 126.5, 1.0, 1.0)
+        #include "/lib/util/spaceConversion.glsl"
+        #include "/lib/lighting/shadowSampling.glsl"
+        #include "/lib/colors/lightAndAmbientColors.glsl"
+    #endif
 #endif
 void main() {
     #ifdef GI
@@ -412,6 +413,14 @@ void main() {
             float thisDFval = getDistanceField(vxPos);
             if (thisDFval < 0.7 && thisDFval > 0.1) {
                 vec4 GILight = imageLoad(irradianceCacheI, coords);
+                float weight = 1.0;
+                for (int k = 0; k < 6; k++) {
+                    ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
+                    float otherWeight = 0.006 * (1 - (imageLoad(occupancyVolume, coords + offset).r & 1));
+                    GILight += otherWeight * imageLoad(irradianceCacheI, coords + offset);
+                    weight += otherWeight;
+                }
+                GILight /= weight;
                 for (int k = 0; k < 3; k++) {
                     normal[k] = getDistanceField(vxPos + mat3(0.5)[k]) - getDistanceField(vxPos - mat3(0.5)[k]);
                 }
@@ -424,10 +433,12 @@ void main() {
                 if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5) {
                     const float pi = 3.14;
                     vec3 hitBlocklight = 4 * (4.0/pi) * ndotl * imageLoad(irradianceCacheI, ivec3(hitPos + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
+                    float sunShadowOffset = 0.00075;
+                    vec3 sunShadowPos = GetShadowPos(hitPos - fract(cameraPosition));
+                    vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0);
                     vec3 hitAlbedo = getColor(hitPos).rgb;
-                    vec3 hitCol = hitBlocklight * hitAlbedo;
-                    GILight *= 0.99;
-                    GILight += vec4(hitCol, 1);
+                    vec3 hitCol = (hitBlocklight + hitSunlight * lightColor) * hitAlbedo;
+                    if (all(greaterThanEqual(hitCol, vec3(0)))) GILight += vec4(hitCol, 1);
                 }
                 imageStore(irradianceCacheI, coords, GILight);
             }

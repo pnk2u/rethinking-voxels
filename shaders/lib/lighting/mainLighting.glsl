@@ -441,7 +441,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         }
     #endif
 
-    // Combine Lighting
+    // Voxel-based Lighting
     vec3 vxPos = playerPos + fract(cameraPosition);
     #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
         vxPos = floor(vxPos * PIXEL_SHADOW + 0.001) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
@@ -456,7 +456,6 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         float lVoxelBlockLighting = length(voxelBlockLighting);
         if (lVoxelBlockLighting > 0.01) voxelBlockLighting *= log(lVoxelBlockLighting + 1.0) / lVoxelBlockLighting;
         #endif
-    vec3 blockLighting = mix(voxelBlockLighting, lightmapXM * blocklightCol, voxelFactor);
     #ifdef GI
         vec3 giLighting = readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM) * (1.0 - voxelFactor);
         float lGiLighting = length(giLighting);
@@ -464,6 +463,9 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #else
         const float giLighting = 0.0;
     #endif
+
+    // Combine Lighting
+    vec3 blockLighting = mix(voxelBlockLighting, lightmapXM * blocklightCol, voxelFactor);
     vec3 sceneLighting = lightColorM * shadowMult + ambientColorM * ambientMult + giLighting * GI_STRENGTH;
     float dotSceneLighting = dot(sceneLighting, sceneLighting);
 

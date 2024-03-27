@@ -27,7 +27,7 @@ vec3 SampleShadow(vec3 shadowPos, float colorMult, float colorPow) {
 
     return shadowcol * (1.0 - shadow0) + shadow0;
 }
-#ifndef NOT_IN_FRAGMENT
+
 float InterleavedGradientNoiseForShadows() {
     float n = 52.9829189 * fract(0.06711056 * gl_FragCoord.x + 0.00583715 * gl_FragCoord.y);
     #if !defined GBUFFERS_ENTITIES && !defined GBUFFERS_HAND && !defined GBUFFERS_TEXTURED
@@ -36,12 +36,12 @@ float InterleavedGradientNoiseForShadows() {
         return fract(n);
     #endif
 }
-#endif
+
 vec2 offsetDist(float x, int s) {
     float n = fract(x * 2.427) * 3.1415;
     return vec2(cos(n), sin(n)) * 1.4 * x / s;
 }
-#ifndef NOT_IN_FRAGMENT
+
 vec3 SampleTAAFilteredShadow(vec3 shadowPos, float lViewPos, float offset, bool leaves, float colorMult, float colorPow) {
     vec3 shadow = vec3(0.0);
     float gradientNoise = InterleavedGradientNoiseForShadows();
@@ -79,7 +79,7 @@ vec3 SampleTAAFilteredShadow(vec3 shadowPos, float lViewPos, float offset, bool 
 
     return shadow;
 }
-#endif
+
 vec2 shadowOffsets[4] = vec2[4](
     vec2( 1.0, 0.0),
     vec2( 0.0, 1.0),
@@ -95,7 +95,7 @@ vec3 SampleBasicFilteredShadow(vec3 shadowPos, float offset) {
 
     return vec3(shadow * 0.25);
 }
-#ifndef NOT_IN_FRAGMENT
+
 vec3 GetShadow(vec3 shadowPos, float lViewPos, float lightmapY, float offset, bool leaves) {
     #if SHADOW_QUALITY > 0
         #if !defined ENTITY_SHADOWS && defined GBUFFERS_BLOCK
@@ -120,4 +120,3 @@ vec3 GetShadow(vec3 shadowPos, float lViewPos, float lightmapY, float offset, bo
 
     return shadow;
 }
-#endif
