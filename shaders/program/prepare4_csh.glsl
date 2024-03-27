@@ -302,6 +302,10 @@ void main() {
     }
     barrier();
     memoryBarrierShared();
+    float lWriteColor = length(writeColor);
+    if (lWriteColor > 0.01) {
+        writeColor *= log(lWriteColor+1)/lWriteColor;
+    }
     imageStore(colorimg10, writeTexelCoord, vec4(writeColor, 1));
     ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
     imageStore(colorimg11, writeTexelCoord, lightPosToStore);
