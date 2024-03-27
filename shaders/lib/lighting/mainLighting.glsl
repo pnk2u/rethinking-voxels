@@ -35,7 +35,8 @@ uniform float darknessLightFactor;
 
 #if defined PER_PIXEL_LIGHT && !defined GBUFFERS_WATER
     uniform sampler2D colortex12;
-#else
+#endif
+#if !defined PER_PIXEL_LIGHT || defined GBUFFERS_WATER || defined GI
     #include "/lib/vx/irradianceCache.glsl"
 #endif
 //
@@ -452,9 +453,18 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
             4 * texelFetch(colortex12, ivec2(gl_FragCoord.xy), 0).rgb;
         #else
             4 * readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);
+        float lVoxelBlockLighting = length(voxelBlockLighting);
+        if (lVoxelBlockLighting > 0.01) voxelBlockLighting *= log(lVoxelBlockLighting + 1.0) / lVoxelBlockLighting;
         #endif
     vec3 blockLighting = mix(voxelBlockLighting, lightmapXM * blocklightCol, voxelFactor);
-    vec3 sceneLighting = lightColorM * shadowMult + ambientColorM * ambientMult;
+    #ifdef GI
+        vec3 giLighting = readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM) * (1.0 - voxelFactor);
+        float lGiLighting = length(giLighting);
+        if (lGiLighting > 0.01) giLighting *= log(lGiLighting + 1.0) / lGiLighting;
+    #else
+        const float giLighting = 0.0;
+    #endif
+    vec3 sceneLighting = lightColorM * shadowMult + ambientColorM * ambientMult + giLighting * GI_STRENGTH;
     float dotSceneLighting = dot(sceneLighting, sceneLighting);
 
     #ifdef LIGHT_COLOR_MULTS

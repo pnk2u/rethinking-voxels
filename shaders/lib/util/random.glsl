@@ -1,5 +1,8 @@
 #ifndef INCLUDE_RANDOM
 #define INCLUDE_RANDOM
+#if defined FSH || defined FRAGMENT_SHADER
+    #define gl_GlobalInvocationID uvec3(gl_FragCoord.xy, 0)
+#endif
 
 uint globalSeed = uint(frameCounter * 382 + gl_GlobalInvocationID.x * 419 + gl_GlobalInvocationID.y * 353 + gl_GlobalInvocationID.z * 383);
 

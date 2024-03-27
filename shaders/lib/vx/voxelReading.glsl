@@ -42,10 +42,10 @@ int getLightLevel(ivec3 coords) {
     return imageLoad(occupancyVolume, coords).r >> 6 & 16; //FIXME not implemented
 }
 
-vec3 rayTrace(vec3 start, vec3 dir) {
+vec3 rayTrace(vec3 start, vec3 dir, float dither) {
     float dirLen = infnorm(dir);
     dir /= dirLen;
-    float w = 0.001;
+    float w = 0.001 + dither * getDistanceField(start + 0.001 * dir);
     for (int k = 0; k < 50; k++) {
         float thisdist = getDistanceField(start + w * dir);
         if (abs(thisdist) < 0.0001) {

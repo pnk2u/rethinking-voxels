@@ -25,7 +25,9 @@ const ivec2 offsets[8] = ivec2[8](
     ivec2( 1,-1));
 
 #include "/lib/vx/voxelReading.glsl"
+#include "/lib/util/random.glsl"
 void main() {
+    float dither = nextFloat();
     ivec2 texelCoord = ivec2(gl_FragCoord.xy);
     vec4 writeData = texelFetch(colortex8, texelCoord, 0);
     if (writeData.a > 1.5) {
@@ -52,7 +54,7 @@ void main() {
             writeData = avgAroundData / validAroundCount;
         } else {
             // fuck view bobbing!
-            vec3 rayHit = rayTrace(fract(cameraPosition) - gbufferModelView[3].xyz + normalize(dir), dir);
+            vec3 rayHit = rayTrace(fract(cameraPosition) - gbufferModelView[3].xyz + normalize(dir), dir, dither);
             float hitDF = getDistanceField(rayHit);
             if (hitDF < 0.1) {
                 writeData.rgb = normalize(distanceFieldGradient(rayHit));

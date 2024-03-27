@@ -30,8 +30,8 @@ layout(rgba16i) uniform iimage3D lightStorage;
 void main() {
     ivec3 camOffset = ivec3(1.01 * (floor(cameraPosition) - floor(previousCameraPosition)));
     ivec3 coords = ivec3(gl_GlobalInvocationID);
-    // this actually works for having threads be executed in the correct order so that they don't read the output of other previously run threads, so I should uncomment it if I need this program to offset data again
-   coords = coords * ivec3(greaterThan(camOffset, ivec3(-1))) +
+    // this actually works for having threads be executed in the correct order so that they don't read the output of other previously run threads
+    coords = coords * ivec3(greaterThan(camOffset, ivec3(-1))) +
         (voxelVolumeSize - coords - 1) * ivec3(lessThan(camOffset, ivec3(0)));
     ivec4 lightPos = imageLoad(lightStorage, coords);
     ivec3 prevCoords = coords + camOffset;
@@ -67,7 +67,6 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 uniform int frameCounter;
 uniform vec3 cameraPosition;
-uniform vec3 previousCameraPosition;
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
 #if defined REALTIME_SHADOWS && defined GI && defined OVERWORLD
@@ -348,38 +347,11 @@ void main() {
         imageStore(lightStorage, coords, lightPosToStore);
     }
 }
-/*        #ifdef GI
-            else if (hasNeighbor) {
-                if (rayHit0.rayColor.a > 0.999999) {
-                    ivec3 hitCoords = ivec3(rayHit0.pos + 0.1 * rayHit0.normal + 0.5 * voxelVolumeSize);
-                    vec4 blocklightHere = imageLoad(irradianceCacheI, hitCoords + ivec3(0, voxelVolumeSize.y, 0));
-                    vec4 bouncedLightHere = imageLoad(irradianceCacheI, hitCoords);
-                    #if defined REALTIME_SHADOWS && defined OVERWORLD
-                        vec3 playerPos = rayHit0.pos - fract(cameraPosition);
-                        float distanceBias = pow(dot(playerPos, playerPos), 0.75);
-                        distanceBias = 0.12 + 0.0008 * distanceBias;
-                        playerPos += distanceBias * rayHit0.normal;
-                        vec3 shadowPos = GetShadowPos(playerPos);
-                        vec3 shadow = SampleShadow(shadowPos, 1, 1) * clamp(pow2(pow2(eyeBrightness.y / 60.0)), 0.0, 1.0);
-                        vec3 totalLight = shadow * lightColor * max(0, dot(rayHit0.normal, lightVec));
-                    #else
-                        vec3 totalLight = vec3(0);
-                    #endif
-                    totalLight += blocklightHere.xyz / max(blocklightHere.a, 0.0001) + bouncedLightHere.xyz / max(bouncedLightHere.a, 0.0001);
-                    vec3 lightMult = pow2(rayHit0.rayColor.rgb) / max(max(max(rayHit0.rayColor.r, rayHit0.rayColor.g), rayHit0.rayColor.b), 0.01) * ndotl;
-                    GILight += vec4(totalLight * lightMult, 1);
-                } else {
-                    GILight.a += 1;
-                }
-            }
-            imageStore(irradianceCacheI, coords, GILight);
-        #endif
-        */
 #endif
 
 // This program calculates GI
 #ifdef CSH_B
-#if VX_VOL_SIZE == 0
+#if VX_VOL_SIZE == 0 || !defined GI
     const ivec3 workGroups = ivec3(12, 8, 12);
 #elif VX_VOL_SIZE == 1
     const ivec3 workGroups = ivec3(16, 12, 16);
@@ -390,11 +362,76 @@ void main() {
 #endif
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+#ifdef GI
+    uniform int frameCounter;
+    uniform vec3 cameraPosition;
+    uniform mat4 gbufferProjectionInverse;
+    uniform mat4 gbufferModelViewInverse;
 
-uniform int frameCounter;
-uniform vec3 cameraPosition;
+    layout(rgba16f) uniform image3D irradianceCacheI;
+    #include "/lib/vx/SSBOs.glsl"
+    #include "/lib/vx/voxelReading.glsl"
+    #include "/lib/util/random.glsl"
 
+    shared vec3[5] frustrumSides;
+
+    const vec2[4] squareCorners = vec2[4](vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1));
+#endif
 void main() {
+    #ifdef GI
+        int index = int(gl_LocalInvocationID.x + gl_WorkGroupSize.x * (gl_LocalInvocationID.y + gl_WorkGroupSize.y * gl_LocalInvocationID.z));
+        float dither = nextFloat();
+        if (index < 4) {
+            vec4 pos = vec4(squareCorners[index], 0.9999, 1);
+            pos = gbufferModelViewInverse * (gbufferProjectionInverse * pos);
+            frustrumSides[index] = pos.xyz * pos.w;
+        } else if (index == 4) {
+            frustrumSides[4] = -normalize(gbufferModelViewInverse[2].xyz);
+        }
+        barrier();
+        memoryBarrierShared();
+        vec3 sideNormal = vec3(0);
+        if (index < 4) {
+            sideNormal = -normalize(cross(frustrumSides[index], frustrumSides[(index+1)%4]));
+        }
+        barrier();
+        if(index < 4) {
+            frustrumSides[index] = sideNormal;
+        }
+        barrier();
+        memoryBarrierShared();
+        ivec3 coords = ivec3(gl_GlobalInvocationID);
+        vec3 normal = vec3(0);
+        vec3 vxPos = coords - 0.5 * voxelVolumeSize + vec3(0.51, 0.49, 0.502);
+        bool insideFrustrum = true;
+        for (int k = 0; k < 5; k++) {
+            insideFrustrum = (insideFrustrum && dot(vxPos, frustrumSides[k]) > -10.0);
+        }
 
+        if (insideFrustrum) {
+            float thisDFval = getDistanceField(vxPos);
+            if (thisDFval < 0.7 && thisDFval > 0.1) {
+                vec4 GILight = imageLoad(irradianceCacheI, coords);
+                for (int k = 0; k < 3; k++) {
+                    normal[k] = getDistanceField(vxPos + mat3(0.5)[k]) - getDistanceField(vxPos - mat3(0.5)[k]);
+                }
+                normal = normalize(normal);
+                vxPos -= 0.3 * normal;
+                vec3 dir = randomSphereSample();
+                if (dot(dir, normal) < 0.0) dir = -dir;
+                float ndotl = dot(dir, normal);
+                vec3 hitPos = rayTrace(vxPos, LIGHT_TRACE_LENGTH * dir, dither);
+                if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5) {
+                    const float pi = 3.14;
+                    vec3 hitBlocklight = 4 * (4.0/pi) * ndotl * imageLoad(irradianceCacheI, ivec3(hitPos + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
+                    vec3 hitAlbedo = getColor(hitPos).rgb;
+                    vec3 hitCol = hitBlocklight * hitAlbedo;
+                    GILight *= 0.99;
+                    GILight += vec4(hitCol, 1);
+                }
+                imageStore(irradianceCacheI, coords, GILight);
+            }
+        }
+    #endif
 }
 #endif
