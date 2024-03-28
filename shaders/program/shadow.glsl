@@ -320,14 +320,16 @@ void main() {
         if (localMat != 10996) col.rgb *= glColorV[0].rgb;
         ivec3 coords = ivec3(center - 0.1 * cnormal + 0.5 * voxelVolumeSize);
         if (correspondingBlockV[0] != ivec3(-1000)) coords = correspondingBlockV[0];
-        ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
-                                int(20 * col.b) + (int(4.5 * (1 - col.a)) << 13) + (1<<23));
-        imageAtomicAdd(voxelCols,
-            coords * ivec3(1, 2, 1),
-            packedCol.x);
-        imageAtomicAdd(voxelCols,
-            coords * ivec3(1, 2, 1) + ivec3(0, 1, 0),
-            packedCol.y);
+        if (all(greaterThan((maxTexCoord - minTexCoord) / atlasSize, vec2(1.5)))) {
+            ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
+                                    int(20 * col.b) + (int(4.5 * (1 - col.a)) << 13) + (1<<23));
+            imageAtomicAdd(voxelCols,
+                coords * ivec3(1, 2, 1),
+                packedCol.x);
+            imageAtomicAdd(voxelCols,
+                coords * ivec3(1, 2, 1) + ivec3(0, 1, 0),
+                packedCol.y);
+        }
 
         #if HELD_LIGHTING_MODE == 0
             if (isHeldLight) emissive = false;
