@@ -188,10 +188,10 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
                 voxelCol.rgb *= skyLight * ambientColor + sunShadow * lightColor + blockLight + 0.25 * giLight;
 
                 vec3 playerHitPos = hitPos - fract(cameraPosition);
+                float skyFade = 0.0;
+                DoFog(voxelCol.rgb, skyFade, length(playerHitPos), playerHitPos, RVdotU, RVdotS, dither);
 
                 reflection.rgb = mix(voxelCol.rgb, reflection.rgb, reflection.a);
-                float skyFade = 0.0;
-                DoFog(reflection.rgb, skyFade, length(playerHitPos), playerHitPos, RVdotU, RVdotS, dither);
                 reflection.a += (1.0 - reflection.a) * voxelCol.a;
             }
         }
