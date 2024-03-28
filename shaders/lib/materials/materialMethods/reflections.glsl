@@ -164,7 +164,9 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
                 vec3 hitNormal = normalize(distanceFieldGradient(hitPos) + vec3(0.000001, -0.0000041, 0.0000003));
                 int occupancyData = imageLoad(occupancyVolume, ivec3(hitPos + 0.5 * voxelVolumeSize - 0.1 * hitNormal)).r;
                 vec4 voxelCol = getColor(hitPos - 0.1 * hitNormal);
-                vec3 shadowHitPos = GetShadowPos(hitPos - fract(cameraPosition) + 0.2 * hitNormal);
+                #if defined REALTIME_SHADOWS && defined OVERWORLD
+                    vec3 shadowHitPos = GetShadowPos(hitPos - fract(cameraPosition) + 0.2 * hitNormal);
+                #endif
                 float skyLight = 0.0;
                 int liveBitCount = 0;
                 for (int k = 0; k < 3; k++) {

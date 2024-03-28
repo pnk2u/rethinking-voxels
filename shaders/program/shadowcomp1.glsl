@@ -438,12 +438,12 @@ void main() {
                             vec3 hitBlocklight = 4 * (4.0/pi) * ndotl * imageLoad(irradianceCacheI, ivec3(hitPos + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
                             #if defined REALTIME_SHADOWS && defined OVERWORLD
                                 vec3 sunShadowPos = GetShadowPos(hitPos - fract(cameraPosition));
-                                vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0);
+                                vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0) * lightColor;
                             #else
                                 const float hitSunlight = 0.0;
                             #endif
                             vec3 hitAlbedo = getColor(hitPos).rgb;
-                            hitCol = (hitBlocklight + hitSunlight * lightColor) * hitAlbedo;
+                            hitCol = (hitBlocklight + hitSunlight) * hitAlbedo;
                         }
                         if (all(greaterThanEqual(hitCol, vec3(0)))) GILight += vec4(hitCol, 1);
                     }
