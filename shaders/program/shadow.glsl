@@ -369,10 +369,12 @@ void main() {
         if (emissive) {
             float brightness = infnorm(col.xyz);
             col.xyz -= brightness;
-            float minVal = infnorm(col.xyz);
-            float saturation = 1.0 - minVal/brightness;
+            float minVal = max(0.0001, infnorm(col.xyz));
             col.xyz *= mix(1.0, brightness/minVal, LIGHT_COLOR_SATURATION);
             col.xyz += brightness;
+            if (localMat == 10368) { // nether quartz ore colour doesn't work for some reason
+                col = vec4(1);
+            }
             uint hash = posToHash(coords - voxelVolumeSize/2) % uint(1<<18);
             vec3[3] blockRelPos;
             for (int i = 0; i < 3; i++) {

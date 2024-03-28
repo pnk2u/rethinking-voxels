@@ -161,43 +161,68 @@ vec3 getLightCol(int mat) {
         case 10216: // crimson wood
         case 10224: // warped wood
             break;
-    #if GLOWING_ORES > 0
+    #ifdef GLOWING_ORE_IRON
         case 10272: // iron ore
         case 10276:
             #ifdef ORE_HARDCODED_IRON_COL
             lightcol = vec3(IRON_COL_R, IRON_COL_G, IRON_COL_B);
             #endif
             break;
+    #endif
+    #ifdef GLOWING_ORE_COPPER
         case 10284: // copper ore
         case 10288:
             #ifdef ORE_HARDCODED_COPPER_COL
             lightcol = vec3(COPPER_COL_R, COPPER_COL_G, COPPER_COL_B);
             #endif
             break;
+    #endif
+    #ifdef GLOWING_ORE_NETHERGOLD
+        case 10308: // nether gold ore
+    #endif
+    #ifdef GLOWING_ORE_GILDEDBLACKSTONE
+        case 10484: // gilded blackstone
+    #endif
+    #ifdef GLOWING_ORE_GOLD
         case 10300: // gold ore
         case 10304:
             #ifdef ORE_HARDCODED_GOLD_COL
             lightcol = vec3(GOLD_COL_R, GOLD_COL_G, GOLD_COL_B);
             #endif
             break;
+    #endif
+    #ifdef GLOWING_ORE_DIAMOND
         case 10320: // diamond ore
         case 10324:
             #ifdef ORE_HARDCODED_DIAMOND_COL
             lightcol = vec3(DIAMOND_COL_R, DIAMOND_COL_G, DIAMOND_COL_B);
             #endif
             break;
+    #endif
+    #ifdef GLOWING_ORE_EMERALD
         case 10340: // emerald ore
         case 10344:
             #ifdef ORE_HARDCODED_EMERALD_COL
             lightcol = vec3(EMERALD_COL_R, EMERALD_COL_G, EMERALD_COL_B);
             #endif
             break;
+    #endif
+    #ifdef GLOWING_ORE_LAPIS
         case 10356: // lapis ore
         case 10360:
             #ifdef ORE_HARDCODED_LAPIS_COL
             lightcol = vec3(LAPIS_COL_R, LAPIS_COL_G, LAPIS_COL_B);
             #endif
             break;
+    #endif
+    #ifdef GLOWING_ORE_QUARTZ
+        case 10368:
+            #ifdef ORE_HARDCODED_QUARTZ_COL
+            lightcol = vec3(QUARTZ_COL_R, QUARTZ_COL_G, QUARTZ_COL_B);
+            #endif
+            break;
+    #endif
+    #ifdef GLOWING_ORE_REDSTONE
         case 10612: // redstone ore
         case 10620:
     #endif
@@ -506,34 +531,71 @@ int getLightLevel(int mat) {
         case 10224: // warped wood
             lightlevel = BRIGHTNESS_WARPED;
             break;
-    #if GLOWING_ORES > 0
+    #ifdef GLOWING_ORE_IRON
         case 10272: // iron ore
         case 10276:
             lightlevel = ORE_BRIGHTNESS_IRON;
             break;
+    #endif
+    #ifdef GLOWING_ORE_COPPER
         case 10284: // copper ore
         case 10288:
             lightlevel = ORE_BRIGHTNESS_COPPER;
             break;
+    #endif
+    #ifdef GLOWING_ORE_GOLD
         case 10300: // gold ore
         case 10304:
             lightlevel = ORE_BRIGHTNESS_GOLD;
             break;
+    #endif
+    #ifdef GLOWING_ORE_DIAMOND
         case 10320: // diamond ore
         case 10324:
             lightlevel = ORE_BRIGHTNESS_DIAMOND;
             break;
+    #endif
+    #ifdef GLOWING_ORE_EMERALD
         case 10340: // emerald ore
         case 10344:
             lightlevel = ORE_BRIGHTNESS_EMERALD;
             break;
+    #endif
+    #ifdef GLOWING_ORE_LAPIS
         case 10356: // lapis ore
         case 10360:
             lightlevel = ORE_BRIGHTNESS_LAPIS;
             break;
+    #endif
+    #ifdef GLOWING_ORE_REDSTONE
         case 10612: // unlit redstone ore
         case 10620:
             lightlevel = OREUNLIT_BRIGHTNESS_REDSTONE;
+            break;
+    #endif
+    #ifdef GLOWING_ORE_NETHERQUARTZ
+        case 10368:
+            lightlevel = ORE_BRIGHTNESS_QUARTZ;
+            break;
+    #endif
+    #ifdef GLOWING_ORE_NETHERGOLD
+        case 10308:
+            lightlevel = ORE_BRIGHTNESS_GOLD;
+            break;
+    #endif
+    #ifdef GLOWING_ORE_GILDEDBLACKSTONE
+        case 10484:
+            lightlevel = ORE_BRIGHTNESS_GOLD;
+            break;
+    #endif
+    #ifdef GLOWING_ORE_ANCIENTDEBRIS
+        case 10252:
+            lightlevel = BRIGHTNESS_DEBRIS;
+            break;
+    #endif
+    #ifdef GLOWING_ORE_MODDED
+        case 10024:
+            lightlevel = 10;
             break;
     #endif
         case 10616: // lit redstone ore
