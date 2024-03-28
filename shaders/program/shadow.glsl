@@ -317,7 +317,7 @@ void main() {
         }
         col.a = textureCol.a;
         if (col.rgb == vec3(0)) col = textureCol;
-        col.rgb *= glColorV[0].rgb;
+        if (localMat != 10996) col.rgb *= glColorV[0].rgb;
         ivec3 coords = ivec3(center - 0.1 * cnormal + 0.5 * voxelVolumeSize);
         if (correspondingBlockV[0] != ivec3(-1000)) coords = correspondingBlockV[0];
         ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
@@ -345,10 +345,23 @@ void main() {
             #ifndef ENTITY_VOXELIZATION
                 shouldVoxelize = false;
             #endif
-        } else if (localMat == 10004) {
+        } else if (length(abs(cnormal.xz) - vec2(sqrt(0.5))) < 0.01 || localMat == 10004 || localMat == 10012) {
             #ifndef FOLIAGE_VOXELIZATION
                 shouldVoxelize = false;
             #endif
+        }
+
+        // campfires
+        if (localMat == 10652 || localMat == 10656) {
+            if (length(abs(cnormal.xz) - vec2(sqrt(0.5))) < 0.01) {
+                // flame needs to be moved up a little
+                for (int i = 0; i < 3; i++) {
+                    vxPos[i].y += 0.4;
+                }
+            } else {
+                // logs are not emissive
+                emissive = false;
+            }
         }
 
         if (emissive) {

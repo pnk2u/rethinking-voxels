@@ -72,7 +72,7 @@ bool isEmissive(int mat) {
         mat == 10708 || // spawner
         mat == 10852 || // copper bulb
         mat == 10996 || // light block
-        //mat == 12740 || // lit candle cake
+      //mat == 12740 || // lit candle cake
         mat == 30020 || // nether portal
         mat == 31016 || // beacon
         mat == 60000 || // end portal
@@ -98,8 +98,9 @@ vec3 getLightCol(int mat) {
     vec3 lightcol = vec3(0);
         switch (mat) {
         case 1235: // fallback with hardcoded colour
-        case 10999:
+        case 10996: // light block
             lightcol = blocklightCol;
+            break;
         case 10056: // lava cauldron
             #ifdef CAULDRON_HARDCODED_LAVA_COL
             lightcol = vec3(LAVA_COL_R, LAVA_COL_G, LAVA_COL_B);
