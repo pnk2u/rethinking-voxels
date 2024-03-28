@@ -152,7 +152,6 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
     #endif
     // End Step 2
 
-    if (gl_FragCoord.x < 400) reflection.a = 0.0;
     #ifdef VOXEL_RT_REFLECTIONS
         // Step 2.5: fill missing reflections with voxel data
         if (reflection.a < 1.0 ) {
