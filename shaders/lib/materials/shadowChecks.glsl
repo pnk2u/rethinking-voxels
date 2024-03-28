@@ -7,21 +7,48 @@ bool isEmissive(int mat) {
         mat == 10076 || // soul fire
         mat == 10216 || // crimson wood
         mat == 10224 || // warped wood
-#if GLOWING_ORE_MASTER == 2 || (GLOWING_ORE_MASTER == 1 && SHADER_STYLE == 4)
+#ifdef GLOWING_ORE_IRON
         mat == 10272 || // iron ore
         mat == 10276 ||
+#endif
+#ifdef GLOWING_ORE_COPPER
         mat == 10284 || // copper ore
         mat == 10288 ||
+#endif
+#ifdef GLOWING_ORE_GOLD
         mat == 10300 || // gold ore
         mat == 10304 ||
+#endif
+#ifdef GLOWING_ORE_DIAMOND
         mat == 10320 || // diamond ore
         mat == 10324 ||
+#endif
+#ifdef GLOWING_ORE_EMERALD
         mat == 10340 || // emerald ore
         mat == 10344 ||
+#endif
+#ifdef GLOWING_ORE_LAPIS
         mat == 10356 || // lapis ore
         mat == 10360 ||
+#endif
+#ifdef GLOWING_ORE_REDSTONE
         mat == 10612 || // redstone ore
         mat == 10620 ||
+#endif
+#ifdef GLOWING_ORE_NETHERQUARTZ
+        mat == 10368 ||
+#endif
+#ifdef GLOWING_ORE_NETHERGOLD
+        mat == 10308 ||
+#endif
+#ifdef GLOWING_ORE_GILDEDBLACKSTONE
+        mat == 10484 ||
+#endif
+#ifdef GLOWING_ORE_ANCIENTDEBRIS
+        mat == 10252 ||
+#endif
+#ifdef GLOWING_ORE_MODDED
+        mat == 10024 ||
 #endif
         mat == 10616 || // lit redstone ore
         mat == 10624 ||
