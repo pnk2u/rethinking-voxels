@@ -345,7 +345,7 @@ void main() {
             #ifndef ENTITY_VOXELIZATION
                 shouldVoxelize = false;
             #endif
-        } else if (length(abs(cnormal.xz) - vec2(sqrt(0.5))) < 0.01 || localMat == 10004 || localMat == 10012) {
+        } else if (length(abs(cnormal.xz) - vec2(sqrt(0.5))) < 0.01 || localMat == 10004 || localMat == 10012 || localMat == 10488) {
             #ifndef FOLIAGE_VOXELIZATION
                 shouldVoxelize = false;
             #endif
