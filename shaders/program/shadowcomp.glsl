@@ -148,7 +148,7 @@ uniform vec3 cameraPosition;
 #include "/lib/vx/positionHashing.glsl"
 #define WRITE_TO_SSBOS
 #include "/lib/vx/SSBOs.glsl"
-shared int lights[512][7];
+shared int lights[512];
 shared int lightCount;
 shared ivec4 lightLocs[512];
 void main() {
@@ -162,13 +162,11 @@ void main() {
         ivec3 offset = ivec3(k%4, k/4%4, k/16%4);
         ivec3 coord = ivec3(gl_GlobalInvocationID) * 4 + 3 + offset;
         int thisOccupancy = imageLoad(occupancyVolume, coord).r;
-        if ((thisOccupancy >> 27 & 1) != 0) {
+        if ((thisOccupancy >> 27 & 1) == 1) {
             int lightIndex = atomicAdd(lightCount, 1);
             if (lightIndex < 512) {
                 lightLocs[lightIndex] = ivec4(coord, thisOccupancy >> 22 & 31);
-                for (int k = 0; k < 7; k++) {
-                    lights[lightIndex][k] = 0;
-                }
+                lights[lightIndex] = 0;
             } else {
                 atomicMin(lightCount, 512);
             }
@@ -179,8 +177,12 @@ void main() {
     int aroundLightCount = 1;
     for (int k = index + 1; k < lightCount; k++) {
         if (length(lightLocs[k] - lightLocs[index]) < 1.1) {
-            lights[index][aroundLightCount++] = k;
-            atomicMin(lights[k][0], -1);
+            for (int l = index + 1; l < k; l++) {
+                if (length(lightLocs[l] - lightLocs[k]) < 1.1) {
+                    atomicExchange(lights[l], -1);
+                }
+            }
+            atomicExchange(lights[k], -1);
         }
     }
     barrier();
@@ -189,29 +191,30 @@ void main() {
     ivec3 coord;
     uvec4 packedLightDataToWrite;
     int maxLightLevel = 0;
+    #define MAX_CLUMP_SIZE 128
     if (index < lightCount) {
         coord = lightLocs[index].xyz;
         imageAtomicAnd(occupancyVolume, coord, ~(1<<16));
-        if (lights[index][0] == 0) {
+        if (lights[index] == 0) {
             int thisOccupancy = imageLoad(occupancyVolume, coord).r;
             int linkedLightCount = 1;
-            ivec3 linkedLights[512];
+            ivec3 linkedLights[MAX_CLUMP_SIZE];
             linkedLights[0] = coord;
-            for (int j = 0; j < min(512, linkedLightCount); j++) {
-                if (linkedLightCount >= 512) break;
+            for (int j = 0; j < min(MAX_CLUMP_SIZE, linkedLightCount); j++) {
+                if (linkedLightCount >= MAX_CLUMP_SIZE) break;
                 for (int i = 0; i < 6; i++) {
                     ivec3 offset = (i/3*2-1)*ivec3(equal(ivec3(i%3), ivec3(0, 1, 2)));
                     ivec3 thisLight = linkedLights[j] + offset;
                     int aroundOccupancy = imageLoad(occupancyVolume, thisLight).r;
                     if ((aroundOccupancy >> 22 & 63) != (thisOccupancy >> 22 & 63)) continue;
                     bool known = false;
-                    for (int n = 0; n < linkedLightCount; n++) {
+                    for (int n = 0; n < min(MAX_CLUMP_SIZE, linkedLightCount); n++) {
                         if (linkedLights[n] == thisLight) {
                             known = true;
                             break;
                         }
                     }
-                    if (known || linkedLightCount >= 512) {
+                    if (known || linkedLightCount >= MAX_CLUMP_SIZE) {
                         continue;
                     }
                     linkedLights[linkedLightCount++] = thisLight;
