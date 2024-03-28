@@ -36,6 +36,7 @@
 
     #if GI_STRENGTH > 0
         #define GI
+        #define GI_SAMPLE_COUNT 1 //[1 3 7 13]
     #endif
 
     #define BLOCKLIGHT_I 1.0 //[0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.5 10.0]
