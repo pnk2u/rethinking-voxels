@@ -336,6 +336,21 @@ void main() {
         int skyLight = int(5.49 * lmCoordV[0].y + 0.5);
         int writeSkyLight = (1<<skyLight/2) | (1<<(skyLight-1)/2);
         imageAtomicOr(occupancyVolume, coords, writeSkyLight << 28);
+        bool shouldVoxelize = true;
+        if (entityId == 50016) {
+            #ifndef PLAYER_VOXELIZATION
+                shouldVoxelize = false;
+            #endif
+        } else if (renderStage == MC_RENDER_STAGE_ENTITIES) {
+            #ifndef ENTITY_VOXELIZATION
+                shouldVoxelize = false;
+            #endif
+        } else if (localMat == 10004) {
+            #ifndef FOLIAGE_VOXELIZATION
+                shouldVoxelize = false;
+            #endif
+        }
+
         if (emissive) {
             uint hash = posToHash(coords - voxelVolumeSize/2) % uint(1<<18);
             vec3[3] blockRelPos;
@@ -384,7 +399,7 @@ void main() {
                     imageAtomicOr(occupancyVolume, coords, 1<<27);
                 }
             }
-        } else {
+        } else if (shouldVoxelize) {
             for (int i = 0; i < 3; i++) {
                 vec2 relProjectedPos
                     = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])

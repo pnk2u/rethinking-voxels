@@ -51,7 +51,7 @@
     #define VBL_END_MULT 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
 
     #ifdef END
-        #define CONWAY 2 //[0 1 2]
+        #define CONWAY 0 //[0 1 2]
         #define CONWAY_HEIGHT 10.1
     #endif
     #ifdef OVERWORLD
@@ -62,8 +62,11 @@
     #define REALTIME_SHADOWS
     #define SHADOW_QUALITY 2 //[0 1 2 3 4 5]
     const float shadowDistance = 128.0; //[64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0]
+    #define PLAYER_VOXELIZATION
+    #define FOLIAGE_VOXELIZATION
     #define ENTITY_SHADOWS
     #ifdef ENTITY_SHADOWS
+        #define ENTITY_VOXELIZATION
         #define RT_ENTITIES
     #endif
     #define SSAO_QUALI_DEFINE 2 //[0 2 3]

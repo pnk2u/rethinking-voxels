@@ -173,7 +173,9 @@ screen.WORLD_OUTLINE_SETTINGS.comment=Settings that are about optional outline e
 
 screen.VX_SETTINGS=Rethinking Voxels Settings
 screen.VX_SETTINGS.comment=Settings that are introduced by Rethinking Voxels
-screen.DENOISE_SETTINGS=Denoiser-Related Settings
+
+screen.VX_VOL_SETTINGS=Voxelization Settings
+screen.VX_VOL_SETTINGS.comment=Settings that change which parts of the world are used for advanced light calculations.
 
 screen.VBL_SETTINGS=Vol. Blocklight Settings
 screen.VBL_SETTINGS.comment=Settings related to volumetric blocklight. This is the effect that makes fog light up around block light sources.
@@ -1056,29 +1058,16 @@ value.VOXEL_DETAIL_AMOUNT.7=64/Block
 value.VOXEL_DETAIL_AMOUNT.8=128/Block
 option.VOXEL_DETAIL_AMOUNT.comment=Adjusts the resolution at which models for blocks are generated. §e[*]§r High performance impact.
 
+option.ENTITY_VOXELIZATION=Entity Voxelization
+option.PLAYER_VOXELIZATION=Player Voxelization
+option.FOLIAGE_VOXELIZATION=Foliage Voxelization
+
 option.VOXEL_RT_REFLECTIONS=World-Space Reflections
 option.VOXEL_RT_REFLECTIONS.comment=Allows things that aren't visible on the screen to be reflected by other things. §e[*]§r High performance impact.
 
 option.LIGHT_TRACE_LENGTH=Light Spread Distance
 option.LIGHT_TRACE_LENGTH.comment=Controls the maximum distance at which a light source can still illuminate its surroundings.
 
-option.DENOISE_MAX_BLUR=Maximum Blur Amount
-option.ACCUM_FALLOFF_SPEED=Accumulation Discard Speed
-option.ACCUM_FALLOFF_SPEED.comment=This changes how fast old lighting data is discarded and replaced by new data. High values cause more responsive, but also more flickery lighting, while lower values cause more stable and less noisy lighting, which is also slow to update.
-option.DENOISE_LENIENCE=Denoiser Mode
-value.DENOISE_LENIENCE.0=Sharpest
-value.DENOISE_LENIENCE.1=Sharp
-value.DENOISE_LENIENCE.2=Cleaner
-value.DENOISE_LENIENCE.3=Blurry
-option.DENOISE_LENIENCE.comment=Changes how much the denoiser blurs over details. Sharpest keeps the most noise, but is fairly good at retaining sharp edges. Sharp is a middle ground between Sharpest and Cleaner. Cleaner creates more blurry edges. Blurry barely preserves any sharp edges.
-
-option.DENOISING_DEFINE=Denoising
-value.DENOISING_DEFINE.0=Off
-value.DENOISING_DEFINE.1=Auto
-value.DENOISING_DEFINE.2=On
-
-option.ACCUMULATION=Accumulation
-option.ACCUMULATION.comment=If enabled, block light data will be smoothed across multiple frames. Without this, lighting will look flickery and low-resolution.
 option.MAX_TRACE_COUNT=Max. Light Sample Count
 option.MAX_TRACE_COUNT.comment=This setting controls the maximum amount of nearby light sources that can cast light on an object.
 
