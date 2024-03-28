@@ -436,8 +436,12 @@ void main() {
                         if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5) {
                             const float pi = 3.14;
                             vec3 hitBlocklight = 4 * (4.0/pi) * ndotl * imageLoad(irradianceCacheI, ivec3(hitPos + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
-                            vec3 sunShadowPos = GetShadowPos(hitPos - fract(cameraPosition));
-                            vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0);
+                            #if defined REALTIME_SHADOWS && defined OVERWORLD
+                                vec3 sunShadowPos = GetShadowPos(hitPos - fract(cameraPosition));
+                                vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0);
+                            #else
+                                const float hitSunlight = 0.0;
+                            #endif
                             vec3 hitAlbedo = getColor(hitPos).rgb;
                             hitCol = (hitBlocklight + hitSunlight * lightColor) * hitAlbedo;
                         }
