@@ -233,6 +233,7 @@ uniform vec3 eyePosition;
 uniform sampler2D tex;
 uniform sampler2D specular;
 uniform ivec2 atlasSize;
+uniform vec4 entityColor;
 
 layout(r32i) restrict uniform iimage3D voxelCols;
 layout(r32i) restrict uniform iimage3D occupancyVolume;
@@ -318,9 +319,10 @@ void main() {
         col.a = textureCol.a;
         if (col.rgb == vec3(0)) col = textureCol;
         if (localMat != 10996) col.rgb *= glColorV[0].rgb;
+        col.rgb = mix(col.rgb, entityColor.rgb, entityColor.a);
         ivec3 coords = ivec3(center - 0.1 * cnormal + 0.5 * voxelVolumeSize);
         if (correspondingBlockV[0] != ivec3(-1000)) coords = correspondingBlockV[0];
-        if (all(greaterThan((maxTexCoord - minTexCoord) / atlasSize, vec2(1.5)))) {
+        if (all(greaterThan((maxTexCoord - minTexCoord) * atlasSize, vec2(1.5)))) {
             ivec2 packedCol = ivec2(int(20 * col.r) + (int(20 * col.g) << 13),
                                     int(20 * col.b) + (int(4.5 * (1 - col.a)) << 13) + (1<<23));
             imageAtomicAdd(voxelCols,
@@ -370,7 +372,7 @@ void main() {
             float brightness = infnorm(col.xyz);
             col.xyz -= brightness;
             float minVal = max(0.0001, infnorm(col.xyz));
-            col.xyz *= mix(1.0, min(1.0 + 3 * LIGHT_COLOR_SATURATION, brightness/minVal), LIGHT_COLOR_SATURATION);
+            col.xyz *= mix(1.0, min(1.0 + 4 * LIGHT_COLOR_SATURATION, brightness/minVal), LIGHT_COLOR_SATURATION);
             col.xyz += brightness;
             if (localMat == 10368) { // nether quartz ore colour doesn't work for some reason
                 col = vec4(1);
