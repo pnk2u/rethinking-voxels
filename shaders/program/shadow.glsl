@@ -19,6 +19,8 @@ flat in vec4 glColor;
 
 flat in int passType;
 flat in ivec3 correspondingBlock;
+in vec3 vxPosF;
+
 //Uniforms//
 uniform int isEyeInWater;
 uniform int renderStage;
@@ -181,9 +183,8 @@ void main() {
         vec4 col = textureLod(tex, texCoord, 0);
         col.rgb *= glColor.rgb;
         if (col.a > 0.1) {
-            vec3 vxPos = position.xyz + fract(cameraPosition);
             for (int k = 0; k < passType >> 1; k++) {
-                vec3 position2 = vxPos * (1<<k) - 0.15 * upVec + voxelVolumeSize * 0.5;
+                vec3 position2 = vxPosF * (1<<k) - 0.1561271 * upVec + voxelVolumeSize * 0.5;
                 if (any(lessThan(position2, vec3(0))) || any(greaterThanEqual(position2, voxelVolumeSize - 0.01))) {
                     break;
                 }
@@ -217,6 +218,7 @@ out vec2 texCoord;
 flat out vec3 sunVec, upVec;
 out vec4 position;
 flat out vec4 glColor;
+out vec3 vxPosF;
 
 flat out int passType;
 flat out ivec3 correspondingBlock;
@@ -247,14 +249,10 @@ void main() {
     if (currentRenderedItemId > 0) localMat = currentRenderedItemId;
 
     vec3 cnormal = cross(positionV[1].xyz - positionV[0].xyz, positionV[2].xyz - positionV[0].xyz);
-    cnormal += vec3(0.000001, 0.00021, -0.0000391);
     float area = length(cnormal);
+    cnormal += vec3(0.00001, 0.00021, -0.0000391);
 
-    if (area == 0) {
-        cnormal = vec3(0,1,0);
-    } else {
-        cnormal = normalize(cnormal);
-    }
+    cnormal = normalize(cnormal);
 
     bool emissive = isEmissive(localMat) || (lmCoordV[0].x > 0.99 && localMat == 0);
 
@@ -391,13 +389,14 @@ void main() {
                 vec2 relProjectedPos
                     = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])
                     - vec2(lowerBound[(bestNormalAxis+1)%3], lowerBound[(bestNormalAxis+2)%3]);
-                gl_Position = vec4(relProjectedPos * (1<<localResolution) / shadowMapResolution - 0.5 + 0.49/shadowMapResolution, 0.5, 1.0);
+                gl_Position = vec4(relProjectedPos * (1<<localResolution) / shadowMapResolution - 0.5 + 0.09/shadowMapResolution, 0.5, 1.0);
                 mat = matV[i];
                 texCoord = texCoordV[i];
                 sunVec = sunVecV[i];
                 upVec = cnormal;
                 position = positionV[i];
                 glColor = glColorV[i];
+                vxPosF = vxPos[i];
                 passType = 1 + (localResolution << 1);
                 correspondingBlock = correspondingBlockV[i];
                 EmitVertex();
