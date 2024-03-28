@@ -152,9 +152,10 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
     #endif
     // End Step 2
 
+    if (gl_FragCoord.x < 400) reflection.a = 0.0;
     #ifdef VOXEL_RT_REFLECTIONS
         // Step 2.5: fill missing reflections with voxel data
-        if (reflection.a < 1.0) {
+        if (reflection.a < 1.0 ) {
             vec3 voxelVector = mat3(gbufferModelViewInverse) * normalize(vector);
             vec4 voxelStart = gbufferModelViewInverse * vec4(start, 1.0);
             voxelStart.xyz += fract(cameraPosition);
@@ -184,8 +185,13 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
                 #else
                     const float  giLight = 0.0;
                 #endif
-                voxelCol.rgb *= skyLight * ambientColor + sunShadow * lightColor + 4.0 * blockLight + giLight;
+                voxelCol.rgb *= skyLight * ambientColor + sunShadow * lightColor + blockLight + 0.25 * giLight;
+
+                vec3 playerHitPos = hitPos - fract(cameraPosition);
+
                 reflection.rgb = mix(voxelCol.rgb, reflection.rgb, reflection.a);
+                float skyFade = 0.0;
+                DoFog(reflection.rgb, skyFade, length(playerHitPos), playerHitPos, RVdotU, RVdotS, dither);
                 reflection.a += (1.0 - reflection.a) * voxelCol.a;
             }
         }
