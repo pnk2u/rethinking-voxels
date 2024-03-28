@@ -370,7 +370,7 @@ void main() {
             float brightness = infnorm(col.xyz);
             col.xyz -= brightness;
             float minVal = max(0.0001, infnorm(col.xyz));
-            col.xyz *= mix(1.0, brightness/minVal, LIGHT_COLOR_SATURATION);
+            col.xyz *= mix(1.0, min(1.0 + 3 * LIGHT_COLOR_SATURATION, brightness/minVal), LIGHT_COLOR_SATURATION);
             col.xyz += brightness;
             if (localMat == 10368) { // nether quartz ore colour doesn't work for some reason
                 col = vec4(1);
