@@ -411,38 +411,42 @@ void main() {
 
         if (insideFrustrum) {
             float thisDFval = getDistanceField(vxPos);
-            if (thisDFval < 0.7 && thisDFval > 0.1) {
-                vec4 GILight = imageLoad(irradianceCacheI, coords);
-                float weight = 1.0;
-                for (int k = 0; k < 6; k++) {
-                    ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
-                    float otherWeight = 0.01 * (1 - (imageLoad(occupancyVolume, coords + offset).r & 1));
-                    GILight += otherWeight * imageLoad(irradianceCacheI, coords + offset);
-                    weight += otherWeight;
-                }
-                GILight /= weight;
-                for (int k = 0; k < 3; k++) {
-                    normal[k] = getDistanceField(vxPos + mat3(0.5)[k]) - getDistanceField(vxPos - mat3(0.5)[k]);
-                }
-                normal = normalize(normal);
-                vxPos -= 0.3 * normal;
-                for (int sampleNum = 0; sampleNum < GI_SAMPLE_COUNT; sampleNum++) {
-                    vec3 dir = randomSphereSample();
-                    if (dot(dir, normal) < 0.0) dir = -dir;
-                    float ndotl = dot(dir, normal);
-                    vec3 hitPos = rayTrace(vxPos, LIGHT_TRACE_LENGTH * dir, dither);
-                    vec3 hitCol = vec3(0);
-                    if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5) {
-                        const float pi = 3.14;
-                        vec3 hitBlocklight = 4 * (4.0/pi) * ndotl * imageLoad(irradianceCacheI, ivec3(hitPos + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
-                        vec3 sunShadowPos = GetShadowPos(hitPos - fract(cameraPosition));
-                        vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0);
-                        vec3 hitAlbedo = getColor(hitPos).rgb;
-                        hitCol = (hitBlocklight + hitSunlight * lightColor) * hitAlbedo;
+            if (thisDFval < 0.7) {
+                if (thisDFval > 0.1) {
+                    vec4 GILight = imageLoad(irradianceCacheI, coords);
+                    float weight = 1.0;
+                    for (int k = 0; k < 6; k++) {
+                        ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
+                        float otherWeight = 0.01 * (1 - (imageLoad(occupancyVolume, coords + offset).r & 1));
+                        GILight += otherWeight * imageLoad(irradianceCacheI, coords + offset);
+                        weight += otherWeight;
                     }
-                    if (all(greaterThanEqual(hitCol, vec3(0)))) GILight += vec4(hitCol, 1);
+                    GILight /= weight;
+                    for (int k = 0; k < 3; k++) {
+                        normal[k] = getDistanceField(vxPos + mat3(0.5)[k]) - getDistanceField(vxPos - mat3(0.5)[k]);
+                    }
+                    normal = normalize(normal);
+                    vxPos -= 0.3 * normal;
+                    for (int sampleNum = 0; sampleNum < GI_SAMPLE_COUNT; sampleNum++) {
+                        vec3 dir = randomSphereSample();
+                        if (dot(dir, normal) < 0.0) dir = -dir;
+                        float ndotl = dot(dir, normal);
+                        vec3 hitPos = rayTrace(vxPos, LIGHT_TRACE_LENGTH * dir, dither);
+                        vec3 hitCol = vec3(0);
+                        if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5) {
+                            const float pi = 3.14;
+                            vec3 hitBlocklight = 4 * (4.0/pi) * ndotl * imageLoad(irradianceCacheI, ivec3(hitPos + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
+                            vec3 sunShadowPos = GetShadowPos(hitPos - fract(cameraPosition));
+                            vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0);
+                            vec3 hitAlbedo = getColor(hitPos).rgb;
+                            hitCol = (hitBlocklight + hitSunlight * lightColor) * hitAlbedo;
+                        }
+                        if (all(greaterThanEqual(hitCol, vec3(0)))) GILight += vec4(hitCol, 1);
+                    }
+                    imageStore(irradianceCacheI, coords, GILight);
+                } else {
+                    imageStore(irradianceCacheI, coords, vec4(0, 0, 0, 1));
                 }
-                imageStore(irradianceCacheI, coords, GILight);
             }
         }
     #endif
