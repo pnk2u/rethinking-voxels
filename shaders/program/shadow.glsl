@@ -284,7 +284,7 @@ void main() {
     if (localResolution > 0) {
         vec2 minTexCoord = min(min(texCoordV[0], texCoordV[1]), texCoordV[2]);
         vec2 maxTexCoord = max(max(texCoordV[0], texCoordV[1]), texCoordV[2]);
-        int lodLevel = int(log2(max(1.1, 1.01 * min((maxTexCoord.x - minTexCoord.x) * atlasSize.x, (maxTexCoord.y - minTexCoord.y) * atlasSize.y))));
+        int lodLevel = int(log2(max(4.1, 1.01 * min((maxTexCoord.x - minTexCoord.x) * atlasSize.x, (maxTexCoord.y - minTexCoord.y) * atlasSize.y)))) - 2;
         vec4 col = vec4(getLightCol(localMat), 1);
         int lightLevel = 0;
         if (emissive) {
@@ -312,6 +312,11 @@ void main() {
             }
         #endif
         vec4 textureCol = textureLod(tex, 0.5 * (minTexCoord + maxTexCoord), lodLevel);
+        for (int k = 0; k < 9; k++) {
+            vec2 offset = (vec2(k%3, k/3) + 0.5)/3.0;
+            vec4 textureCol2 = textureLod(tex, mix(minTexCoord, maxTexCoord, offset), max(0, lodLevel - 2));
+            if (textureCol2.a > textureCol.a + 0.01) textureCol = textureCol2;
+        }
         col.a = textureCol.a;
         if (col.rgb == vec3(0)) col = textureCol;
         col.rgb *= glColorV[0].rgb;
