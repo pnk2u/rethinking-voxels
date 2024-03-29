@@ -317,7 +317,8 @@ void main() {
             if (textureCol2.a > textureCol.a + 0.01) textureCol = textureCol2;
         }
         col.a = textureCol.a;
-        if (col.rgb == vec3(0)) col = textureCol;
+        bool detectCol = (col.rgb == vec3(0));
+        if (detectCol) col = textureCol;
         if (localMat != 10996) col.rgb *= glColorV[0].rgb;
         col.rgb = mix(col.rgb, entityColor.rgb, entityColor.a);
         ivec3 coords = ivec3(center - 0.1 * cnormal + 0.5 * voxelVolumeSize);
@@ -369,11 +370,13 @@ void main() {
         }
 
         if (emissive) {
-            float brightness = infnorm(col.xyz);
-            col.xyz -= brightness;
-            float minVal = max(0.0001, infnorm(col.xyz));
-            col.xyz *= mix(1.0, min(1.0 + 4 * LIGHT_COLOR_SATURATION, brightness/minVal), LIGHT_COLOR_SATURATION);
-            col.xyz += brightness;
+            if (detectCol) {
+                float brightness = infnorm(col.xyz);
+                col.xyz -= brightness;
+                float minVal = max(0.0001, infnorm(col.xyz));
+                col.xyz *= mix(1.0, min(1.0 + 4 * LIGHT_COLOR_SATURATION, brightness/minVal), LIGHT_COLOR_SATURATION);
+                col.xyz += brightness;
+            }
             if (localMat == 10368) { // nether quartz ore colour doesn't work for some reason
                 col = vec4(1);
             }

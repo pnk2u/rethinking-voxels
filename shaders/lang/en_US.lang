@@ -1074,6 +1074,7 @@ option.MAX_TRACE_COUNT=Max. Light Sample Count
 option.MAX_TRACE_COUNT.comment=This setting controls the maximum amount of nearby light sources that can cast light on an object.
 
 option.LIGHT_COLOR_SATURATION=Light Color Saturation
+option.LIGHT_COLOR_SATURATION.comment=This setting adjusts how much the saturation of light colours is boosted relative to their texture colors. Only applies when the light source colour is not being overridden in the light colour settings.
 
 option.LIGHTSOURCE_SIZE_MULT=Light Source Size
 option.LIGHTSOURCE_SIZE_MULT.comment=Lower values increase sharpness of shadows cast by light sources by treating them as smaller than they actually are. §c[-]§rMay cause some light sources to cast weird shadows or stop working altogether at low values.
