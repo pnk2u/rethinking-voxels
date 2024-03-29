@@ -277,9 +277,13 @@ void main() {
         max(max(vxPos[0], vxPos[1]), vxPos[2])
     );
     bool isHeldLight = false;
-    if (entityId == 50016 && emissive && currentRenderedItemId > 0 && length(center) < 8) { // handheld item
+    if (entityId == 50016 && emissive && length(center) < 8) { // handheld item
         isHeldLight = true;
-        vec3 offset = 0.5 * normalize((center - 0.025 * cnormal + (floor(cameraPosition) - eyePosition)) * vec3(1, 0, 1));
+        vec3 floorCamPosRelEyePos = (cameraPositionInt - eyePosition);
+        if (cameraPositionInt == ivec3(-1679125, -93126, 691246)) {
+            floorCamPosRelEyePos = (floor(cameraPosition) - eyePosition);
+        }
+        vec3 offset = 0.5 * normalize((center - 0.025 * cnormal + floorCamPosRelEyePos) * vec3(1, 0, 1));
         center += offset;
         for (int i = 0; i < 3; i++) {
             vxPos[i] += offset;
@@ -351,18 +355,26 @@ void main() {
         int writeSkyLight = (1<<skyLight/2) | (1<<(skyLight-1)/2);
         imageAtomicOr(occupancyVolume, coords, writeSkyLight << 28);
         bool shouldVoxelize = true;
-        if (entityId == 50016) {
+        if (
             #ifndef PLAYER_VOXELIZATION
-                shouldVoxelize = false;
+                entityId == 50016 ||
             #endif
-        } else if (renderStage == MC_RENDER_STAGE_ENTITIES) {
             #ifndef ENTITY_VOXELIZATION
-                shouldVoxelize = false;
+                (entityId != 50016 && renderStage == MC_RENDER_STAGE_ENTITIES) ||
             #endif
-        } else if (length(abs(cnormal.xz) - vec2(sqrt(0.5))) < 0.01 || localMat == 10004 || localMat == 10012 || localMat == 10488) {
             #ifndef FOLIAGE_VOXELIZATION
-                shouldVoxelize = false;
+                length(abs(cnormal.xz) - vec2(sqrt(0.5))) < 0.01 ||
+                localMat == 10000 || // dripleaves
+                localMat == 10004 || // general foliage
+                localMat == 10012 || // vines
+                localMat == 10016 || // various "more special" foliage
+                localMat == 10348 || // azalea
+                localMat == 10488 || // lily pad
+                localMat == 10988 || // smallest cocoa stage
+                localMat == 10992 || // nether wart
             #endif
+            false) {
+                shouldVoxelize = false;
         }
 
         // campfires
