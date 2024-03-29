@@ -229,6 +229,11 @@ uniform int entityId;
 uniform int currentRenderedItemId;
 
 uniform vec3 cameraPosition;
+
+// default value as feature check
+uniform ivec3 cameraPositionInt = ivec3(-1679125, -93126, 691246);
+uniform vec3 cameraPositionFract;
+
 uniform vec3 eyePosition;
 uniform sampler2D tex;
 uniform sampler2D specular;
@@ -245,6 +250,10 @@ layout(r32i) restrict uniform iimage3D occupancyVolume;
 #include "/lib/vx/positionHashing.glsl"
 
 void main() {
+    vec3 fractCamPos = cameraPositionFract;
+    if (cameraPositionInt == ivec3(-1679125, -93126, 691246)) {
+        fractCamPos = fract(cameraPosition);
+    }
     int localMat = matV[0];
     if (entityId > 0) localMat = entityId;
     if (currentRenderedItemId > 0) localMat = currentRenderedItemId;
@@ -259,7 +268,7 @@ void main() {
 
     vec3[3] vxPos;
 
-    for (int i = 0; i < 3; i++) vxPos[i] = positionV[i].xyz + fract(cameraPosition);
+    for (int i = 0; i < 3; i++) vxPos[i] = positionV[i].xyz + fractCamPos;
     if (localMat == 50088) { // entity flame needs to be moved outside of entity it belongs to or it will glitch out
         for (int i = 0; i < 3; i++) vxPos[i].y += 0.5 * sqrt(area);
     }
@@ -484,6 +493,10 @@ uniform int renderStage;
 uniform int blockEntityId;
 uniform vec3 cameraPosition;
 
+// default value as feature check
+uniform ivec3 cameraPositionInt = ivec3(-1679125, -93126, 691246);
+uniform vec3 cameraPositionFract;
+
 uniform mat4 shadowProjection, shadowProjectionInverse;
 uniform mat4 shadowModelView, shadowModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
@@ -517,6 +530,11 @@ in vec3 at_midBlock;
 
 //Program//
 void main() {
+    vec3 fractCamPos = cameraPositionFract;
+    if (cameraPositionInt == ivec3(-1679125, -93126, 691246)) {
+        fractCamPos = fract(cameraPosition);
+    }
+
     texCoordV = gl_MultiTexCoord0.xy;
     lmCoordV = clamp(((gl_TextureMatrix[1] * gl_MultiTexCoord1).xy - 0.03125) * 1.06667, 0.0, 1.0);
     glColorV = gl_Color;
@@ -532,7 +550,7 @@ void main() {
         renderStage == MC_RENDER_STAGE_TERRAIN_CUTOUT ||
         renderStage == MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
     ) {
-        correspondingBlockV = ivec3(floor(positionV.xyz + fract(cameraPosition) + at_midBlock/64) + 1000.5) - 1000 + voxelVolumeSize/2;
+        correspondingBlockV = ivec3(floor(positionV.xyz + fractCamPos + at_midBlock/64) + 1000.5) - 1000 + voxelVolumeSize/2;
         matV = int(mc_Entity.x + 0.5);
     }
     vec4 position = positionV;
