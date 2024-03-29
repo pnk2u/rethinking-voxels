@@ -177,6 +177,8 @@ screen.VX_SETTINGS.comment=Settings that are introduced by Rethinking Voxels
 screen.VX_VOL_SETTINGS=Voxelization Settings
 screen.VX_VOL_SETTINGS.comment=Settings that change which parts of the world are used for advanced light calculations.
 
+screen.RT_SETTINGS=Raytracing settings
+
 screen.VBL_SETTINGS=Vol. Blocklight Settings
 screen.VBL_SETTINGS.comment=Settings related to volumetric blocklight. This is the effect that makes fog light up around block light sources.
 
@@ -1106,6 +1108,12 @@ value.GI_SAMPLE_COUNT.3=Medium
 value.GI_SAMPLE_COUNT.7=High
 value.GI_SAMPLE_COUNT.13=Ultra
 option.GI_SAMPLE_COUNT.comment=Adjusts the amount of GI samples per voxel and frame. Low: 1 sample. Medium: 3 samples. High: 7 samples. Ultra: 13 samples.
+
+option.RT_STEPS=Raytracing Step Count
+option.RT_STEPS.comment=Adjusts the maximum amount of steps the raytracing algorithm will do before giving up. Low values can cause raytracing operations to incorrectly return occlusion if large portions of the ray are close to objects.
+
+option.TRANSLUCENT_LIGHT_TINT=Translucent Blocklight Tint
+option.TRANSLUCENT_LIGHT_TINT.comment=When enabled, translucents such as stained glass and water can tint block lighting that passes through them. §c[-]§r High performance impact.
 
 option.CAULDRON_BRIGHTNESS_LAVA=Lava Cauldron Brightness
 option.BRIGHTNESS_LAVA=Lava Brightness

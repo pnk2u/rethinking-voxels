@@ -46,7 +46,7 @@ vec3 rayTrace(vec3 start, vec3 dir, float dither) {
     float dirLen = infnorm(dir);
     dir /= dirLen;
     float w = 0.001 + dither * getDistanceField(start + 0.001 * dir);
-    for (int k = 0; k < 50; k++) {
+    for (int k = 0; k < RT_STEPS; k++) {
         float thisdist = getDistanceField(start + w * dir);
         if (abs(thisdist) < 0.0001) {
             break;
@@ -64,9 +64,10 @@ vec4 coneTrace(vec3 start, vec3 dir, float angle, float dither) {
     float w = 0.001 + dither * getDistanceField(start + 0.001 * dir);
     vec4 color = vec4(0.0);
     int k;
-    for (k = 0; k < 50; k++) {
+    for (k = 0; k < RT_STEPS; k++) {
         vec3 thisPos = start + w * dir;
         float thisdist = getDistanceField(thisPos);
+        #ifdef TRANSLUCENT_LIGHT_TINT
         if (thisdist < 0.75) {
             ivec3 coords = ivec3(thisPos + 1000) - 1000 + voxelVolumeSize/2;
             if ((imageLoad(occupancyVolume, coords).r >> 8 & 1) == 1) {
@@ -74,6 +75,7 @@ vec4 coneTrace(vec3 start, vec3 dir, float angle, float dither) {
                 color += vec4(localCol.rgb, 1.0) * max(0.0, 1.2 * min(2 * localCol.a, 2 - 2 * localCol.a) - 0.2);
             }
         }
+        #endif
         angle = min(angle, thisdist / w);
         w += thisdist;
         if (angle < 0.01 * angle0 || w > dirLen) break;
