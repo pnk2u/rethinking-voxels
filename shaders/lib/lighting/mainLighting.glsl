@@ -39,6 +39,9 @@ uniform float darknessLightFactor;
 #if !defined PER_PIXEL_LIGHT || defined GBUFFERS_WATER || defined GI
     #include "/lib/vx/irradianceCache.glsl"
 #endif
+
+#include "/lib/materials/shadowChecks.glsl"
+
 //
 vec3 highlightColor = normalize(pow(lightColor, vec3(0.37))) * (0.3 + 1.5 * sunVisibility2) * (1.0 - 0.85 * rainFactor);
 
@@ -461,6 +464,21 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #else
         const float giLighting = 0.0;
     #endif
+
+    int localMat = 
+    #if defined GBUFFERS_TERRAIN || defined GBUFFERS_WATER
+        mat;
+    #elif defined GBUFFERS_BLOCK
+        blockEntityId;
+    #elif defined GBUFFERS_ENTITIES
+        entityId;
+    #else
+        0;
+    #endif
+
+    if (isEmissive(localMat)) {
+        voxelBlockLighting = max(lightmapXM * blocklightCol, voxelBlockLighting * max(0.0, 1.0 - voxelFactor));
+    }
 
     // Combine Lighting
     vec3 blockLighting = mix(voxelBlockLighting, lightmapXM * blocklightCol, voxelFactor);
