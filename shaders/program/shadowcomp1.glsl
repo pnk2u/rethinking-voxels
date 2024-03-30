@@ -417,7 +417,8 @@ void main() {
                     float weight = 1.0;
                     for (int k = 0; k < 6; k++) {
                         ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
-                        float otherWeight = 0.01 * (1 - (imageLoad(occupancyVolume, coords + offset).r & 1));
+                        if ((imageLoad(occupancyVolume, coords + offset).r & 1) != 0 || getDistanceField(vxPos + 0.5 * offset) < 0.2) continue;
+                        float otherWeight = 0.01;
                         GILight += otherWeight * imageLoad(irradianceCacheI, coords + offset);
                         weight += otherWeight;
                     }
@@ -426,7 +427,7 @@ void main() {
                         normal[k] = getDistanceField(vxPos + mat3(0.5)[k]) - getDistanceField(vxPos - mat3(0.5)[k]);
                     }
                     normal = normalize(normal);
-                    vxPos -= 0.3 * normal;
+                    vxPos -= min(0.3, thisDFval - 0.1) * normal;
                     for (int sampleNum = 0; sampleNum < GI_SAMPLE_COUNT; sampleNum++) {
                         vec3 dir = randomSphereSample();
                         if (dot(dir, normal) < 0.0) dir = -dir;
