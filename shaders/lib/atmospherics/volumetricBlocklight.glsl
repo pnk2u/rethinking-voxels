@@ -13,7 +13,7 @@ vec4 GetVolumetricBlocklight(vec3 translucentMult, float lViewPos, vec3 nViewPos
     if (max(blindness, darknessFactor) > 0.1) return vec4(0.0);
     vec4 volumetricLight = vec4(0.0);
 
-    float vlMult = VBL_STRENGTH;
+    vec3 vlMult = vec3(VBL_STRENGTH);
     #ifdef OVERWORLD
         float vlSceneIntensity = 0.3 + 0.6 * rainFactor;
     #elif defined NETHER
