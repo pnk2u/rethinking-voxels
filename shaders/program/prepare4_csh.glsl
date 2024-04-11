@@ -132,7 +132,7 @@ void main() {
         #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
             vxPos = floor(vxPos * PIXEL_SHADOW + 0.5 * normalDepthData.xyz) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
         #endif
-        biasedVxPos = vxPos + max(0.03, 1.2 * infnorm(vxPos/voxelVolumeSize)) * normalDepthData.xyz;
+        biasedVxPos = vxPos + max(0.6/(1<<VOXEL_DETAIL_AMOUNT), 1.2 * infnorm(vxPos/voxelVolumeSize)) * normalDepthData.xyz;
         for (int k = 0; k < 4; k++) {
             float dfVal = getDistanceField(biasedVxPos);
             if (dfVal > 0.01) break;

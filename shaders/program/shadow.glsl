@@ -184,7 +184,10 @@ void main() {
         col.rgb *= glColor.rgb;
         if (col.a > 0.1) {
             for (int k = 0; k < passType >> 1; k++) {
-                vec3 position2 = vxPosF * (1<<k) - 0.1561271 * upVec + voxelVolumeSize * 0.5;
+                vec3 position2 = vxPosF * (1<<k) + voxelVolumeSize * 0.5;
+                if (floor((position2 - 0.003 * upVec) / (1<<k)) == floor((position2 - 0.1561271 * upVec) / (1<<k))) {
+                    position2 -= 0.1561271 * upVec;
+                }
                 if (any(lessThan(position2, vec3(0))) || any(greaterThanEqual(position2, voxelVolumeSize - 0.01))) {
                     break;
                 }
@@ -269,31 +272,31 @@ void main() {
     vec3[3] vxPos;
 
     for (int i = 0; i < 3; i++) vxPos[i] = positionV[i].xyz + fractCamPos;
-    if (localMat == 50088) { // entity flame needs to be moved outside of entity it belongs to or it will glitch out
-        for (int i = 0; i < 3; i++) vxPos[i].y += 0.5 * sqrt(area);
-    }
-    vec3 center = 0.5 * (
-        min(min(vxPos[0], vxPos[1]), vxPos[2]) +
-        max(max(vxPos[0], vxPos[1]), vxPos[2])
-    );
-    bool isHeldLight = false;
-    if (entityId == 50016 && emissive && length(center) < 8) { // handheld item
-        isHeldLight = true;
-        vec3 floorCamPosRelEyePos = (cameraPositionInt - eyePosition);
-        if (cameraPositionInt == ivec3(-1679125, -93126, 691246)) {
-            floorCamPosRelEyePos = (floor(cameraPosition) - eyePosition);
-        }
-        vec3 offset = 0.5 * normalize((center - 0.025 * cnormal + floorCamPosRelEyePos) * vec3(1, 0, 1));
-        center += offset;
-        for (int i = 0; i < 3; i++) {
-            vxPos[i] += offset;
-        }
-    }
-    vec3 lowerBound = floor(min(min(vxPos[0], vxPos[1]), vxPos[2]));
     vec3 minAbsPos = min(min(abs(vxPos[0]), abs(vxPos[1])), abs(vxPos[2]));
-    int bestNormalAxis = int(dot(vec3(greaterThanEqual(abs(cnormal), max(abs(cnormal).yzx, abs(cnormal.zxy)))), vec3(0.5, 1.5, 2.5)));
     int localResolution = min(VOXEL_DETAIL_AMOUNT, int(-log2(infnorm(minAbsPos / voxelVolumeSize))));
     if (localResolution > 0) {
+        if (localMat == 50088) { // entity flame needs to be moved outside of entity it belongs to or it will glitch out
+            for (int i = 0; i < 3; i++) vxPos[i].y += 0.5 * sqrt(area);
+        }
+        vec3 center = 0.5 * (
+            min(min(vxPos[0], vxPos[1]), vxPos[2]) +
+            max(max(vxPos[0], vxPos[1]), vxPos[2])
+        );
+        bool isHeldLight = false;
+        if (entityId == 50016 && emissive && length(center) < 8) { // handheld item
+            isHeldLight = true;
+            vec3 floorCamPosRelEyePos = (cameraPositionInt - eyePosition);
+            if (cameraPositionInt == ivec3(-1679125, -93126, 691246)) {
+                floorCamPosRelEyePos = (floor(cameraPosition) - eyePosition);
+            }
+            vec3 offset = 0.5 * normalize((center - 0.025 * cnormal + floorCamPosRelEyePos) * vec3(1, 0, 1));
+            center += offset;
+            for (int i = 0; i < 3; i++) {
+                vxPos[i] += offset;
+            }
+        }
+        vec3 lowerBound = floor(min(min(vxPos[0], vxPos[1]), vxPos[2]));
+        int bestNormalAxis = int(dot(vec3(greaterThanEqual(abs(cnormal), max(abs(cnormal).yzx, abs(cnormal.zxy)))), vec3(0.5, 1.5, 2.5)));
         vec2 minTexCoord = min(min(texCoordV[0], texCoordV[1]), texCoordV[2]);
         vec2 maxTexCoord = max(max(texCoordV[0], texCoordV[1]), texCoordV[2]);
         int lodLevel = int(log2(max(4.1, 1.01 * min((maxTexCoord.x - minTexCoord.x) * atlasSize.x, (maxTexCoord.y - minTexCoord.y) * atlasSize.y)))) - 2;
@@ -453,7 +456,7 @@ void main() {
                 vec2 relProjectedPos
                     = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])
                     - vec2(lowerBound[(bestNormalAxis+1)%3], lowerBound[(bestNormalAxis+2)%3]);
-                gl_Position = vec4((relProjectedPos * (1<<localResolution) + 0.09) / shadowMapResolution - 0.9, 0.5, 1.0);
+                gl_Position = vec4((relProjectedPos * (1<<localResolution) + 0.09) / shadowMapResolution - 0.9, 0.999999, 1.0);
                 mat = matV[i];
                 texCoord = texCoordV[i];
                 sunVec = sunVecV[i];
@@ -564,6 +567,7 @@ void main() {
     ) {
         correspondingBlockV = ivec3(floor(positionV.xyz + fractCamPos + at_midBlock/64) + 1000.5) - 1000 + voxelVolumeSize/2;
         matV = int(mc_Entity.x + 0.5);
+        positionV = vec4(correspondingBlockV - voxelVolumeSize/2 - fractCamPos + 0.5 - at_midBlock/64, 1.0);
     }
     vec4 position = positionV;
     #if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
