@@ -139,14 +139,15 @@ void main() {
             if (dfGrad != vec3(0)) dfGrad = normalize(dfGrad);
             vec3 dfGradPerp = dfGrad - dot(normalDepthData.xyz, dfGrad) * normalDepthData.xyz;
             float dfVal = getDistanceField(biasedVxPos);
-            if (length(dfGradPerp) > 0.1) {
+            float dfGradPerpLength = length(dfGradPerp);
+            if (dfGradPerpLength > 0.1) {
                 float resolution = min(VOXEL_DETAIL_AMOUNT, -log2(infnorm(abs(vxPos) / voxelVolumeSize) - 0.5));
-                dfVal = min(dfVal, getDistanceField(biasedVxPos - 0.5 * normalize(dfGradPerp)/pow(2, resolution)));
+                dfVal = min(dfVal, getDistanceField(biasedVxPos - dfGradPerp / (pow(2, resolution + 1) * dfGradPerpLength)));
             }
             if (dfVal > 0.01) break;
             bias += max(0.01, -dfVal);
         }
-        biasedVxPos = vxPos + min(1.2, bias) * normalDepthData.xyz;
+        biasedVxPos = vxPos + min(1.1, bias) * normalDepthData.xyz;
         lightStorageCoords = ivec3(biasedVxPos + voxelVolumeSize/2)/8*8;
         ivec4 discretizedVxPos = ivec4(100 * vxPos, 100);
         ivec4 discretizedNormal = ivec4(10 * normalDepthData.xyz, 10);
