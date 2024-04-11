@@ -132,12 +132,21 @@ void main() {
         #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
             vxPos = floor(vxPos * PIXEL_SHADOW + 0.5 * normalDepthData.xyz) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
         #endif
-        biasedVxPos = vxPos + max(0.6/(1<<VOXEL_DETAIL_AMOUNT), 1.2 * infnorm(vxPos/voxelVolumeSize)) * normalDepthData.xyz;
+        float bias = max(0.6/(1<<VOXEL_DETAIL_AMOUNT), 1.2 * infnorm(vxPos/voxelVolumeSize));
         for (int k = 0; k < 4; k++) {
+            biasedVxPos = vxPos + bias * normalDepthData.xyz;
+            vec3 dfGrad = distanceFieldGradient(biasedVxPos);
+            if (dfGrad != vec3(0)) dfGrad = normalize(dfGrad);
+            vec3 dfGradPerp = dfGrad - dot(normalDepthData.xyz, dfGrad) * normalDepthData.xyz;
             float dfVal = getDistanceField(biasedVxPos);
+            if (length(dfGradPerp) > 0.1) {
+                float resolution = min(VOXEL_DETAIL_AMOUNT, -log2(infnorm(abs(vxPos) / voxelVolumeSize) - 0.5));
+                dfVal = min(dfVal, getDistanceField(biasedVxPos - 0.5 * normalize(dfGradPerp)/pow(2, resolution)));
+            }
             if (dfVal > 0.01) break;
-            biasedVxPos += max(0.01, -dfVal) * normalDepthData.xyz;
+            bias += max(0.01, -dfVal);
         }
+        biasedVxPos = vxPos + min(1.2, bias) * normalDepthData.xyz;
         lightStorageCoords = ivec3(biasedVxPos + voxelVolumeSize/2)/8*8;
         ivec4 discretizedVxPos = ivec4(100 * vxPos, 100);
         ivec4 discretizedNormal = ivec4(10 * normalDepthData.xyz, 10);
