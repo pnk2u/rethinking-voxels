@@ -6,7 +6,7 @@ layout(local_size_x = 10, local_size_y = 10, local_size_z = 1) in;
 
 uniform sampler2D colortex8;
 uniform sampler2D colortex10;
-layout(rgba16f) uniform image2D colorimg12;
+layout(rgba16f) uniform writeonly image2D colorimg12;
 
 shared vec3[20][20] readColors;
 

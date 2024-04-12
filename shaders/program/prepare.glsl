@@ -1,8 +1,7 @@
 //////Fragment Shader//////Fragment Shader//////
 #ifdef FSH
 
-uniform sampler2D shadowcolor0;
-layout(r32ui) uniform uimage2D colorimg9;
+layout(r32ui) uniform writeonly uimage2D colorimg9;
 
 void main() {
     imageStore(colorimg9, ivec2(gl_FragCoord.xy), uvec4(1<<31));

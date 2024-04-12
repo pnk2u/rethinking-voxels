@@ -74,7 +74,7 @@ uniform sampler2D colortex5;
     uniform mat4 gbufferPreviousProjection;
     uniform mat4 gbufferPreviousModelView;
 
-    uniform sampler2D colortex1;
+    uniform sampler2D colortex2;
     uniform sampler2D colortex7;
 #endif
 
@@ -400,8 +400,8 @@ void main() {
                     blendFactor *= 0.7 + 0.3 * exp(-velocity);
 
                     // Reduce blending if depth changed
-                    float linearZP = GetLinearDepth(texelFetch(colortex1, texelOppositePreCoord, 0).r);
-                    float linearZP2 = GetLinearDepth(texture2D(colortex1, texCoord + 1.5 * (prvCoord - texCoord)).r);
+                    float linearZP = GetLinearDepth(1.0 - texelFetch(colortex2, texelOppositePreCoord, 0).a);
+                    float linearZP2 = GetLinearDepth(1.0 - texture2D(colortex2, texCoord + 1.5 * (prvCoord - texCoord)).a);
                     float linearZDif = max(abs(linearZP - linearZ0), abs(linearZP2 - linearZ0)) * far;
                     blendFactor *= max0(2.0 - linearZDif) * 0.5;
                     //color = mix(vec3(1,1,0), color, max0(2.0 - max0(linearZDif - 1.0)) * 0.5);

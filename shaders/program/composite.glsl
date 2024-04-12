@@ -261,8 +261,8 @@ void main() {
     /* DRAWBUFFERS:0 */
     gl_FragData[0] = vec4(color, 1.0);
 
-    // a.k.a #if defined LIGHTSHAFTS_ACTIVE && (LIGHTSHAFT_BEHAVIOUR == 1 && SHADOW_QUALITY >= 1 || defined END)
     vec4 tex4Data = texelFetch(colortex4, texelCoord, 0);
+    // a.k.a #if defined LIGHTSHAFTS_ACTIVE && (LIGHTSHAFT_BEHAVIOUR == 1 && SHADOW_QUALITY >= 1 || defined END)
     #if LIGHTSHAFT_QUALI_DEFINE > 0 && LIGHTSHAFT_BEHAVIOUR == 1 && SHADOW_QUALITY >= 1 && defined OVERWORLD && defined REALTIME_SHADOWS || defined END
         #ifdef LENSFLARE
             if (viewWidth + viewHeight - gl_FragCoord.x - gl_FragCoord.y > 1.5)

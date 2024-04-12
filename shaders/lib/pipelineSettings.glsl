@@ -7,7 +7,6 @@ const int colortex4Format = RGBA8;          //volumetric cloud linear depth & vo
 const int colortex5Format = RGBA8_SNORM;    //normalM & scene image for water reflections
 const int colortex6Format = RGBA8;          //smoothnessD & materialMask & skyLightFactor
 const int colortex7Format = RGBA16F;        //(cloud/water map on gbuffers) | temporal filter
-const int colortex8Format = RGBA8;          //light source info but replaces colortex3 to work as colorimg3
 const int colortex8Format = RGBA16F;        //reprojected normal and depth data in prepare
 const int colortex9Format = R32UI;          //scaled depth for atomics in reprojection validation
 const int colortex10Format= RGBA16F;        //raw block lighting in bottom left quarter
