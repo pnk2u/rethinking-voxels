@@ -36,6 +36,7 @@ shared ivec4[MAX_LIGHT_COUNT] positions;
 shared int[MAX_LIGHT_COUNT] extraData;
 shared float[MAX_LIGHT_COUNT] weights;
 shared uint[128] lightHashMap;
+shared uvec3 probeLightCols[5];
 
 ivec2 getFlipPair(int index, int stage) {
     int groupSize = 1<<stage;
@@ -88,6 +89,9 @@ void main() {
     }
     if (index < 128) {
         lightHashMap[index] = 0;
+    }
+    if (index < 5) {
+        probeLightCols[index] = uvec3(0);
     }
     barrier();
     memoryBarrierShared();
@@ -245,21 +249,6 @@ void main() {
     bool participateInSorting = index < MAX_LIGHT_COUNT/2;
     #include "/lib/misc/prepare4_BM_sort.glsl"
 
-    if (index >= MAX_TRACE_COUNT) {
-        if (index < (lightCount + 2 * MAX_TRACE_COUNT)/3) {
-            vec3 lightPos = positions[index].xyz + 0.5;
-            vec3 dir = lightPos - meanPos;
-            float dirLen = length(dir);
-            float ndotl = infnorm(lightPos - meanPos + 0.5 * meanNormal) < 0.5 ? 1.0 :
-                mix(dot(normalize(lightPos - meanPos), meanNormal), 0.7, length(meanNormal));
-            float totalBrightness = ndotl * (sqrt(1 - min(1.0, dirLen / LIGHT_TRACE_LENGTH))) / (dirLen + 0.1);
-            int thisWeight = int(10000.5 * length(getColor(lightPos)) * totalBrightness);
-            vec4 rayHit1 = coneTrace(meanPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.3 / dirLen, dither);
-            if (rayHit1.w > 0.01) positions[index].w = thisWeight;
-        } else if (index < lightCount) {
-            positions[index].w = 0;
-        }
-    }
     if (index < lightCount) {
         extraData[index] = imageLoad(occupancyVolume, positions[index].xyz + voxelVolumeSize/2).r;
     }
@@ -267,47 +256,38 @@ void main() {
     memoryBarrierShared();
 
     vec3 writeColor = vec3(0);
-    uint thisLightIndex = MAX_LIGHT_COUNT * uint(!validData);
-    for (uint traceNum = 0; thisLightIndex < lightCount && traceNum < MAX_TRACE_COUNT; traceNum++) {
-        bool validTrace;
-        float lightSize;
-        vec3 lightPos;
-        float dirLen;
-        float thisTraceLen;
-        vec3 dir;
-        float ndotl0;
-        uvec2 packedLightCol;
-        uvec2 packedLightSubPos;
-        while (thisLightIndex < lightCount) {
+    uint traceNum = 0;
+    if (validData) {
+        for (uint thisLightIndex = 0; thisLightIndex < MAX_LIGHT_COUNT; thisLightIndex++) {
+            if (thisLightIndex >= lightCount) break;
             uint hash = posToHash(positions[thisLightIndex].xyz) % uint(1<<18);
-            packedLightSubPos = uvec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
-            packedLightCol = uvec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
+            uvec2 packedLightSubPos = uvec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
+            uvec2 packedLightCol = uvec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
             vec3 subLightPos = 1.0/32.0 * vec3(packedLightSubPos.x & 0xffff, packedLightSubPos.x>>16, packedLightSubPos.y & 0xffff) / (packedLightSubPos.y >> 16) - 1;
-            lightSize = 0.5;
-            lightPos = positions[thisLightIndex].xyz + subLightPos;
+            float lightSize = 0.5;
+            vec3 lightPos = positions[thisLightIndex].xyz + subLightPos;
             lightSize = clamp(lightSize, 0.01, getDistanceField(lightPos));
-            ndotl0 = max(0.0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
-            dir = lightPos - biasedVxPos;
-            dirLen = length(dir);
-            thisTraceLen = (extraData[thisLightIndex]>>17 & 31)/32.0;
-            validTrace = dirLen < thisTraceLen * LIGHT_TRACE_LENGTH && ndotl0 > 0.001;
-            if (validTrace) break;
-            thisLightIndex++;
-        }
-        if (validTrace) {
-            float lightBrightness = 1.5 * thisTraceLen;
-            lightBrightness *= lightBrightness;
-            float ndotl = ndotl0 * lightBrightness;
-            vec4 rayHit1 = coneTrace(biasedVxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, lightSize * LIGHTSOURCE_SIZE_MULT / dirLen, dither);
-            if (rayHit1.w > 0.01) {
-                vec3 lightColor = 1.0/32.0 * vec3(packedLightCol.x & 0xffff, packedLightCol.x>>16, packedLightCol.y & 0xffff) / (packedLightSubPos.y >> 16);
-                float totalBrightness = ndotl * (sqrt(1 - dirLen / (LIGHT_TRACE_LENGTH * thisTraceLen))) / (dirLen + 0.1);
-                writeColor += lightColor * rayHit1.rgb * rayHit1.w * totalBrightness;
-                int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);
-                atomicMax(positions[thisLightIndex].w, thisWeight);
+            float ndotl0 = max(0.0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
+            vec3 dir = lightPos - biasedVxPos;
+            float dirLen = length(dir);
+            float thisTraceLen = (extraData[thisLightIndex]>>17 & 31)/32.0;
+
+            if (dirLen < thisTraceLen * LIGHT_TRACE_LENGTH && ndotl0 > 0.001) {
+                float lightBrightness = 1.5 * thisTraceLen;
+                lightBrightness *= lightBrightness;
+                float ndotl = ndotl0 * lightBrightness;
+                vec4 rayHit1 = coneTrace(biasedVxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, lightSize * LIGHTSOURCE_SIZE_MULT / dirLen, dither);
+                if (rayHit1.w > 0.01) {
+                    vec3 lightColor = 1.0/32.0 * vec3(packedLightCol.x & 0xffff, packedLightCol.x>>16, packedLightCol.y & 0xffff) / (packedLightSubPos.y >> 16);
+                    float totalBrightness = ndotl * (sqrt(1 - dirLen / (LIGHT_TRACE_LENGTH * thisTraceLen))) / (dirLen + 0.1);
+                    writeColor += lightColor * rayHit1.rgb * rayHit1.w * totalBrightness;
+                    int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);
+                    atomicMax(positions[thisLightIndex].w, thisWeight);
+                }
+                traceNum++;
+                if (traceNum > MAX_TRACE_COUNT) break;
             }
         }
-        thisLightIndex++;
     }
     barrier();
     memoryBarrierShared();

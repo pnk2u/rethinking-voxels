@@ -43,7 +43,7 @@
     #define LIGHT_TRACE_LENGTH 30.0 //[10.0 12.0 15.0 18.0 22.0 26.0 30.0 35.0 40.0 47.0 55.0 65.0 76.0 88.0 100.0]
     #define LIGHT_COLOR_SATURATION 0.5 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
     #define LIGHTSOURCE_SIZE_MULT 0.6 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define MAX_TRACE_COUNT 48 //[1 2 4 8 16 32 48 64 96 128 192 256]
+    #define MAX_TRACE_COUNT 32 //[1 2 4 8 16 32 48 64 96 128 192 256]
     #define RT_STEPS 70 //[30 50 70 100]
     #define TRANSLUCENT_LIGHT_TINT
     //#define LIGHT_CLUMPING
@@ -69,7 +69,6 @@
     #define ENTITY_SHADOWS
     #ifdef ENTITY_SHADOWS
         #define ENTITY_VOXELIZATION
-        #define RT_ENTITIES
     #endif
     #define SSAO_QUALI_DEFINE 2 //[0 2 3]
     #define FXAA
