@@ -272,28 +272,31 @@ void main() {
     barrier();
 
     vec3 writeColor = vec3(0);
-    for (uint thisLightIndex = MAX_LIGHT_COUNT * uint(!insideFrustrum || !activeFrame); thisLightIndex < min(lightCount, MAX_LIGHT_COUNT); thisLightIndex++) {
-        uint hash = posToHash(positions[thisLightIndex].xyz) % uint(1<<18);
-        uvec2 packedLightSubPos = uvec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
-        uvec2 packedLightCol = uvec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
+    if (insideFrustrum && activeFrame) {
+        for (uint thisLightIndex = 0; thisLightIndex < MAX_LIGHT_COUNT; thisLightIndex++) {
+            if (thisLightIndex >= lightCount) break;
+            uint hash = posToHash(positions[thisLightIndex].xyz) % uint(1<<18);
+            uvec2 packedLightSubPos = uvec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
+            uvec2 packedLightCol = uvec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
 
-        vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
-        float ndotl0 = infnorm(vxPos - 0.5 * normal - lightPos) < 0.5 || !hasNeighbor ? 1.0 :
-            max(0, (dot(normalize(lightPos - vxPos + 0.5 * normal), normal)));
-        ivec3 lightCoords = positions[thisLightIndex].xyz + voxelVolumeSize / 2;
-        vec3 dir = lightPos - vxPos;
-        float dirLen = length(dir);
-        if (dirLen < LIGHT_TRACE_LENGTH && ndotl0 > 0.001) {
-            float lightBrightness = 1;//getLightLevel(ivec3(lightPos + 1000) - 1000 + voxelVolumeSize/2) * 0.04;
-            lightBrightness *= lightBrightness;
-            float ndotl = ndotl0 * lightBrightness;
-            vec4 rayHit1 = coneTrace(vxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.4 / dirLen, dither);
-            if (rayHit1.w > 0.01) {
-                vec3 lightColor = 1.0/32.0 * vec3(packedLightCol.x & 0xffff, packedLightCol.x>>16, packedLightCol.y & 0xffff) / (packedLightSubPos.y >> 16);
-                float totalBrightness = ndotl * (sqrt(1 - dirLen / LIGHT_TRACE_LENGTH)) / (dirLen + 0.1);
-                writeColor += lightColor * rayHit1.rgb * rayHit1.w * totalBrightness;
-                int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);
-                atomicMax(positions[thisLightIndex].w, thisWeight);
+            vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
+            float ndotl0 = infnorm(vxPos - 0.5 * normal - lightPos) < 0.5 || !hasNeighbor ? 1.0 :
+                max(0, (dot(normalize(lightPos - vxPos + 0.5 * normal), normal)));
+            ivec3 lightCoords = positions[thisLightIndex].xyz + voxelVolumeSize / 2;
+            vec3 dir = lightPos - vxPos;
+            float dirLen = length(dir);
+            if (dirLen < LIGHT_TRACE_LENGTH && ndotl0 > 0.001) {
+                float lightBrightness = 1;
+                lightBrightness *= lightBrightness;
+                float ndotl = ndotl0 * lightBrightness;
+                vec4 rayHit1 = coneTrace(vxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.4 / dirLen, dither);
+                if (rayHit1.w > 0.01) {
+                    vec3 lightColor = 1.0/32.0 * vec3(packedLightCol.x & 0xffff, packedLightCol.x>>16, packedLightCol.y & 0xffff) / (packedLightSubPos.y >> 16);
+                    float totalBrightness = ndotl * (sqrt(1 - dirLen / LIGHT_TRACE_LENGTH)) / (dirLen + 0.1);
+                    writeColor += lightColor * rayHit1.rgb * rayHit1.w * totalBrightness;
+                    int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);
+                    atomicMax(positions[thisLightIndex].w, thisWeight);
+                }
             }
         }
     }

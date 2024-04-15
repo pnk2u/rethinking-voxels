@@ -111,6 +111,18 @@ void main() {
     vec4 normalDepthData = texelFetch(colortex8, readTexelCoord, 0);
     ivec3 vxPosFrameOffset = ivec3((floor(previousCameraPosition) - floor(cameraPosition)) * 1.1);
     bool validData = (normalDepthData.a < 1.5 && length(normalDepthData.rgb) > 0.1 && all(lessThan(readTexelCoord, ivec2(view + 0.1))));
+    for (int k = 1; k < BLOCKLIGHT_RESOLUTION; k++) {
+        if (validData) break;
+        for (int i = 0; i < 2 * k - 1; i++) {
+            ivec2 offset = i < k ? ivec2(i, k) : ivec2(k, 2 * k - 2 - i);
+            ivec2 newReadTexelCoord = readTexelCoord + offset;
+            normalDepthData = texelFetch(colortex8, newReadTexelCoord, 0);
+            bool validData = (normalDepthData.a < 1.5 && length(normalDepthData.rgb) > 0.1 && all(lessThan(newReadTexelCoord, ivec2(view + 0.1))));
+            if (validData) {
+                readTexelCoord = newReadTexelCoord;
+            }
+        }
+    }
     vec3 vxPos = vec3(1000);
     vec3 biasedVxPos = vec3(1000);
     ivec3 lightStorageCoords = ivec3(-1);

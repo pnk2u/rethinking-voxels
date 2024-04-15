@@ -15,7 +15,7 @@
 
     #define RP_MODE 1 //[1 0 3 2]
 
-    #define VOXEL_DETAIL_AMOUNT 5 //[1 2 3 4 5 6 7 8]
+    #define VOXEL_DETAIL_AMOUNT 6 //[1 2 3 4 5 6 7 8]
     #define VX_VOL_SIZE 1 //[0 1 2 3]
     const float voxelDistance = 32;
     #if VX_VOL_SIZE == 0
@@ -40,11 +40,11 @@
     #endif
 
     #define BLOCKLIGHT_I 1.0 //[0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.5 10.0]
-    #define BLOCKLIGHT_RESOLUTION 2 //[8 6 4 3 2 1]
+    #define BLOCKLIGHT_RESOLUTION 3 //[8 6 4 3 2 1]
     #define LIGHT_TRACE_LENGTH 30.0 //[10.0 12.0 15.0 18.0 22.0 26.0 30.0 35.0 40.0 47.0 55.0 65.0 76.0 88.0 100.0]
     #define LIGHT_COLOR_SATURATION 0.5 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
     #define LIGHTSOURCE_SIZE_MULT 0.6 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define MAX_TRACE_COUNT 32 //[1 2 4 8 16 32 48 64 96 128 192 256]
+    #define MAX_TRACE_COUNT 32 //[1 2 4 8 16 24 32 48 64 96 128 192 256]
     #define RT_STEPS 70 //[30 50 70 100]
     #define TRANSLUCENT_LIGHT_TINT
     //#define LIGHT_CLUMPING

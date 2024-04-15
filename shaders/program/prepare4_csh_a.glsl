@@ -23,7 +23,7 @@ void main() {
     #else
         int index = int(gl_LocalInvocationID.x) + 16 * int(gl_LocalInvocationID.y);
         ivec2 lowerBound = ivec2(gl_WorkGroupID.xy) * 16 / BLOCKLIGHT_RESOLUTION;
-        ivec2 upperBound = ivec2(gl_WorkGroupID.xy + 1) * 16 / BLOCKLIGHT_RESOLUTION + 1;
+        ivec2 upperBound = ivec2(gl_WorkGroupID.xy + 1) * 16 / BLOCKLIGHT_RESOLUTION + 2;
         ivec2 readSize = upperBound - lowerBound;
         if (index < readSize.x * readSize.y) {
             ivec2 readCoords = ivec2(index % readSize.x, index / readSize.x);
