@@ -269,13 +269,13 @@ value.WATER_QUALITY.2=§aMedium
 value.WATER_QUALITY.3=§bHigh
 
 option.WATER_REFLECT_QUALITY=Water Reflection Quality
-option.WATER_REFLECT_QUALITY.comment=Adjusts the visual quality of reflections that appear on translucents. §aMedium§r: Screenspace ray-traced reflections on water and translucents. §4Potato§r: Replaces water and translucent reflections with a faster method, may look incorrect in some situations. §cOFF§r: No reflections.
+option.WATER_REFLECT_QUALITY.comment=Adjusts the visual quality of reflections that appear on translucents. §aMedium§r: Screenspace ray-traced reflections on water and translucents. §4Potato§r: Replaces water and translucent reflections with a faster method, may look incorrect in some situations. §cOFF§r: No reflections. World-Space Reflections can be toggled separately in the Rethinking Voxels Settings.
 value.WATER_REFLECT_QUALITY.0=§cOFF
 value.WATER_REFLECT_QUALITY.1=§4Potato
 value.WATER_REFLECT_QUALITY.2=§aMedium
 
 option.BLOCK_REFLECT_QUALITY=Block Reflection Quality §e[*]§r
-option.BLOCK_REFLECT_QUALITY.comment=Adjusts the visual quality of reflections that appear on solid materials. §bHigh§r: Sun/moon highlights + smoother specular reflections using a temporal filter. §aMedium§r: Sun/moon highlights + specular reflections. §eLow§r: Sun/moon highlights only. §e[*]§r RP Support option must be set to anything but Basic for any specular reflections to appear.
+option.BLOCK_REFLECT_QUALITY.comment=Adjusts the visual quality of reflections that appear on solid materials. §bHigh§r: Sun/moon highlights + smoother specular reflections using a temporal filter. §aMedium§r: Sun/moon highlights + specular reflections. §eLow§r: Sun/moon highlights only. §e[*]§r RP Support option must be set to anything but Basic for any specular reflections to appear. World-Space Reflections can be toggled separately in the Rethinking Voxels Settings.
 value.BLOCK_REFLECT_QUALITY.0=§cOFF
 value.BLOCK_REFLECT_QUALITY.1=§eLow
 value.BLOCK_REFLECT_QUALITY.2=§aMedium
@@ -1064,6 +1064,14 @@ option.ENTITY_VOXELIZATION=Entity Voxelization
 option.PLAYER_VOXELIZATION=Player Voxelization
 option.FOLIAGE_VOXELIZATION=Foliage Voxelization
 
+option.BLOCKLIGHT_RESOLUTION=Blocklight Resolution
+option.BLOCKLIGHT_RESOLUTION.comment=Changes the internal resolution at which block light is rendered. §e[*]§r Lower values are better for performance.
+value.BLOCKLIGHT_RESOLUTION.1=1
+value.BLOCKLIGHT_RESOLUTION.2=0.5
+value.BLOCKLIGHT_RESOLUTION.3=0.33
+value.BLOCKLIGHT_RESOLUTION.4=0.25
+value.BLOCKLIGHT_RESOLUTION.6=0.17
+value.BLOCKLIGHT_RESOLUTION.8=0.13
 option.VOXEL_RT_REFLECTIONS=World-Space Reflections
 option.VOXEL_RT_REFLECTIONS.comment=Allows things that aren't visible on the screen to be reflected by other things. §e[*]§r High performance impact.
 
