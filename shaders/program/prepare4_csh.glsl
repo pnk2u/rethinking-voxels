@@ -3,8 +3,19 @@
 #ifdef CSH
 #ifdef PER_PIXEL_LIGHT
 layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
-const vec2 workGroupsRender = vec2(0.5, 0.5);
-
+#if BLOCKLIGHT_RESOLUTION == 1
+    const vec2 workGroupsRender = vec2(1.0, 1.0);
+#elif BLOCKLIGHT_RESOLUTION == 2
+    const vec2 workGroupsRender = vec2(0.5, 0.5);
+#elif BLOCKLIGHT_RESOLUTION == 3
+    const vec2 workGroupsRender = vec2(0.3333333, 0.3333333);
+#elif BLOCKLIGHT_RESOLUTION == 4
+    const vec2 workGroupsRender = vec2(0.25, 0.25);
+#elif BLOCKLIGHT_RESOLUTION == 6
+    const vec2 workGroupsRender = vec2(0.1666667, 0.1666667);
+#elif BLOCKLIGHT_RESOLUTION == 8
+    const vec2 workGroupsRender = vec2(0.125, 0.125);
+#endif
 uniform int frameCounter;
 uniform float viewWidth;
 uniform float viewHeight;
@@ -95,7 +106,7 @@ void main() {
     }
     barrier();
     memoryBarrierShared();
-    ivec2 readTexelCoord = ivec2(gl_GlobalInvocationID.xy) * 2;// + ivec2(frameCounter % 2, frameCounter / 2 % 2);
+    ivec2 readTexelCoord = ivec2(gl_GlobalInvocationID.xy) * BLOCKLIGHT_RESOLUTION;// + ivec2(frameCounter % 2, frameCounter / 2 % 2);
     ivec2 writeTexelCoord = ivec2(gl_GlobalInvocationID.xy);
     vec4 normalDepthData = texelFetch(colortex8, readTexelCoord, 0);
     ivec3 vxPosFrameOffset = ivec3((floor(previousCameraPosition) - floor(cameraPosition)) * 1.1);
@@ -130,7 +141,12 @@ void main() {
     barrier();
 
     if (validData) {
-        vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * (vec4((readTexelCoord + 0.5) / view, 1 - normalDepthData.a, 1) * 2 - 1));
+        vec4 playerPos =
+            gbufferModelViewInverse *
+            (gbufferProjectionInverse *
+            (vec4((readTexelCoord + 0.5) / view,
+            1 - normalDepthData.a,
+            1) * 2 - 1));
         playerPos /= playerPos.w;
         vxPos = playerPos.xyz + fract(cameraPosition);
         #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
@@ -285,7 +301,7 @@ void main() {
                     atomicMax(positions[thisLightIndex].w, thisWeight);
                 }
                 traceNum++;
-                if (traceNum > MAX_TRACE_COUNT) break;
+                if (traceNum >= MAX_TRACE_COUNT) break;
             }
         }
     }
