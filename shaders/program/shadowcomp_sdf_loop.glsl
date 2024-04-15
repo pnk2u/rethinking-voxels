@@ -1,8 +1,8 @@
 {
     ivec3 prevTexCoord0 = texCoord + (1<<j) * camOffset;
     ivec3 prevTexCoord = prevTexCoord0 + ivec3(0, (frameCounter % 2 * 2 + j/4) * voxelVolumeSize.y, 0);
-    ivec3 prevCoord = prevTexCoord0 / 2 + voxelVolumeSize / 4 + ivec3(0, (frameCounter % 2 * 2 + (j-1)/4) * voxelVolumeSize.y, 0);
-    ivec3 prevFractCoord = prevTexCoord0 % 2 + 1;
+    ivec3 prevCoord = (prevTexCoord0+1) / 2 + voxelVolumeSize / 4 + ivec3(0, (frameCounter % 2 * 2 + (j-1)/4) * voxelVolumeSize.y, 0);
+    ivec3 prevFractCoord = (prevTexCoord0 + 1) % 2;
     fullDist[localCoord.x+1][localCoord.y+1][localCoord.z+1] =
         (thisOccupancy >> j & 1) == 1 ? (1.0-1.0/sqrt(3.0)) / (1<<j) : (
         all(greaterThanEqual(prevTexCoord0, ivec3(0))) &&
@@ -21,7 +21,7 @@
             float prevDist = mix(
                 imageLoad(distanceFieldI, prevCoord)[(j-1)%4],
                 imageLoad(distanceFieldI, prevCoord + 2 * prevFractCoord - 1)[(j-1)%4],
-                0.0
+                0.25
             );
             if (prevDist < 3.0/(1<<j)) {
             #endif
@@ -44,6 +44,10 @@
                 }
             } else {
                 theseDists[j] = prevDist - 0.5/(1<<j);
+            }
+            float edgeFactor = infnorm(max(abs(texCoord + 0.5 - voxelVolumeSize/2) - voxelVolumeSize/2 + 5, vec3(0)));
+            if (edgeFactor > 0.0) {
+                theseDists[j] = mix(theseDists[j], prevDist, clamp(edgeFactor * 0.24, 0.0, 1.0));
             }
         #endif
     }
