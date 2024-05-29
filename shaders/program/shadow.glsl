@@ -564,6 +564,7 @@ void main() {
     if (
         renderStage == MC_RENDER_STAGE_TERRAIN_SOLID ||
         renderStage == MC_RENDER_STAGE_TERRAIN_CUTOUT ||
+        renderStage == MC_RENDER_STAGE_TERRAIN_CUTOUT_MIPPED ||
         renderStage == MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
     ) {
         correspondingBlockV = ivec3(floor(positionV.xyz + fractCamPos + at_midBlock/64) + 1000.5) - 1000 + voxelVolumeSize/2;
