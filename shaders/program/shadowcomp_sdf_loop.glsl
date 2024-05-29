@@ -45,11 +45,6 @@
             } else {
                 theseDists[j] = prevDist - 0.5/(1<<j);
             }
-            float edgeFactor = infnorm(max(abs(texCoord + 0.5 - voxelVolumeSize/2) - voxelVolumeSize/2 + 5, vec3(0)));
-            if (edgeFactor > 0.0) {
-                float mixDist = min(max(prevDist, 1.5/(1<<j)), theseDists[j]);
-                theseDists[j] = mix(theseDists[j], mixDist, clamp(edgeFactor * 0.24, 0.0, 1.0));
-            }
         #endif
     }
     barrier();

@@ -446,6 +446,7 @@ void main() {
                 if (
                     renderStage != MC_RENDER_STAGE_TERRAIN_SOLID &&
                     renderStage != MC_RENDER_STAGE_TERRAIN_CUTOUT &&
+                    renderStage != MC_RENDER_STAGE_TERRAIN_CUTOUT_MIPPED &&
                     renderStage != MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
                 ) {
                     imageAtomicOr(occupancyVolume, coords, 1<<27);
