@@ -2,8 +2,12 @@ uniform sampler3D distanceField;
 layout(r32i) uniform restrict iimage3D occupancyVolume;
 layout(r32i) uniform restrict iimage3D voxelCols;
 
+int getVoxelResolution(vec3 pos) {
+    return max(min(int(-log2(infnorm(pos/(voxelVolumeSize-2.01))))-1, VOXEL_DETAIL_AMOUNT-1), 0);
+}
+
 float getDistanceField(vec3 pos) {
-    int resolution = max(min(int(-log2(infnorm(pos/(voxelVolumeSize-2.01))))-1, VOXEL_DETAIL_AMOUNT-1), 0);
+    int resolution = getVoxelResolution(pos);
     pos = clamp((1<<resolution) * pos / voxelVolumeSize + 0.5, 0.5/voxelVolumeSize, 1-0.5/voxelVolumeSize);
     pos.y = 0.25 * (pos.y + (frameCounter+1)%2 * 2 + resolution/4);
     return texture(distanceField, pos)[resolution%4];

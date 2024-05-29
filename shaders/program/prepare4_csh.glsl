@@ -165,6 +165,12 @@ void main() {
             vxPos = floor(vxPos * PIXEL_SHADOW + 0.5 * normalDepthData.xyz) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
         #endif
         float bias = max(0.6/(1<<VOXEL_DETAIL_AMOUNT), 1.2 * infnorm(vxPos/voxelVolumeSize));
+        int thisResolution = getVoxelResolution(vxPos);
+        if (
+            thisResolution != getVoxelResolution(vxPos + 1.0/(1<<thisResolution) * normalDepthData.xyz)
+        ) {
+            bias = 1.0/(1<<thisResolution);
+        }
         for (int k = 0; k < 4; k++) {
             biasedVxPos = vxPos + bias * normalDepthData.xyz;
             vec3 dfGrad = distanceFieldGradient(biasedVxPos);
