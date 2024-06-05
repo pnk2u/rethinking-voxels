@@ -69,7 +69,7 @@ vec4 GetVolumetricBlocklight(vec3 translucentMult, float lViewPos, vec3 nViewPos
         //viewPos /= viewPos.w;
         vec4 wpos = gbufferModelViewInverse * viewPos;
         vec3 playerPos = wpos.xyz / wpos.w;
-        vec3 vxPos = playerPos + fract(cameraPosition);
+        vec3 vxPos = playerPos + fractCamPos;
 
         vec3 vlSample = vec3(0.0);
 

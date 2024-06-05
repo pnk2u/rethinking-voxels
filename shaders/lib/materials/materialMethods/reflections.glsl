@@ -157,7 +157,7 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
         if (reflection.a < 1.0 ) {
             vec3 voxelVector = mat3(gbufferModelViewInverse) * normalize(vector);
             vec4 voxelStart = gbufferModelViewInverse * vec4(start, 1.0);
-            voxelStart.xyz += fract(cameraPosition);
+            voxelStart.xyz += fractCamPos;
             vec3 hitPos = rayTrace(voxelStart.xyz + 0.1 * voxelVector, 50.0 * voxelVector, dither);
             if (length(voxelStart.xyz - hitPos) < 49.0 && getDistanceField(hitPos) < 0.1) {
                 // do lighting on the reflected surface
@@ -165,7 +165,7 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
                 int occupancyData = imageLoad(occupancyVolume, ivec3(hitPos + 0.5 * voxelVolumeSize - 0.1 * hitNormal)).r;
                 vec4 voxelCol = getColor(hitPos - 0.1 * hitNormal);
                 #if defined REALTIME_SHADOWS && defined OVERWORLD
-                    vec3 shadowHitPos = GetShadowPos(hitPos - fract(cameraPosition) + 0.2 * hitNormal);
+                    vec3 shadowHitPos = GetShadowPos(hitPos - fractCamPos + 0.2 * hitNormal);
                 #endif
                 float skyLight = 0.0;
                 int liveBitCount = 0;
@@ -189,7 +189,7 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
                 #endif
                 voxelCol.rgb *= skyLight * ambientColor + max(0.0, RNdotS + 0.1) * sunShadow * lightColor + blockLight + 0.25 * giLight;
 
-                vec3 playerHitPos = hitPos - fract(cameraPosition);
+                vec3 playerHitPos = hitPos - fractCamPos;
                 float skyFade = 0.0;
                 DoFog(voxelCol.rgb, skyFade, length(playerHitPos), playerHitPos, RVdotU, RVdotS, dither);
 

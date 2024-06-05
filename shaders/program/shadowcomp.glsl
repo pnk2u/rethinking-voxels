@@ -20,6 +20,12 @@ layout(r32i) uniform restrict iimage3D voxelCols;
 uniform vec3 cameraPosition;
 uniform vec3 previousCameraPosition;
 uniform int frameCounter;
+uniform ivec3 cameraPositionInt = ivec3(-98257195);
+uniform ivec3 previousCameraPositionInt;
+ivec3 floorCamPosOffset =
+    cameraPositionInt.y == -98257195 ?
+    ivec3((floor(cameraPosition) - floor(previousCameraPosition)) * 1.001) :
+    cameraPositionInt - previousCameraPositionInt;
 
 bvec2 or(bvec2 a, bvec2 b) {
     return bvec2(a.x || b.x, a.y || b.y);
@@ -40,7 +46,6 @@ shared float fullDist[10][10][10];
 #include "/lib/vx/SSBOs.glsl"
 
 void main() {
-    ivec3 camOffset = ivec3(1.01 * (floor(cameraPosition) - floor(previousCameraPosition)));
     ivec3 baseCoord = ivec3(gl_WorkGroupID) * 8;
     ivec3 localCoord = ivec3(gl_LocalInvocationID) - 1;
     ivec3 texCoord = baseCoord + localCoord;

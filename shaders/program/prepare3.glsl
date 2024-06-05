@@ -14,6 +14,10 @@ uniform vec3 cameraPosition;
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferModelView;
 
+uniform vec3 cameraPositionFract;
+uniform ivec3 cameraPositionInt = ivec3(-98257195);
+vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
+
 const ivec2 offsets[8] = ivec2[8](
     ivec2( 1, 0),
     ivec2( 1, 1),
@@ -54,11 +58,11 @@ void main() {
             writeData = avgAroundData / validAroundCount;
         } else {
             // fuck view bobbing!
-            vec3 rayHit = rayTrace(fract(cameraPosition) - gbufferModelView[3].xyz + normalize(dir), dir, dither);
+            vec3 rayHit = rayTrace(fractCamPos - gbufferModelView[3].xyz + normalize(dir), dir, dither);
             float hitDF = getDistanceField(rayHit);
             if (hitDF < 0.1) {
                 writeData.rgb = normalize(distanceFieldGradient(rayHit));
-                vec4 clipHitPos = gbufferProjection * (gbufferModelView * vec4(rayHit - fract(cameraPosition), 1));
+                vec4 clipHitPos = gbufferProjection * (gbufferModelView * vec4(rayHit - fractCamPos, 1));
                 clipHitPos = 0.5 / clipHitPos.w * clipHitPos + 0.5;
                 writeData.a = 1 - clipHitPos.z;
             }

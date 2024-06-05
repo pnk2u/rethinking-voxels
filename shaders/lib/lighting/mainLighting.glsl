@@ -6,6 +6,10 @@ uniform float darknessLightFactor;
     uniform int heldBlockLightValue2;
 #endif
 
+uniform vec3 cameraPositionFract;
+uniform ivec3 cameraPositionInt = ivec3(-98257195);
+vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
+
 //Lighting Includes//
 #include "/lib/colors/lightAndAmbientColors.glsl"
 #include "/lib/lighting/ggx.glsl"
@@ -445,7 +449,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     // Voxel-based Lighting
-    vec3 vxPos = playerPos + fract(cameraPosition);
+    vec3 vxPos = playerPos + fractCamPos;
     #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
         vxPos = floor(vxPos * PIXEL_SHADOW + 0.001) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
     #endif

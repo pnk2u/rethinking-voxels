@@ -39,6 +39,11 @@ uniform mat4 gbufferModelViewInverse;
 uniform vec3 cameraPosition;
 uniform sampler2D colortex4;
 uniform sampler2D colortex12;
+
+uniform vec3 cameraPositionFract;
+uniform ivec3 cameraPositionInt = ivec3(-98257195);
+vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
+
 void main() {
     #ifndef LIGHT_COLORING
         vec3 color = texelFetch(colortex3, texelCoord, 0).rgb;
@@ -55,7 +60,7 @@ void main() {
 //        color = texelFetch(colortex4, texelCoord, 0).gba;
         vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
         dir = normalize(dir * dir.w);
-        vec3 start = fract(cameraPosition) + 2 * dir.xyz;
+        vec3 start = fractCamPos + 2 * dir.xyz;
         vec3 normal;
         vec4 hitPos = voxelTrace(start, dir.xyz * 128, normal);
         //normal = normalize(distanceFieldGradient(hitPos));

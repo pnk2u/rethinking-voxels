@@ -24,6 +24,10 @@ uniform float viewWidth, viewHeight;
 
 uniform vec3 cameraPosition;
 
+uniform vec3 cameraPositionFract;
+uniform ivec3 cameraPositionInt = ivec3(-98257195);
+vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
+
 uniform mat4 gbufferProjectionInverse;
 
 uniform sampler2D colortex0;

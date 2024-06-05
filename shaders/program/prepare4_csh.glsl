@@ -30,6 +30,17 @@ uniform sampler2D colortex8;
 layout(rgba16f) uniform image2D colorimg10;
 layout(rgba16i) uniform iimage2D colorimg11;
 
+uniform vec3 cameraPositionFract;
+uniform ivec3 cameraPositionInt = ivec3(-98257195);
+uniform ivec3 previousCameraPositionInt;
+vec3 fractCamPos =
+    cameraPositionInt.y == -98257195 ?
+    fract(cameraPosition) :
+    cameraPositionFract;
+ivec3 floorCamPosOffset =
+    cameraPositionInt.y == -98257195 ?
+    ivec3((floor(cameraPosition) - floor(previousCameraPosition)) * 1.001) :
+    cameraPositionInt - previousCameraPositionInt;
 #include "/lib/vx/SSBOs.glsl"
 #include "/lib/vx/voxelReading.glsl"
 #include "/lib/util/random.glsl"
@@ -109,7 +120,7 @@ void main() {
     ivec2 readTexelCoord = ivec2(gl_GlobalInvocationID.xy) * BLOCKLIGHT_RESOLUTION;// + ivec2(frameCounter % 2, frameCounter / 2 % 2);
     ivec2 writeTexelCoord = ivec2(gl_GlobalInvocationID.xy);
     vec4 normalDepthData = texelFetch(colortex8, readTexelCoord, 0);
-    ivec3 vxPosFrameOffset = ivec3((floor(previousCameraPosition) - floor(cameraPosition)) * 1.1);
+    ivec3 vxPosFrameOffset = -floorCamPosOffset;
     bool validData = (normalDepthData.a < 1.5 && length(normalDepthData.rgb) > 0.1 && all(lessThan(readTexelCoord, ivec2(view + 0.1))));
     for (int k = 1; k < BLOCKLIGHT_RESOLUTION; k++) {
         if (validData) break;
@@ -160,7 +171,7 @@ void main() {
             1 - normalDepthData.a,
             1) * 2 - 1));
         playerPos /= playerPos.w;
-        vxPos = playerPos.xyz + fract(cameraPosition);
+        vxPos = playerPos.xyz + fractCamPos;
         #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
             vxPos = floor(vxPos * PIXEL_SHADOW + 0.5 * normalDepthData.xyz) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
         #endif

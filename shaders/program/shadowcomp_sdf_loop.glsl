@@ -1,5 +1,5 @@
 {
-    ivec3 prevTexCoord0 = texCoord + (1<<j) * camOffset;
+    ivec3 prevTexCoord0 = texCoord + (1<<j) * floorCamPosOffset;
     ivec3 prevTexCoord = prevTexCoord0 + ivec3(0, (frameCounter % 2 * 2 + j/4) * voxelVolumeSize.y, 0);
     ivec3 prevCoord = (prevTexCoord0+1) / 2 + voxelVolumeSize / 4 + ivec3(0, (frameCounter % 2 * 2 + (j-1)/4) * voxelVolumeSize.y, 0);
     ivec3 prevFractCoord = (prevTexCoord0 + 1) % 2;
