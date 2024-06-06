@@ -569,7 +569,7 @@ void main() {
     ) {
         correspondingBlockV = ivec3(floor(positionV.xyz + fractCamPos + at_midBlock/64) + 1000.5) - 1000 + voxelVolumeSize/2;
         matV = int(mc_Entity.x + 0.5);
-        positionV = vec4(correspondingBlockV - voxelVolumeSize/2 - fractCamPos + 0.5 - at_midBlock/64, 1.0);
+        //positionV = vec4(correspondingBlockV - voxelVolumeSize/2 - fractCamPos + 0.5 - at_midBlock/64, 1.0);
     }
     vec4 position = positionV;
     #if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
