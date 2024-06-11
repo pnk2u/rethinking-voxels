@@ -522,16 +522,9 @@ in vec3 at_midBlock;
     attribute vec4 mc_midTexCoord;
 #endif
 
-#if COLORED_LIGHTING > 0
-    attribute vec3 at_midBlock;
-#endif
-
 //Common Variables//
-vec2 lmCoord;
-
-#if COLORED_LIGHTING > 0
-    uniform int renderStage;
-    writeonly uniform uimage3D voxel_img;
+#ifdef ACL_VOXELIZATION
+    vec2 lmCoord;
 
     #ifdef PUDDLE_VOXELIZATION
         writeonly uniform uimage2D puddle_img;
@@ -547,6 +540,9 @@ vec2 lmCoord;
     #include "/lib/materials/materialMethods/wavingBlocks.glsl"
 #endif
 
+#ifdef ACL_VOXELIZATION
+    #include "/lib/misc/voxelization.glsl"
+#endif
 #ifdef PUDDLE_VOXELIZATION
     #include "/lib/misc/puddleVoxelization.glsl"
 #endif
@@ -579,7 +575,7 @@ void main() {
     vec4 position = positionV;
     #if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
         #ifdef NO_WAVING_INDOORS
-            lmCoord = GetLightMapCoordinates();
+            lmCoord = lmCoordV;
         #endif
 
         DoWave(position.xyz, matV);
@@ -587,7 +583,7 @@ void main() {
 
     #ifdef CONNECTED_GLASS_EFFECT
         vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
-        vec2 texMinMidCoord = texCoord - midCoord;
+        vec2 texMinMidCoord = texCoordV - midCoord;
         signMidCoordPos = sign(texMinMidCoord);
         absMidCoordPos  = abs(texMinMidCoord);
     #endif
@@ -607,14 +603,14 @@ void main() {
         position.y += 0.015 * max0(length(position.xyz) - 50.0);
     }
 
-    #if COLORED_LIGHTING > 0
-        if (gl_VertexID % 4 == 0) {
-            UpdateVoxelMap(mat);
-            #ifdef PUDDLE_VOXELIZATION
-                UpdatePuddleVoxelMap(mat);
-            #endif
-        }
-    #endif
+    if (gl_VertexID % 4 == 0) {
+        #ifdef ACL_VOXELIZATION
+            UpdateVoxelMap(matV);
+        #endif
+        #ifdef PUDDLE_VOXELIZATION
+            UpdatePuddleVoxelMap(matV);
+        #endif
+    }
 
     gl_Position = shadowProjection * shadowModelView * position;
 

@@ -1,6 +1,4 @@
-#if COLORED_LIGHTING > 0
-    #include "/lib/misc/voxelization.glsl"
-#endif
+#include "/lib/misc/voxelization.glsl"
 
 vec3 GetRawWave(in vec3 pos, float wind) {
     float magnitude = sin(wind * 0.0027 + pos.z + pos.y) * 0.04 + 0.04;
@@ -119,19 +117,17 @@ void DoWave(inout vec3 playerPos, int mat) {
             #if defined NETHER || defined DO_NETHER_VINE_WAVING_OUTSIDE_NETHER
                 else if (mat == 10884 || mat == 10885) { // Weeping Vines, Twisting Vines
                     float waveMult = 1.0;
-                    #if COLORED_LIGHTING > 0
-                        vec3 playerPosP = playerPos + vec3(0.0, 0.1, 0.0);
-                        vec3 voxelPosP = SceneToVoxel(playerPosP);
-                        vec3 playerPosN = playerPos - vec3(0.0, 0.1, 0.0);
-                        vec3 voxelPosN = SceneToVoxel(playerPosN);
+                    vec3 playerPosP = playerPos + vec3(0.0, 0.1, 0.0);
+                    vec3 voxelPosP = SceneToVoxel(playerPosP);
+                    vec3 playerPosN = playerPos - vec3(0.0, 0.1, 0.0);
+                    vec3 voxelPosN = SceneToVoxel(playerPosN);
 
-                        if (CheckInsideVoxelVolume(voxelPosP)) {
-                            int voxelP = int(texelFetch(voxel_sampler, ivec3(voxelPosP), 0).r);
-                            int voxelN = int(texelFetch(voxel_sampler, ivec3(voxelPosN), 0).r);
-                            if (voxelP != 0 && voxelP != 65 || voxelN != 0 && voxelN != 65) // not air, not weeping vines
-                                waveMult = 0.0;
-                        }
-                    #endif
+                    if (CheckInsideVoxelVolume(voxelPosP)) {
+                        int voxelP = int(texelFetch(voxel_sampler, ivec3(voxelPosP), 0).r);
+                        int voxelN = int(texelFetch(voxel_sampler, ivec3(voxelPosN), 0).r);
+                        if (voxelP != 0 && voxelP != 65 || voxelN != 0 && voxelN != 65) // not air, not weeping vines
+                            waveMult = 0.0;
+                    }
                     DoWave_Foliage(playerPos.xyz, worldPos, waveMult);
                 }
             #endif

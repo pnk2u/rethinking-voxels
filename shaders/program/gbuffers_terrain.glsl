@@ -36,9 +36,6 @@ in vec4 glColorRaw;
 #endif
 
 //Pipeline Constants//
-#if COLORED_LIGHTING > 0
-    const float voxelDistance = 32.0;
-#endif
 
 //Common Variables//
 float NdotU = dot(normal, upVec);

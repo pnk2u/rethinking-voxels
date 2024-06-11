@@ -164,7 +164,8 @@ void main() {
     #endif
 
     #ifdef NETHER_STORM
-        if (isEyeInWater == 0) color = mix(color, netherVolumetricEffect.rgb, netherVolumetricEffect.a);
+        if (isEyeInWater == 0) color = mix(color, volumetricEffect.rgb, volumetricEffect.a);
+        volumetricEffect = vec4(0.0);
     #endif
 
     #ifdef VOLUMETRIC_BLOCKLIGHT
@@ -197,9 +198,6 @@ void main() {
             if (z1 == 1.0) color.rgb = fogColor * 5.0;
 
             volumetricEffect.rgb *= 0.0;
-            #ifdef NETHER_STORM
-                netherVolumetricEffect.rgb *= 0.0;
-            #endif
         }
     }
 

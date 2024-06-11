@@ -82,9 +82,13 @@
     #define BLOCK_REFLECT_QUALITY 3 //[0 1 2 3]
     #define ANISOTROPIC_FILTER 0 //[0 4 8 16]
 
-    //#define PORTAL_EDGE_EFFECT
+    #define PORTAL_EDGE_EFFECT
     #ifndef IRIS_HAS_CONNECTED_TEXTURES
-        //#define CONNECTED_GLASS_EFFECT
+        #define CONNECTED_GLASS_EFFECT
+    #endif
+
+    #if defined CONNECTED_GLASS_EFFECT || defined PORTAL_EDGE_EFFECT
+        #define ACL_VOXELIZATION
     #endif
 
     #define WATER_STYLE_DEFINE -1 //[-1 1 2 3]
@@ -365,7 +369,6 @@
     //#define SAFER_GENERATED_NORMALS
 
     #define SHADOW_FRUSTUM_FIT
-
 //Extensions//
 
 //Information//
@@ -524,7 +527,7 @@
         #define CONNECTED_GLASS_CORNER_FIX
         #define ACL_CORNER_LEAK_FIX
         #define DO_NETHER_VINE_WAVING_OUTSIDE_NETHER
-        #if defined IRIS_FEATURE_CUSTOM_IMAGES && SHADOW_QUALITY > -1 && RAIN_PUDDLES > 0
+        #if RAIN_PUDDLES > 0
             #define PUDDLE_VOXELIZATION
         #endif
     #endif

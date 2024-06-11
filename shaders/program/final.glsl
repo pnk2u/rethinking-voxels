@@ -22,7 +22,7 @@ noperspective in vec2 texCoord;
     #define OPTIFINE_AF_ERROR
 #endif
 
-#if COLORED_LIGHTING > 0 && !defined IS_IRIS
+#if !defined IS_IRIS
     #define OPTIFINE_ACL_ERROR
 #endif
 
@@ -122,6 +122,8 @@ void main() {
             globalLightHashMap[index * clearPerFragment + j] = uint(0);
         }
     }
+
+    if (gl_FragCoord.x < 0.0) gl_FragData[0] = texture(shadowcolor0, vec2(0.5));
 }
 
 #endif
