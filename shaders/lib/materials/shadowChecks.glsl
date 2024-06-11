@@ -64,15 +64,14 @@ bool isEmissive(int mat) {
         mat == 10332 || // amethyst buds
         //mat == 10388 || // blue ice
         mat == 10396 || // jack o'lantern
-        mat == 10400 || // 1-2 waterlogged sea pickles
-        mat == 10401 || // 3-4 waterlogged sea pickles
+        mat == 10404 || // waterlogged sea pickle
         mat == 10412 || // glowstone
         mat == 10448 || // sea lantern
         mat == 10452 || // magma block
         mat == 10476 || // crying obsidian
         mat == 10496 || // torch
         mat == 10500 || // end rod
-        mat == 10508 || // chorus flower
+        mat == 10512 || // chorus flower
         mat == 10516 || // lit furnace
         mat == 10528 || // soul torch
         mat == 10544 || // glow lichen
@@ -96,13 +95,15 @@ bool isEmissive(int mat) {
         mat == 10684 || // verdant     froglight
         mat == 10688 || // pearlescent froglight
         mat == 10704 || // active sculk sensor
+        mat == 10788 ||
         mat == 10708 || // spawner
         mat == 10852 || // copper bulb
+        mat == 10856 || // weathered copper bulb
         mat == 10996 || // light block
       //mat == 12740 || // lit candle cake
         mat == 30020 || // nether portal
-        mat == 31016 || // beacon
-        mat == 60000 || // end portal
+        mat == 32016 || // beacon
+        mat == 60025 || // end portal
         mat == 60012 || // ender chest
         mat == 60020 || // conduit
         mat == 50000 || // end crystal
@@ -160,6 +161,11 @@ vec3 getLightCol(int mat) {
             break;
         case 10216: // crimson wood
         case 10224: // warped wood
+            break;
+        case 10252: // ancient debris
+            #ifdef HARDCODED_DEBRIS_COL
+            lightcol = vec3(DEBRIS_COL_R, DEBRIS_COL_G, DEBRIS_COL_B);
+            #endif
             break;
     #ifdef GLOWING_ORE_IRON
         case 10272: // iron ore
@@ -268,8 +274,7 @@ vec3 getLightCol(int mat) {
             lightcol = vec3(PUMPKIN_COL_R, PUMPKIN_COL_G, PUMPKIN_COL_B);
             #endif
             break;
-        case 10400: // 1-2 waterlogged sea pickles
-        case 10401: // 3-4 waterlogged sea pickles
+        case 10404: // waterlogged sea pickle
             #ifdef HARDCODED_PICKLE_COL
             lightcol = vec3(PICKLE_COL_R, PICKLE_COL_G, PICKLE_COL_B);
             #endif
@@ -296,19 +301,16 @@ vec3 getLightCol(int mat) {
             #endif
             break;
         case 10496: // torch
-        case 10497:
             #ifdef HARDCODED_TORCH_COL
             lightcol = vec3(TORCH_COL_R, TORCH_COL_G, TORCH_COL_B);
             #endif
             break;
         case 10500: // end rod
-        case 10501:
-        case 10502:
             #ifdef HARDCODED_ENDROD_COL
             lightcol = vec3(ENDROD_COL_R, ENDROD_COL_G, ENDROD_COL_B);
             #endif
             break;
-        case 10508: // chorus flower
+        case 10512: // chorus flower
             #ifdef HARDCODED_CHORUS_COL
             lightcol = vec3(CHORUS_COL_R, CHORUS_COL_G, CHORUS_COL_B);
             #endif
@@ -319,7 +321,6 @@ vec3 getLightCol(int mat) {
             #endif
             break;
         case 10528: // soul torch
-        case 10529:
             #ifdef HARDCODED_SOULTORCH_COL
             lightcol = vec3(SOULTORCH_COL_R, SOULTORCH_COL_G, SOULTORCH_COL_B);
             #endif
@@ -375,9 +376,6 @@ vec3 getLightCol(int mat) {
             #endif
             break;
         case 10596: // redstone wire
-        case 10597:
-        case 10598:
-        case 10599:
             #ifdef WIRE_HARDCODED_REDSTONE_COL
             lightcol = vec3(REDSTONE_COL_R, REDSTONE_COL_G, REDSTONE_COL_B);
             #endif
@@ -417,7 +415,8 @@ vec3 getLightCol(int mat) {
             lightcol = vec3(PINKFROG_COL_R, PINKFROG_COL_G, PINKFROG_COL_B);
             #endif
             break;
-        case 10705: // active sculk sensor
+        case 10704: // active sculk sensor
+        case 10788:
             #ifdef HARDCODED_SCULK_COL
             lightcol = vec3(SCULK_COL_R, SCULK_COL_G, SCULK_COL_B);
             #endif
@@ -442,12 +441,12 @@ vec3 getLightCol(int mat) {
             lightcol = vec3(PORTAL_COL_R, PORTAL_COL_G, PORTAL_COL_B);
             #endif
             break;
-        case 31016: // beacon
+        case 32016: // beacon
             #ifdef HARDCODED_BEACON_COL
             lightcol = vec3(BEACON_COL_R, BEACON_COL_G, BEACON_COL_B);
             #endif
             break;
-        case 60000: // end portal
+        case 60025: // end portal
             #ifdef PORTAL_HARDCODED_END_COL
             lightcol = vec3(END_COL_R, END_COL_G, END_COL_B);
             #endif
@@ -626,10 +625,7 @@ int getLightLevel(int mat) {
         case 10396: // jack o'lantern
             lightlevel = BRIGHTNESS_PUMPKIN;
             break;
-        case 10400: // 1-2 waterlogged sea pickles
-            lightlevel = LOW_BRIGHTNESS_PICKLE;
-            break;
-        case 10401: // 3-4 waterlogged sea pickles
+        case 10404: // waterlogged sea pickle
             lightlevel = HIGH_BRIGHTNESS_PICKLE;
             break;
         case 10412: // glowstone
@@ -648,22 +644,18 @@ int getLightLevel(int mat) {
             lightlevel = BRIGHTNESS_CRYING;
             break;
         case 10496: // torch
-        case 10497:
             lightlevel = BRIGHTNESS_TORCH;
             break;
         case 10500: // end rod
-        case 10501:
-        case 10502:
             lightlevel = BRIGHTNESS_ENDROD;
             break;
-        case 10508: // chorus flower
+        case 10512: // chorus flower
             lightlevel = BRIGHTNESS_CHORUS;
             break;
         case 10516: // lit furnace
             lightlevel = BRIGHTNESS_FURNACE;
             break;
         case 10528: // soul torch
-        case 10529:
             lightlevel = BRIGHTNESS_SOULTORCH;
             break;
         case 10544: // glow lichen
@@ -697,16 +689,7 @@ int getLightLevel(int mat) {
             lightlevel = ANCHOR_BRIGHTNESS_PORTAL;
             break;
         case 10596: // redstone wire
-            lightlevel = WIRE0_BRIGHTNESS_REDSTONE;
-            break;
-        case 10597:
-            lightlevel = WIRE1_BRIGHTNESS_REDSTONE;
-            break;
-        case 10598:
-            lightlevel = WIRE2_BRIGHTNESS_REDSTONE;
-            break;
-        case 10599:
-            lightlevel = WIRE3_BRIGHTNESS_REDSTONE;
+            lightlevel = WIRE_BRIGHTNESS_REDSTONE;
             break;
         case 10604: // lit redstone torch
             lightlevel = TORCH_BRIGHTNESS_REDSTONE;
@@ -736,6 +719,7 @@ int getLightLevel(int mat) {
             lightlevel = BRIGHTNESS_PINKFROG;
             break;
         case 10704: // active sculk sensor
+        case 10788:
             lightlevel = SENSOR_BRIGHTNESS_SCULK;
             break;
         case 10708: // spawner
@@ -750,10 +734,10 @@ int getLightLevel(int mat) {
         case 30020: // nether portal
             lightlevel = BRIGHTNESS_PORTAL;
             break;
-        case 31016: // beacon
+        case 32016: // beacon
             lightlevel = BRIGHTNESS_BEACON;
             break;
-        case 60000: // end portal
+        case 60025: // end portal
             lightlevel = PORTAL_BRIGHTNESS_END;
             break;
         case 60012: // ender chest
