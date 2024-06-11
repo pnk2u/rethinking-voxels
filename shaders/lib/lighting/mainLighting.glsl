@@ -496,7 +496,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         }
     #endif
 
-#ifdef DREAM_TWEAKED_LIGHTING
+    #ifdef DREAM_TWEAKED_LIGHTING
         ambientColorM = mix(ambientColorM, lightColorM, 0.25) * 1.5;
         lightColorM = lightColorM * 0.3;
     #endif
