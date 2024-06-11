@@ -85,7 +85,7 @@ uniform sampler2D noisetex;
 uniform sampler2D specular;
 uniform sampler2D tex;
 
-uniform ivec3 cameraPositionInt;
+uniform ivec3 cameraPositionInt = ivec3(-98257195);
 uniform ivec3 previousCameraPositionInt;
 uniform vec3 cameraPositionFract;
 uniform vec3 previousCameraPositionFract;
@@ -116,12 +116,6 @@ uniform vec3 previousCameraPositionFract;
     
     uniform sampler2D dhDepthTex;
     uniform sampler2D dhDepthTex1;
-#endif
-
-#if COLORED_LIGHTING > 0
-    uniform usampler3D voxel_sampler;
-    uniform sampler3D floodfill_sampler;
-    uniform sampler3D floodfill_sampler_copy;
 #endif
 
 #ifdef PUDDLE_VOXELIZATION

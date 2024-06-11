@@ -1,21 +1,10 @@
 #include "/lib/common.glsl"
 
 //////Fragment Shader//////Fragment Shader//////
-#ifdef FSH
+#ifdef FRAGMENT_SHADER
 in vec3 dir;
 
-uniform sampler2D colortex8;
-
-uniform int frameCounter;
-uniform float viewWidth;
-uniform float viewHeight;
 vec2 view = vec2(viewWidth, viewHeight);
-uniform vec3 cameraPosition;
-uniform mat4 gbufferProjection;
-uniform mat4 gbufferModelView;
-
-uniform vec3 cameraPositionFract;
-uniform ivec3 cameraPositionInt = ivec3(-98257195);
 vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
 
 const ivec2 offsets[8] = ivec2[8](
@@ -77,9 +66,6 @@ void main() {
 #ifdef VSH
 
 out vec3 dir;
-
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferModelViewInverse;
 
 void main() {
     gl_Position = ftransform();

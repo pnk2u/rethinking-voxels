@@ -63,6 +63,9 @@ noperspective in vec2 texCoord;
     }
 #endif
 
+#define WRITE_TO_SSBOS
+#include "/lib/vx/SSBOs.glsl"
+
 //Program//
 void main() {
     vec2 texCoordM = texCoord;

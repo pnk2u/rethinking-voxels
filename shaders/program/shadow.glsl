@@ -26,19 +26,12 @@ in vec3 vxPosF;
     flat in vec2 absMidCoordPos;
 #endif
 //Uniforms//
-uniform int isEyeInWater;
 uniform int renderStage;
 
-uniform vec3 cameraPosition;
-
-uniform sampler2D tex;
-uniform sampler2D noisetex;
 
 layout(r32i) restrict uniform iimage3D occupancyVolume;
 
 #if WATER_CAUSTIC_STYLE >= 3
-    uniform float frameTimeCounter;
-
     uniform sampler2D gaux4;
 #endif
 
@@ -251,20 +244,7 @@ flat out ivec3 correspondingBlock;
 //Uniforms//
 
 uniform int renderStage;
-uniform int entityId;
-uniform int currentRenderedItemId;
-
-uniform vec3 cameraPosition;
-
-// default value as feature check
-uniform ivec3 cameraPositionInt = ivec3(-1679125, -93126, 691246);
-uniform vec3 cameraPositionFract;
-
 uniform vec3 eyePosition;
-uniform sampler2D tex;
-uniform sampler2D specular;
-uniform ivec2 atlasSize;
-uniform vec4 entityColor;
 
 layout(r32i) restrict uniform iimage3D voxelCols;
 layout(r32i) restrict uniform iimage3D occupancyVolume;
@@ -277,7 +257,7 @@ layout(r32i) restrict uniform iimage3D occupancyVolume;
 
 void main() {
     vec3 fractCamPos = cameraPositionFract;
-    if (cameraPositionInt == ivec3(-1679125, -93126, 691246)) {
+    if (cameraPositionInt.y == -98257195) {
         fractCamPos = fract(cameraPosition);
     }
     int localMat = matV[0];
@@ -309,7 +289,7 @@ void main() {
         if (entityId == 50016 && emissive && length(center) < 8) { // handheld item
             isHeldLight = true;
             vec3 floorCamPosRelEyePos = (cameraPositionInt - eyePosition);
-            if (cameraPositionInt == ivec3(-1679125, -93126, 691246)) {
+            if (cameraPositionInt.y == -98257195) {
                 floorCamPosRelEyePos = (floor(cameraPosition) - eyePosition);
             }
             vec3 offset = 0.5 * normalize((center - 0.025 * cnormal + floorCamPosRelEyePos) * vec3(1, 0, 1));
@@ -534,22 +514,6 @@ flat out ivec3 correspondingBlockV;
 
 //Uniforms//
 uniform int renderStage;
-uniform int blockEntityId;
-uniform vec3 cameraPosition;
-
-// default value as feature check
-uniform ivec3 cameraPositionInt = ivec3(-1679125, -93126, 691246);
-uniform vec3 cameraPositionFract;
-
-uniform mat4 shadowProjection, shadowProjectionInverse;
-uniform mat4 shadowModelView, shadowModelViewInverse;
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferModelViewInverse;
-
-#if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
-    uniform float frameTimeCounter;
-
-#endif
 
 //Attributes//
 in vec4 mc_Entity;
@@ -583,18 +547,14 @@ vec2 lmCoord;
     #include "/lib/materials/materialMethods/wavingBlocks.glsl"
 #endif
 
-#if COLORED_LIGHTING > 0
-    #include "/lib/misc/voxelization.glsl"
-
-    #ifdef PUDDLE_VOXELIZATION
-        #include "/lib/misc/puddleVoxelization.glsl"
-    #endif
+#ifdef PUDDLE_VOXELIZATION
+    #include "/lib/misc/puddleVoxelization.glsl"
 #endif
 
 //Program//
 void main() {
     vec3 fractCamPos = cameraPositionFract;
-    if (cameraPositionInt == ivec3(-1679125, -93126, 691246)) {
+    if (cameraPositionInt.y == -98257195) {
         fractCamPos = fract(cameraPosition);
     }
 

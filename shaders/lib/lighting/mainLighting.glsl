@@ -1,5 +1,3 @@
-uniform vec3 cameraPositionFract;
-uniform ivec3 cameraPositionInt = ivec3(-98257195);
 vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
 
 //Lighting Includes//
@@ -326,81 +324,6 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
 
     vec3 blockLighting = lightmapXM * blocklightCol;
 
-    #if COLORED_LIGHTING > 0
-        // Prepare
-        #ifndef GBUFFERS_HAND
-            vec3 voxelPos = SceneToVoxel(playerPos);
-            vec3 voxelPosM = voxelPos + worldGeoNormal * 0.5;
-                 voxelPosM = clamp01(voxelPosM / vec3(voxelVolumeSize));
-        #else
-            vec3 voxelPos = SceneToVoxel(vec3(0.0));
-            vec3 voxelPosM = clamp01(voxelPos / vec3(voxelVolumeSize));
-        #endif
-
-        vec3 specialLighting = vec3(0.0);
-        vec4 lightVolume = vec4(0.0);
-        if (CheckInsideVoxelVolume(voxelPos)) {
-            lightVolume = GetLightVolume(voxelPosM);
-            lightVolume = sqrt(lightVolume);
-            specialLighting = lightVolume.rgb;
-        }
-
-        // Add extra articial light for blocks that request it
-        lightmapXM = mix(lightmapXM, 10.0, lightVolume.a);
-        specialLighting *= 1.0 + 50.0 * lightVolume.a;
-
-        // Color Balance
-        specialLighting = lightmapXM * 0.13 * DoLuminanceCorrection(specialLighting + blocklightCol * 0.05);
-
-        // Add some extra non-contrasty detail
-        vec3 specialLightingM = max(specialLighting, vec3(0.0));
-        specialLightingM /= (0.2 + 0.8 * GetLuminance(specialLightingM));
-        specialLightingM *= (1.0 / (1.0 + emission)) * 0.22;
-        specialLighting *= 0.9;
-        specialLighting += pow2(specialLightingM / (color.rgb + 0.1));
-
-        // Serve with distance fade
-        vec3 absPlayerPos = abs(playerPos);
-        float maxPlayerPos = max(absPlayerPos.x, max(absPlayerPos.y * 2.0, absPlayerPos.z));
-        float blocklightDecider = pow2(min1(maxPlayerPos / effectiveACLdistance * 2.0));
-        //if (heldItemId != 40000 || heldItemId2 == 40000) // Hold spider eye to see vanilla lighting
-        blockLighting = mix(specialLighting, blockLighting, blocklightDecider);
-        //if (heldItemId2 == 40000 && heldItemId != 40000) blockLighting = lightVolume.rgb; // Hold spider eye to see light volume
-    #endif
-
-    #if HELD_LIGHTING_MODE >= 1
-        float heldLight = heldBlockLightValue; float heldLight2 = heldBlockLightValue2;
-        #if COLORED_LIGHTING == 0
-            vec3 heldLightCol = blocklightCol; vec3 heldLightCol2 = blocklightCol;
-
-            if (heldItemId == 45032) heldLight = 15; if (heldItemId2 == 45032) heldLight2 = 15; // Lava Bucket
-        #else
-            vec3 heldLightCol = GetSpecialBlocklightColor(heldItemId - 44000).rgb;
-            vec3 heldLightCol2 = GetSpecialBlocklightColor(heldItemId2 - 44000).rgb;
-
-            if (heldItemId == 45032) { heldLightCol = lavaSpecialLightColor; heldLight = 15; } // Lava Bucket
-            if (heldItemId2 == 45032) { heldLightCol2 = lavaSpecialLightColor; heldLight2 = 15; }
-        #endif
-
-        vec3 playerPosLightM = playerPos + relativeEyePosition;
-        playerPosLightM.y += 0.7;
-        float lViewPosL = length(playerPosLightM) + 6.0;
-        #if HELD_LIGHTING_MODE == 1
-            lViewPosL *= 1.5;
-        #endif
-
-        heldLight = pow2(pow2(heldLight * 0.47 / lViewPosL));
-        heldLight2 = pow2(pow2(heldLight2 * 0.47 / lViewPosL));
-
-        vec3 heldLighting = pow2(heldLight * DoLuminanceCorrection(heldLightCol + 0.001))
-                          + pow2(heldLight2 * DoLuminanceCorrection(heldLightCol2 + 0.001));
-
-        #ifdef GBUFFERS_HAND
-            blockLighting *= 0.5;
-            heldLighting *= 2.0;
-        #endif
-    #endif
-
     // Minimum Light
     #if !defined END && MINIMUM_LIGHT_MODE > 0
         #if MINIMUM_LIGHT_MODE == 1
@@ -534,11 +457,11 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
 
     if (isEmissive(localMat)) {
-        voxelBlockLighting = max(lightmapXM * blocklightCol, voxelBlockLighting * max(0.0, 1.0 - voxelFactor));
+        voxelBlockLighting = max(blockLighting, voxelBlockLighting * max(0.0, 1.0 - voxelFactor));
     }
 
     // Combine Lighting
-    vec3 blockLighting = mix(voxelBlockLighting, lightmapXM * blocklightCol, voxelFactor);
+    blockLighting = mix(voxelBlockLighting, blockLighting, voxelFactor);
     vec3 sceneLighting = lightColorM * shadowMult + ambientColorM * ambientMult + giLighting * GI_STRENGTH;
 
     float dotSceneLighting = dot(sceneLighting, sceneLighting);

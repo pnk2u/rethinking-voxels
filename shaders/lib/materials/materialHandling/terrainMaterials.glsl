@@ -1650,12 +1650,7 @@ if (mat < 11024) {
                                 else /*if (mat < 10600)*/ { // Redstone Wire:Lit
                                     #include "/lib/materials/specificMaterials/terrain/redstoneBlock.glsl"
 
-                                    #if COLORED_LIGHTING == 0
-                                        emission = pow2(min(color.r, 0.9)) * 4.0;
-                                    #else
-                                        vec3 colorP = color.rgb / glColor.rgb;
-                                        emission = pow2((colorP.r + color.r) * 0.5) * 3.5;
-                                    #endif
+                                    emission = pow2(min(color.r, 0.9)) * 4.0;
 
                                     color.gb *= 0.25;
                                 }
@@ -1981,10 +1976,8 @@ if (mat < 11024) {
                                     smoothnessG = color.r * 0.3;
                                     smoothnessD = smoothnessG;
 
-                                    #if COLORED_LIGHTING == 0
-                                        /* Tweak to make caves with Glow Lichen look better lit and closer to vanilla Minecraft. */
-                                        lmCoordM = pow(lmCoordM + 0.0001, vec2(0.65));
-                                    #endif
+                                    /* Tweak to make caves with Glow Lichen look better lit and closer to vanilla Minecraft. */
+                                    lmCoordM = pow(lmCoordM + 0.0001, vec2(0.65));
                                 }
                                 else /*if (mat < 10720)*/ { // Clay
                                     highlightMult = 2.0;

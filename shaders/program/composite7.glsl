@@ -22,17 +22,8 @@ noperspective in vec2 texCoord;
 #endif
 
 //Program//
-
-uniform int frameCounter;
 #include "/lib/vx/voxelReading.glsl"
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferModelViewInverse;
-uniform vec3 cameraPosition;
-uniform sampler2D colortex4;
-uniform sampler2D colortex12;
 
-uniform vec3 cameraPositionFract;
-uniform ivec3 cameraPositionInt = ivec3(-98257195);
 vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
 
 void main() {

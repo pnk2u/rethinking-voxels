@@ -1,6 +1,6 @@
 #ifndef INCLUDE_RANDOM
 #define INCLUDE_RANDOM
-#if defined FSH || defined FRAGMENT_SHADER
+#if defined FRAGMENT_SHADER || defined FRAGMENT_SHADER
     #define gl_GlobalInvocationID uvec3(gl_FragCoord.xy, 0)
 #endif
 

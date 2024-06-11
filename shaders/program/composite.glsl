@@ -16,16 +16,10 @@ flat in vec3 upVec, sunVec;
     flat in float vlFactor;
 #endif
 
-
-uniform vec3 cameraPosition;
-
-uniform vec3 cameraPositionFract;
-uniform ivec3 cameraPositionInt = ivec3(-98257195);
-vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
-
 //Pipeline Constants//
 
 //Common Variables//
+vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
 float SdotU = dot(sunVec, upVec);
 float sunFactor = SdotU < 0.0 ? clamp(SdotU + 0.375, 0.0, 0.75) / 0.75 : clamp(SdotU + 0.03125, 0.0, 0.0625) / 0.0625;
 float sunVisibility = clamp(SdotU + 0.0625, 0.0, 0.125) / 0.125;
@@ -98,6 +92,7 @@ vec2 view = vec2(viewWidth, viewHeight);
 //Program//
 void main() {
     vec3 color = texelFetch(colortex0, texelCoord, 0).rgb;
+    vec4 tex4Data = texelFetch(colortex0, texelCoord, 0);
     float z0 = texelFetch(depthtex0, texelCoord, 0).r;
     float z1 = texelFetch(depthtex1, texelCoord, 0).r;
 

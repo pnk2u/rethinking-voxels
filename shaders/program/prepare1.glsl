@@ -1,20 +1,14 @@
 #include "/lib/common.glsl"
 
 //////Fragment Shader//////Fragment Shader//////
-#ifdef FSH
+#ifdef FRAGMENT_SHADER
 
 in mat4 unprojectionMatrix, projectionMatrix;
 
 
-uniform float viewWidth;
-uniform float viewHeight;
 vec2 view = vec2(viewWidth, viewHeight);
 
-uniform vec3 cameraPosition;
-uniform vec3 previousCameraPosition;
-
 uniform sampler2D colortex1;
-uniform sampler2D colortex2;
 uniform sampler2D colortex10;
 
 layout(r32ui) uniform uimage2D colorimg9;
@@ -54,10 +48,6 @@ void main() {
 #ifdef VSH
 
 out mat4 unprojectionMatrix, projectionMatrix;
-
-uniform mat4 gbufferModelView;
-uniform mat4 gbufferProjection;
-uniform int frameCounter;
 
 #define MATERIALMAP_ONLY
 #include "/lib/vx/SSBOs.glsl"

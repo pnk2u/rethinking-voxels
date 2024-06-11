@@ -16,23 +16,10 @@ layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 #elif BLOCKLIGHT_RESOLUTION == 8
     const vec2 workGroupsRender = vec2(0.125, 0.125);
 #endif
-uniform int frameCounter;
-uniform float viewWidth;
-uniform float viewHeight;
 vec2 view = vec2(viewWidth, viewHeight);
-uniform vec3 cameraPosition;
-uniform vec3 previousCameraPosition;
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferPreviousProjection;
-uniform mat4 gbufferPreviousModelView;
-uniform sampler2D colortex8;
 layout(rgba16f) uniform image2D colorimg10;
 layout(rgba16i) uniform iimage2D colorimg11;
 
-uniform vec3 cameraPositionFract;
-uniform ivec3 cameraPositionInt = ivec3(-98257195);
-uniform ivec3 previousCameraPositionInt;
 vec3 fractCamPos =
     cameraPositionInt.y == -98257195 ?
     fract(cameraPosition) :

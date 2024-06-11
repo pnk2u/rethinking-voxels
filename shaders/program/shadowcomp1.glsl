@@ -18,11 +18,6 @@ This program offsets irradiance cache data to account for camera movement, and h
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-uniform int frameCounter;
-uniform vec3 cameraPosition;
-uniform vec3 previousCameraPosition;
-uniform ivec3 cameraPositionInt = ivec3(-98257195);
-uniform ivec3 previousCameraPositionInt;
 ivec3 floorCamPosOffset =
     cameraPositionInt.y == -98257195 ?
     ivec3((floor(cameraPosition) - floor(previousCameraPosition)) * 1.001) :
@@ -70,11 +65,6 @@ this program calculates volumetric block lighting
 #endif
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-
-uniform int frameCounter;
-uniform vec3 cameraPosition;
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferModelViewInverse;
 
 layout(rgba16f) uniform image3D irradianceCacheI;
 layout(rgba16i) uniform iimage3D lightStorage;

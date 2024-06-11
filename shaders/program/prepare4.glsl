@@ -1,5 +1,5 @@
 #include "/lib/common.glsl"
-#ifdef FSH
+#ifdef FRAGMENT_SHADER
 noperspective in vec2 lrTexCoord;
 flat in mat4 unProjectionMatrix;
 flat in mat4 prevProjectionMatrix;

@@ -17,11 +17,6 @@ layout(rgba16f) uniform image3D distanceFieldI;
 layout(r32i) uniform restrict iimage3D occupancyVolume;
 layout(r32i) uniform restrict iimage3D voxelCols;
 
-uniform vec3 cameraPosition;
-uniform vec3 previousCameraPosition;
-uniform int frameCounter;
-uniform ivec3 cameraPositionInt = ivec3(-98257195);
-uniform ivec3 previousCameraPositionInt;
 ivec3 floorCamPosOffset =
     cameraPositionInt.y == -98257195 ?
     ivec3((floor(cameraPosition) - floor(previousCameraPosition)) * 1.001) :
@@ -147,8 +142,6 @@ void main() {
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 layout(r32i) uniform restrict iimage3D occupancyVolume;
-
-uniform vec3 cameraPosition;
 
 #include "/lib/vx/positionHashing.glsl"
 #define WRITE_TO_SSBOS

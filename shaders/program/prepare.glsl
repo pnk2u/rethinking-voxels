@@ -1,5 +1,5 @@
 //////Fragment Shader//////Fragment Shader//////
-#ifdef FSH
+#ifdef FRAGMENT_SHADER
 
 layout(r32ui) uniform writeonly uimage2D colorimg9;
 
