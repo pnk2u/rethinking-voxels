@@ -92,7 +92,7 @@ vec2 view = vec2(viewWidth, viewHeight);
 //Program//
 void main() {
     vec3 color = texelFetch(colortex0, texelCoord, 0).rgb;
-    vec4 tex4Data = texelFetch(colortex0, texelCoord, 0);
+    vec4 tex4Data = texelFetch(colortex4, texelCoord, 0);
     float z0 = texelFetch(depthtex0, texelCoord, 0).r;
     float z1 = texelFetch(depthtex1, texelCoord, 0).r;
 
