@@ -31,10 +31,6 @@ uniform int renderStage;
 
 layout(r32i) restrict uniform iimage3D occupancyVolume;
 
-#if WATER_CAUSTIC_STYLE >= 3
-    uniform sampler2D gaux4;
-#endif
-
 //Pipeline Constants//
 
 //Common Variables//
@@ -295,7 +291,7 @@ void main() {
             #ifdef PLAYER_VOXELIZATION
                 vec3 offset = 0.5 * normalize((center - 0.025 * cnormal + floorCamPosRelEyePos) * vec3(1, 0, 1));
             #else
-                vec3 offset = -0.8 * (center - 0.025 * cnormal + floorCamPosRelEyePos) * vec3(1, 0, 1);
+                vec3 offset = -0.8 * (center - 0.025 * cnormal + floorCamPosRelEyePos) * vec3(1, 0.5, 1);
             #endif
             center += offset;
             for (int i = 0; i < 3; i++) {
