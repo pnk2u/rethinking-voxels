@@ -166,6 +166,7 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
     // End Step 2
 
     #ifdef VOXEL_RT_REFLECTIONS
+        vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
         // Step 2.5: fill missing reflections with voxel data
         if (reflection.a < 1.0 ) {
             vec3 voxelVector = mat3(gbufferModelViewInverse) * normalize(vector);

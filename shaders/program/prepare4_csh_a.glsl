@@ -15,7 +15,7 @@ void main() {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID);
     #if BLOCKLIGHT_RESOLUTION == 1
         imageStore(
-            colorimg2,
+            colorimg12,
             texelCoord,
             texelFetch(colortex10, texelCoord, 0)
         );

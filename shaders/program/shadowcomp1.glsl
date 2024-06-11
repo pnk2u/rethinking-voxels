@@ -341,10 +341,6 @@ void main() {
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 #ifdef GI
-    uniform int frameCounter;
-    uniform vec3 cameraPosition;
-    uniform mat4 gbufferProjectionInverse;
-    uniform mat4 gbufferModelViewInverse;
 
     layout(rgba16f) uniform image3D irradianceCacheI;
     #include "/lib/vx/SSBOs.glsl"
@@ -355,11 +351,6 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
     const vec2[4] squareCorners = vec2[4](vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1));
     #if defined REALTIME_SHADOWS && defined OVERWORLD
-        uniform mat4 gbufferModelView;
-        uniform mat4 shadowModelView;
-        uniform mat4 shadowProjection;
-        uniform vec3 skyColor;
-        uniform ivec2 eyeBrightness;
 
         const vec2 sunRotationData = vec2(cos(sunPathRotation * 0.01745329251994), -sin(sunPathRotation * 0.01745329251994));
         float ang = (fract(timeAngle - 0.25) + (cos(fract(timeAngle - 0.25) * 3.14159265358979) * -0.5 + 0.5 - fract(timeAngle - 0.25)) / 3.0) * 6.28318530717959;
@@ -375,6 +366,8 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
         #include "/lib/lighting/shadowSampling.glsl"
         #include "/lib/colors/lightAndAmbientColors.glsl"
     #endif
+
+    vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
 #endif
 void main() {
     #ifdef GI
