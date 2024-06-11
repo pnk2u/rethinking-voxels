@@ -1,6 +1,6 @@
-////////////////////////////////////////
-// Complementary Reimagined by EminGT //
-////////////////////////////////////////
+/////////////////////////////////////
+// Complementary Shaders by EminGT //
+/////////////////////////////////////
 
 //Common//
 #include "/lib/common.glsl"
@@ -10,28 +10,21 @@
 
 noperspective in vec2 texCoord;
 
-//Uniforms//
-uniform int frameCounter;
-
-uniform float viewWidth, viewHeight;
-
-uniform sampler2D shadowcolor0;
-#ifndef LIGHT_COLORING
-    uniform sampler2D colortex3;
-#else
-    uniform sampler2D colortex8;
-#endif
-
-#ifdef UNDERWATER_DISTORTION
-    uniform int isEyeInWater;
-
-    uniform float frameTimeCounter;
-#endif
-
 //Pipeline Constants//
 #include "/lib/pipelineSettings.glsl"
 
 //Common Variables//
+#if defined MC_ANISOTROPIC_FILTERING || COLORED_LIGHTING > 0 && !defined IS_IRIS
+    #define ANY_ERROR_MESSAGE
+#endif
+
+#ifdef MC_ANISOTROPIC_FILTERING
+    #define OPTIFINE_AF_ERROR
+#endif
+
+#if COLORED_LIGHTING > 0 && !defined IS_IRIS
+    #define OPTIFINE_ACL_ERROR
+#endif
 
 //Common Functions//
 #if IMAGE_SHARPENING > 0
@@ -45,28 +38,30 @@ uniform sampler2D shadowcolor0;
     );
 
     void SharpenImage(inout vec3 color, vec2 texCoordM) {
-        float mult = 0.0125 * IMAGE_SHARPENING;
-        color *= 1.0 + 0.05 * IMAGE_SHARPENING;
+        #ifdef TAA
+            float sharpenMult = IMAGE_SHARPENING;
+        #else
+            float sharpenMult = IMAGE_SHARPENING * 0.5;
+        #endif
+        float mult = 0.0125 * sharpenMult;
+        color *= 1.0 + 0.05 * sharpenMult;
 
         for (int i = 0; i < 4; i++) {
-            #ifndef LIGHT_COLORING
-                color -= texture2D(colortex3, texCoordM + sharpenOffsets[i]).rgb * mult;
-            #else
-                color -= texture2D(colortex8, texCoordM + sharpenOffsets[i]).rgb * mult;
-            #endif
+            color -= texture2D(colortex3, texCoordM + sharpenOffsets[i]).rgb * mult;
         }
     }
 #endif
 
 //Includes//
-#include "/lib/util/textRendering.glsl"
+#ifdef ANY_ERROR_MESSAGE
+    #include "/lib/textRendering/textRenderer.glsl"
 
-void beginTextM(int textSize, vec2 offset) {
-    beginText(ivec2(vec2(viewWidth, viewHeight) * texCoord) / textSize, ivec2(0 + offset.x, viewHeight / textSize - offset.y));
-    text.bgCol = vec4(0.0);
-}
-#define WRITE_TO_SSBOS
-#include "/lib/vx/SSBOs.glsl"
+    void beginTextM(int textSize, vec2 offset) {
+        float scale = 860;
+        beginText(ivec2(vec2(scale * viewWidth / viewHeight, scale) * texCoord) / textSize, ivec2(0 + offset.x, scale / textSize - offset.y));
+        text.bgCol = vec4(0.0);
+    }
+#endif
 
 //Program//
 void main() {
@@ -77,20 +72,12 @@ void main() {
             texCoordM += WATER_REFRACTION_INTENSITY * 0.00035 * sin((texCoord.x + texCoord.y) * 25.0 + frameTimeCounter * 3.0);
     #endif
 
-    #ifndef LIGHT_COLORING
-        vec3 color = texture2D(colortex3, texCoordM).rgb;
-    #else
-        vec3 color = texture2D(colortex8, texCoordM).rgb;
-    #endif
+    vec3 color = texture2D(colortex3, texCoordM).rgb;
 
     #if CHROMA_ABERRATION > 0
         vec2 scale = vec2(1.0, viewHeight / viewWidth);
         vec2 aberration = (texCoordM - 0.5) * (2.0 / vec2(viewWidth, viewHeight)) * scale * CHROMA_ABERRATION;
-        #ifndef LIGHT_COLORING
-            color.rb = vec2(texture2D(colortex3, texCoordM + aberration).r, texture2D(colortex3, texCoordM - aberration).b);
-        #else
-            color.rb = vec2(texture2D(colortex8, texCoordM + aberration).r, texture2D(colortex8, texCoordM - aberration).b);
-        #endif
+        color.rb = vec2(texture2D(colortex3, texCoordM + aberration).r, texture2D(colortex3, texCoordM - aberration).b);
     #endif
 
     #if IMAGE_SHARPENING > 0
@@ -112,12 +99,16 @@ void main() {
         color = max(color, texelFetch(colortex3, texelCoord + boxOffsets[i], 0).rgb);
     }*/
 
-    #ifdef LIGHT_COLORING
-        if (max(texCoordM.x, texCoordM.y) < 0.25) color = texture2D(colortex3, texCoordM * 4.0).rgb;
+    #ifdef ANY_ERROR_MESSAGE
+        color.rgb = mix(color.rgb, vec3(0.0), 0.65);
     #endif
 
-    //if (gl_FragCoord.x < 479 || gl_FragCoord.x > 1441) color = vec3(0.0);
-    if (gl_FragCoord.x < 0) color = texture(shadowcolor0, texCoord).rgb;
+    #ifdef OPTIFINE_AF_ERROR
+        #include "/lib/textRendering/error_optifine_af.glsl"
+    #elif defined OPTIFINE_ACL_ERROR
+        #include "/lib/textRendering/error_optifine_acl.glsl"
+    #endif
+
     /* DRAWBUFFERS:0 */
     gl_FragData[0] = vec4(color, 1.0);
 
@@ -136,12 +127,6 @@ void main() {
 #ifdef VERTEX_SHADER
 
 noperspective out vec2 texCoord;
-
-//Uniforms//
-
-uniform int frameCounter;
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjectionInverse;
 
 //Attributes//
 

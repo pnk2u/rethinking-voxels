@@ -1,6 +1,6 @@
-////////////////////////////////////////
-// Complementary Reimagined by EminGT //
-////////////////////////////////////////
+/////////////////////////////////////
+// Complementary Shaders by EminGT //
+/////////////////////////////////////
 
 //Common//
 #include "/lib/common.glsl"
@@ -21,6 +21,10 @@ flat in int passType;
 flat in ivec3 correspondingBlock;
 in vec3 vxPosF;
 
+#ifdef CONNECTED_GLASS_EFFECT
+    in vec2 signMidCoordPos;
+    flat in vec2 absMidCoordPos;
+#endif
 //Uniforms//
 uniform int isEyeInWater;
 uniform int renderStage;
@@ -55,6 +59,9 @@ void DoNaturalShadowCalculation(inout vec4 color1, inout vec4 color2) {
 }
 
 //Includes//
+#ifdef CONNECTED_GLASS_EFFECT
+    #include "/lib/materials/materialMethods/connectedGlass.glsl"
+#endif
 
 //Program//
 void main() {
@@ -70,12 +77,20 @@ void main() {
                 float positionYM = position.y;
             #endif
 
-            if (mat < 31008) {
-                if (mat < 31000) {
-                    DoNaturalShadowCalculation(color1, color2);
-                } else {
-                    if (mat == 31000) { // Water
-                        vec3 worldPos = position.xyz + cameraPosition;
+        if (mat < 32008) {
+            if (mat < 32000) {
+                #ifdef CONNECTED_GLASS_EFFECT
+                    if (mat == 30008) { // Tinted Glass
+                        DoSimpleConnectedGlass(color1);
+                    }
+                    if (mat >= 31000) { // Stained Glass, Stained Glass Pane
+                        DoSimpleConnectedGlass(color1);
+                    }
+                #endif
+                DoNaturalShadowCalculation(color1, color2);
+            } else {
+                if (mat == 32000) { // Water
+                    vec3 worldPos = position.xyz + cameraPosition;
 
                         #if defined LIGHTSHAFTS_ACTIVE && LIGHTSHAFT_BEHAVIOUR == 1 && defined OVERWORLD
                             // For scene-aware light shafts to be more prone to get extreme near water
@@ -145,30 +160,38 @@ void main() {
                         color2.rgb *= waterNoise * (1.0 + sunVisibility - rainFactor);
                         ////
 
-                        #ifdef UNDERWATERCOLOR_CHANGED
-                            color1.rgb *= vec3(UNDERWATERCOLOR_RM, UNDERWATERCOLOR_GM, UNDERWATERCOLOR_BM);
-                            color2.rgb *= vec3(UNDERWATERCOLOR_RM, UNDERWATERCOLOR_GM, UNDERWATERCOLOR_BM);
-                        #endif
-                    } else /*if (mat == 31004)*/ { // Ice
-                        color1.rgb *= color1.rgb;
-                        color1.rgb *= color1.rgb;
-                        color1.rgb = mix(vec3(1.0), color1.rgb, pow(color1.a, (1.0 - color1.a) * 0.5) * 1.05);
-                        color1.rgb *= 1.0 - pow(color1.a, 64.0);
-                        color1.rgb *= 0.28;
+                    #ifdef UNDERWATERCOLOR_CHANGED
+                        color1.rgb *= vec3(UNDERWATERCOLOR_RM, UNDERWATERCOLOR_GM, UNDERWATERCOLOR_BM);
+                        color2.rgb *= vec3(UNDERWATERCOLOR_RM, UNDERWATERCOLOR_GM, UNDERWATERCOLOR_BM);
+                    #endif
+                } else /*if (mat == 32004)*/ { // Ice
+                    color1.rgb *= color1.rgb;
+                    color1.rgb *= color1.rgb;
+                    color1.rgb = mix(vec3(1.0), color1.rgb, pow(color1.a, (1.0 - color1.a) * 0.5) * 1.05);
+                    color1.rgb *= 1.0 - pow(color1.a, 64.0);
+                    color1.rgb *= 0.28;
 
-                        color2.rgb = normalize(pow(color1.rgb, vec3(0.25))) * 0.5;
-                    }
-                }
-            } else {
-                if (mat < 31020) { // Glass, Glass Pane, Beacon (31008, 31012, 31016)
-                    if (color1.a > 0.5) color1 = vec4(0.0, 0.0, 0.0, 1.0);
-                    else color1 = vec4(vec3(0.2 * (1.0 - GLASS_OPACITY)), 1.0);
-                    color2.rgb = vec3(0.3);
-                } else {
-                    DoNaturalShadowCalculation(color1, color2);
+                    color2.rgb = normalize(pow(color1.rgb, vec3(0.25))) * 0.5;
                 }
             }
-        #endif
+        } else {
+            if (mat < 32020) { // Glass, Glass Pane, Beacon (32008, 32012, 32016)
+                #ifdef CONNECTED_GLASS_EFFECT
+                    if (mat == 32008) { // Glass
+                        DoSimpleConnectedGlass(color1);
+                    }
+                    if (mat == 32012) { // Glass Pane
+                        DoSimpleConnectedGlass(color1);
+                    }
+                #endif
+                if (color1.a > 0.5) color1 = vec4(0.0, 0.0, 0.0, 1.0);
+                else color1 = vec4(vec3(0.2 * (1.0 - GLASS_OPACITY)), 1.0);
+                color2.rgb = vec3(0.3);
+            } else {
+                DoNaturalShadowCalculation(color1, color2);
+            }
+        }
+    #endif
 
         gl_FragData[0] = color1; // Shadow Color
 
@@ -504,6 +527,11 @@ out vec4 positionV;
 flat out vec4 glColorV;
 flat out ivec3 correspondingBlockV;
 
+#ifdef CONNECTED_GLASS_EFFECT
+    out vec2 signMidCoordPos;
+    flat out vec2 absMidCoordPos;
+#endif
+
 //Uniforms//
 uniform int renderStage;
 uniform int blockEntityId;
@@ -526,13 +554,24 @@ uniform mat4 gbufferModelViewInverse;
 //Attributes//
 in vec4 mc_Entity;
 in vec3 at_midBlock;
-#if defined PERPENDICULAR_TWEAKS || defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
+#if defined PERPENDICULAR_TWEAKS || defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX || defined CONNECTED_GLASS_EFFECT
     attribute vec4 mc_midTexCoord;
 #endif
 
+#if COLORED_LIGHTING > 0
+    attribute vec3 at_midBlock;
+#endif
+
 //Common Variables//
-#if (defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX) && defined NO_WAVING_INDOORS
-    vec2 lmCoord = vec2(0.0);
+vec2 lmCoord;
+
+#if COLORED_LIGHTING > 0
+    uniform int renderStage;
+    writeonly uniform uimage3D voxel_img;
+
+    #ifdef PUDDLE_VOXELIZATION
+        writeonly uniform uimage2D puddle_img;
+    #endif
 #endif
 
 //Common Functions//
@@ -544,6 +583,14 @@ in vec3 at_midBlock;
     #include "/lib/materials/materialMethods/wavingBlocks.glsl"
 #endif
 
+#if COLORED_LIGHTING > 0
+    #include "/lib/misc/voxelization.glsl"
+
+    #ifdef PUDDLE_VOXELIZATION
+        #include "/lib/misc/puddleVoxelization.glsl"
+    #endif
+#endif
+
 //Program//
 void main() {
     vec3 fractCamPos = cameraPositionFract;
@@ -552,12 +599,10 @@ void main() {
     }
 
     texCoordV = gl_MultiTexCoord0.xy;
-    lmCoordV = clamp(((gl_TextureMatrix[1] * gl_MultiTexCoord1).xy - 0.03125) * 1.06667, 0.0, 1.0);
+    lmCoordV = GetLightMapCoordinates();
     glColorV = gl_Color;
-
     sunVecV = GetSunVector();
     upVecV = normalize(gbufferModelView[1].xyz);
-
     positionV = shadowModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
     correspondingBlockV = ivec3(-1000);
     matV = blockEntityId;
@@ -579,8 +624,16 @@ void main() {
 
         DoWave(position.xyz, matV);
     #endif
+
+    #ifdef CONNECTED_GLASS_EFFECT
+        vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
+        vec2 texMinMidCoord = texCoord - midCoord;
+        signMidCoordPos = sign(texMinMidCoord);
+        absMidCoordPos  = abs(texMinMidCoord);
+    #endif
+
     #ifdef PERPENDICULAR_TWEAKS
-        if (matV == 10004 || matV == 10016) { // Foliage
+        if (matV == 10005 || matV == 10017) { // Foliage
             vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
             vec2 texMinMidCoord = texCoordV - midCoord;
             if (texMinMidCoord.y < 0.0) {
@@ -590,9 +643,19 @@ void main() {
         }
     #endif
 
-    if (matV == 31000) { // Water
+    if (matV == 32000) { // Water
         position.y += 0.015 * max0(length(position.xyz) - 50.0);
     }
+
+    #if COLORED_LIGHTING > 0
+        if (gl_VertexID % 4 == 0) {
+            UpdateVoxelMap(mat);
+            #ifdef PUDDLE_VOXELIZATION
+                UpdatePuddleVoxelMap(mat);
+            #endif
+        }
+    #endif
+
     gl_Position = shadowProjection * shadowModelView * position;
 
     float lVertexPos = sqrt(gl_Position.x * gl_Position.x + gl_Position.y * gl_Position.y);
