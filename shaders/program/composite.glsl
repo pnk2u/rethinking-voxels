@@ -12,7 +12,7 @@ noperspective in vec2 texCoord;
 
 flat in vec3 upVec, sunVec;
 
-#if defined LIGHTSHAFTS_ACTIVE || defined VOLUMETRIC_BLOCKLIGHT
+#ifdef LIGHTSHAFTS_ACTIVE
     flat in float vlFactor;
 #endif
 
@@ -82,11 +82,6 @@ vec2 view = vec2(viewWidth, viewHeight);
 
 #if RAINBOWS > 0 && defined OVERWORLD
     #include "/lib/atmospherics/rainbow.glsl"
-#endif
-
-#ifdef COLORED_LIGHT_FOG
-    #include "/lib/misc/voxelization.glsl"
-    #include "/lib/atmospherics/fog/coloredLightFog.glsl"
 #endif
 
 //Program//
@@ -163,9 +158,6 @@ void main() {
 
     #ifdef ATM_COLOR_MULTS
         volumetricEffect.rgb *= GetAtmColorMult();
-        #ifdef NETHER_STORM
-            netherVolumetricEffect.rgb *= GetAtmColorMult();
-        #endif
     #endif
     #ifdef MOON_PHASE_INF_ATMOSPHERE
         volumetricEffect.rgb *= moonPhaseInfluence;
@@ -175,15 +167,19 @@ void main() {
         if (isEyeInWater == 0) color = mix(color, netherVolumetricEffect.rgb, netherVolumetricEffect.a);
     #endif
 
-    #ifdef COLORED_LIGHT_FOG
+    #ifdef VOLUMETRIC_BLOCKLIGHT
         float caveFactor = GetCaveFactor();
 
-        vec3 lightFog = GetColoredLightFog(nPlayerPos, translucentMult, lViewPos, lViewPos1, dither, caveFactor);
-        float lightFogMult = COLORED_LIGHT_FOG_I;
+        vec3 lightFog = GetVolumetricBlocklight(translucentMult, lViewPos1, nViewPos, texCoord, z0, z1, dither);
+        float lightFogMult = VBL_STRENGTH;
         //if (heldItemId == 40000 && heldItemId2 != 40000) lightFogMult = 0.0; // Hold spider eye to disable light fog
 
         #ifdef OVERWORLD
             lightFogMult *= 0.2 + 0.6 * max(caveFactor, 1.0 - sunFactor * invRainFactor);
+        #elif defined NETHER
+            lightFogMult *= VBL_NETHER_MULT;
+        #elif defined END
+            lightFogMult *= VBL_END_MULT;
         #endif
 
         color /= 1.0 + pow2(GetLuminance(lightFog)) * lightFogMult * 2.0;
@@ -266,7 +262,7 @@ void main() {
     upVec = normalize(gbufferModelView[1].xyz);
     sunVec = GetSunVector();
 
-    #ifdef LIGHTSHAFTS_ACTIVE
+    #if defined LIGHTSHAFTS_ACTIVE
         #if LIGHTSHAFT_BEHAVIOUR == 1 && SHADOW_QUALITY >= 1 || defined END
             vlFactor = texelFetch(colortex4, ivec2(viewWidth-1, viewHeight-1), 0).r;
         #else

@@ -9,9 +9,9 @@
         return (far * (dist - near)) / (dist * (far - near));
     }
 #endif
-vec4 GetVolumetricBlocklight(vec3 translucentMult, float lViewPos, vec3 nViewPos, vec2 texCoord, float z0, float z1, float dither) {
-    if (max(blindness, darknessFactor) > 0.1) return vec4(0.0);
-    vec4 volumetricLight = vec4(0.0);
+vec3 GetVolumetricBlocklight(vec3 translucentMult, float lViewPos, vec3 nViewPos, vec2 texCoord, float z0, float z1, float dither) {
+    if (max(blindness, darknessFactor) > 0.1) return vec3(0.0);
+    vec3 volumetricLight = vec3(0.0);
 
     vec3 vlMult = vec3(VBL_STRENGTH);
     #ifdef OVERWORLD
@@ -84,7 +84,7 @@ vec4 GetVolumetricBlocklight(vec3 translucentMult, float lViewPos, vec3 nViewPos
 
         if (currentDist > depth0) vlSample *= translucentMult;
 
-        volumetricLight += vec4(vlSample, 1) * sampleMult;
+        volumetricLight += vlSample * sampleMult;
     }
 
     #ifdef OVERWORLD
@@ -103,10 +103,9 @@ vec4 GetVolumetricBlocklight(vec3 translucentMult, float lViewPos, vec3 nViewPos
     #elif defined END
         vlMult *= VBL_END_MULT;
     #endif
-    volumetricLight.rgb *= vlMult;
+    volumetricLight *= vlMult;
 
-    volumetricLight = max(volumetricLight, vec4(0.0));
-    volumetricLight.a = min(volumetricLight.a, 1.0);
+    volumetricLight = max(volumetricLight, vec3(0.0));
 
     return volumetricLight;
 }
