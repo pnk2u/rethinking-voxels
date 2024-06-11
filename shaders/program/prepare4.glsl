@@ -143,7 +143,7 @@ void main() {
     #endif
 }
 #endif
-#ifdef VSH
+#ifdef VERTEX_SHADER
 
 noperspective out vec2 lrTexCoord;
 flat out mat4 unProjectionMatrix;

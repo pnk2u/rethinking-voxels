@@ -45,7 +45,7 @@ void main() {
 #endif
 
 //////Vertex Shader//////Vertex Shader//////
-#ifdef VSH
+#ifdef VERTEX_SHADER
 
 out mat4 unprojectionMatrix, projectionMatrix;
 

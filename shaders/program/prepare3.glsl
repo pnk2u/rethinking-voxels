@@ -63,7 +63,7 @@ void main() {
 #endif
 
 //////Vertex Shader//////Vertex Shader//////
-#ifdef VSH
+#ifdef VERTEX_SHADER
 
 out vec3 dir;
 

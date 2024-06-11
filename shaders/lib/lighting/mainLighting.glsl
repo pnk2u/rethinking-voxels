@@ -466,10 +466,6 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
 
     float dotSceneLighting = dot(sceneLighting, sceneLighting);
 
-    #if HELD_LIGHTING_MODE >= 1
-        blockLighting = sqrt(pow2(blockLighting) + heldLighting);
-    #endif
-
     blockLighting *= XLIGHT_I;
 
     #ifdef LIGHT_COLOR_MULTS

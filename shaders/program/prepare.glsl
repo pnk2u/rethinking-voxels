@@ -11,7 +11,7 @@ void main() {
 #endif
 
 //////Vertex Shader//////Vertex Shader//////
-#ifdef VSH
+#ifdef VERTEX_SHADER
 void main() {
     gl_Position = ftransform();
 }

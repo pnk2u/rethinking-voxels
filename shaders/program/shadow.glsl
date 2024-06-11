@@ -292,7 +292,11 @@ void main() {
             if (cameraPositionInt.y == -98257195) {
                 floorCamPosRelEyePos = (floor(cameraPosition) - eyePosition);
             }
-            vec3 offset = 0.5 * normalize((center - 0.025 * cnormal + floorCamPosRelEyePos) * vec3(1, 0, 1));
+            #ifdef PLAYER_VOXELIZATION
+                vec3 offset = 0.5 * normalize((center - 0.025 * cnormal + floorCamPosRelEyePos) * vec3(1, 0, 1));
+            #else
+                vec3 offset = -0.8 * (center - 0.025 * cnormal + floorCamPosRelEyePos) * vec3(1, 0, 1);
+            #endif
             center += offset;
             for (int i = 0; i < 3; i++) {
                 vxPos[i] += offset;
