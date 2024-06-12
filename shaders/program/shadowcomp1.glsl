@@ -81,6 +81,7 @@ layout(rgba16i) uniform iimage3D lightStorage;
 shared int lightCount;
 shared bool anyInFrustrum;
 shared ivec4[MAX_LIGHT_COUNT] positions;
+shared int[MAX_LIGHT_COUNT] extraData;
 shared float[MAX_LIGHT_COUNT] weights;
 shared int[MAX_LIGHT_COUNT] mergeOffsets;
 shared uint[128] lightHashMap;
@@ -159,12 +160,15 @@ void main() {
     ivec3 coords = ivec3(gl_GlobalInvocationID);
     vec3 normal = vec3(0);
     vec3 vxPos = coords - 0.5 * voxelVolumeSize + vec3(0.51, 0.49, 0.502);
+    vec3 meanPos = vec3(gl_WorkGroupID) * 8 + 4 - 0.5 * voxelVolumeSize;
+
     bool insideFrustrum = true;
     for (int k = 0; k < 5; k++) {
         insideFrustrum = (insideFrustrum && dot(vxPos, frustrumSides[k]) > -10.0);
     }
     bool hasNeighbor = false;
-    bool activeFrame = int(gl_WorkGroupID.x + gl_WorkGroupID.y + gl_WorkGroupID.z) % 10 == frameCounter * 3 % 10;
+    int updateInterval = min(int(0.01 * dot(meanPos, meanPos) + 1.0), 10);
+    bool activeFrame = int(gl_WorkGroupID.x + gl_WorkGroupID.y + gl_WorkGroupID.z) % updateInterval == frameCounter * 3 % updateInterval;
 
     if (insideFrustrum && activeFrame) {
         anyInFrustrum = true;
@@ -215,6 +219,8 @@ void main() {
             }
         }
     }
+    barrier();
+    memoryBarrierShared();
     if (index < MAX_LIGHT_COUNT && anyInFrustrum) {
         for (int k = 0; k < 6; k++) {
             ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
@@ -244,27 +250,48 @@ void main() {
             }
         }
     }
+
+    #if HELD_LIGHTING_MODE > 0
+        if (index < 125 && anyInFrustrum) {
+            ivec3 lightPos0 = ivec3(index%5, index/5%5, index/25%5) - 2;
+            if ((imageLoad(occupancyVolume, lightPos0 + voxelVolumeSize/2).r >> 16 & 1) != 0) {
+                ivec2 packedLightSubPos = ivec2(
+                    imageLoad(
+                        voxelCols,
+                        (lightPos0 + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r,
+                    imageLoad(
+                        voxelCols,
+                        (lightPos0 + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0)).r
+                );
+                vec3 subLightPos = 0.1 * vec3(packedLightSubPos.x & 0x7fff, packedLightSubPos.x>>15 & 0x7fff, packedLightSubPos.y & 0x7fff) / (packedLightSubPos.y >>25) - 1;
+                uint hash = posToHash(lightPos0) % uint(128*32);
+                if ((atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) == 0) {
+                    int lightIndex = atomicAdd(lightCount, 1);
+                    if (lightIndex < MAX_LIGHT_COUNT) {
+                        vec3 lightPos = lightPos0 + 0.5;
+                        float dirLen = length(lightPos - meanPos);
+                        positions[lightIndex] = ivec4(lightPos + 10, 0) - ivec2(10, 0).xxxy;
+                        weights[lightIndex] =
+                            length(getColor(lightPos).xyz) *
+                            (sqrt(1 - min(1.0, dirLen / LIGHT_TRACE_LENGTH))) /
+                            (dirLen + 0.1);
+                    } else {
+                        atomicMin(lightCount, MAX_LIGHT_COUNT);
+                    }
+                }
+            }
+        }
+    #endif
     barrier();
     memoryBarrierShared();
     bool participateInSorting = index < MAX_LIGHT_COUNT/2;
     #include "/lib/misc/prepare4_BM_sort.glsl"
     
-    vec3 meanPos = vec3(gl_WorkGroupID) * 8 + 4 - 0.5 * voxelVolumeSize;
-    if (false && index >= MAX_TRACE_COUNT && anyInFrustrum) {
-        if (index < lightCount) {
-            vec3 lightPos = positions[index].xyz + 0.5;
-            vec3 dir = lightPos - meanPos;
-            float dirLen = length(dir);
-            float ndotl = 1.0;
-            float totalBrightness = ndotl * (sqrt(1 - min(1.0, dirLen / LIGHT_TRACE_LENGTH))) / (dirLen + 0.1);
-            int thisWeight = int(10000.5 * length(getColor(lightPos)) * totalBrightness);
-            vec4 rayHit1 = coneTrace(meanPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.3 / dirLen, dither);
-            if (rayHit1.w > 0.01) positions[index].w = thisWeight;
-        } else if (index < lightCount) {
-            positions[index].w = 0;
-        }
+    if (index < lightCount) {
+        extraData[index] = imageLoad(occupancyVolume, positions[index].xyz + voxelVolumeSize/2).r;
     }
     barrier();
+    memoryBarrierShared();
 
     vec3 writeColor = vec3(0);
     if (insideFrustrum && activeFrame) {
@@ -273,21 +300,25 @@ void main() {
             uint hash = posToHash(positions[thisLightIndex].xyz) % uint(1<<18);
             uvec2 packedLightSubPos = uvec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
             uvec2 packedLightCol = uvec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
-
-            vec3 lightPos = positions[thisLightIndex].xyz + 0.5;
+            vec3 subLightPos
+                = length(positions[thisLightIndex].xyz) < 4
+                ? 1.0/32.0 * vec3(packedLightSubPos.x & 0xffff, packedLightSubPos.x>>16, packedLightSubPos.y & 0xffff) / (packedLightSubPos.y >> 16) - 1
+                : vec3(0.5);
+            vec3 lightPos = positions[thisLightIndex].xyz + subLightPos;
             float ndotl0 = infnorm(vxPos - 0.5 * normal - lightPos) < 0.5 || !hasNeighbor ? 1.0 :
                 max(0, (dot(normalize(lightPos - vxPos + 0.5 * normal), normal)));
             ivec3 lightCoords = positions[thisLightIndex].xyz + voxelVolumeSize / 2;
             vec3 dir = lightPos - vxPos;
             float dirLen = length(dir);
-            if (dirLen < LIGHT_TRACE_LENGTH && ndotl0 > 0.001) {
-                float lightBrightness = 1;
+            float thisTraceLen = (extraData[thisLightIndex]>>17 & 31)/32.0;
+            if (dirLen < thisTraceLen * LIGHT_TRACE_LENGTH && ndotl0 > 0.001) {
+                float lightBrightness = 1.5 * thisTraceLen;
                 lightBrightness *= lightBrightness;
                 float ndotl = ndotl0 * lightBrightness;
                 vec4 rayHit1 = coneTrace(vxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.4 / dirLen, dither);
                 if (rayHit1.w > 0.01) {
                     vec3 lightColor = 1.0/32.0 * vec3(packedLightCol.x & 0xffff, packedLightCol.x>>16, packedLightCol.y & 0xffff) / (packedLightSubPos.y >> 16);
-                    float totalBrightness = ndotl * (sqrt(1 - dirLen / LIGHT_TRACE_LENGTH)) / (dirLen + 0.1);
+                    float totalBrightness = ndotl * (sqrt(1 - dirLen / (LIGHT_TRACE_LENGTH * thisTraceLen))) / (dirLen + 0.1);
                     writeColor += lightColor * rayHit1.rgb * rayHit1.w * totalBrightness;
                     int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);
                     atomicMax(positions[thisLightIndex].w, thisWeight);
@@ -295,29 +326,6 @@ void main() {
             }
         }
     }
-
-    ivec4 thisLight;
-    if (index < lightCount && anyInFrustrum) {
-        thisLight = positions[index];
-        mergeOffsets[index] = 0;
-    }
-    barrier();
-    memoryBarrierShared();
-    if (index < lightCount && anyInFrustrum && thisLight.w <= 0) {
-        for (int j = index + 1; j < lightCount; j++) {
-            atomicAdd(mergeOffsets[j], -1);
-        }
-    }
-    barrier();
-    if (index < lightCount && anyInFrustrum && thisLight.w > 0) {
-        positions[index + mergeOffsets[index]] = thisLight;
-    }
-    barrier();
-    if (lightCount > 0 && anyInFrustrum && index == 0) {
-        lightCount += mergeOffsets[lightCount - 1];
-    }
-    barrier();
-    memoryBarrierShared();
 
     if (anyInFrustrum) {
         imageStore(irradianceCacheI, coords + ivec3(0, voxelVolumeSize.y, 0), vec4(writeColor, 1));
