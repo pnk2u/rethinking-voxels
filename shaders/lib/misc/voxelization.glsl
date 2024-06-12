@@ -228,7 +228,7 @@ int GetVoxelIDs(int mat) {
             mat < 30000 && mat % 4 == 1 // Non-solid terrain
         ) return;
 
-        vec3 modelPos = gl_Vertex.xyz + at_midBlock / 64.0;
+        vec3 modelPos = gl_Vertex.xyz + at_midBlock.xyz / 64.0;
         vec3 viewPos = transform(gl_ModelViewMatrix, modelPos);
         vec3 scenePos = transform(shadowModelViewInverse, viewPos);
         vec3 voxelPos = SceneToVoxel(scenePos);

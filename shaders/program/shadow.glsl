@@ -266,7 +266,12 @@ void main() {
 
     cnormal = normalize(cnormal);
 
-    bool emissive = isEmissive(localMat) || (lmCoordV[0].x > 0.99 && localMat == 0);
+    bool emissive = isEmissive(localMat) ||
+    #ifdef IRIS_FEATURE_BLOCK_EMISSION_ATTRIBUTE
+        (lmCoordV[0].x > 0.3 && localMat == 0);
+    #else
+        (lmCoordV[0].x > 0.99 && localMat == 0);
+    #endif
 
     vec3[3] vxPos;
 
@@ -517,7 +522,7 @@ uniform int renderStage;
 
 //Attributes//
 in vec4 mc_Entity;
-in vec3 at_midBlock;
+in vec4 at_midBlock;
 #if defined PERPENDICULAR_TWEAKS || defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX || defined CONNECTED_GLASS_EFFECT
     attribute vec4 mc_midTexCoord;
 #endif
@@ -562,15 +567,21 @@ void main() {
     positionV = shadowModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
     correspondingBlockV = ivec3(-1000);
     matV = blockEntityId;
+    #ifdef IRIS_FEATURE_BLOCK_EMISSION_ATTRIBUTE
+        //lmCoordV.x = 0.0;
+    #endif
     if (
         renderStage == MC_RENDER_STAGE_TERRAIN_SOLID ||
         renderStage == MC_RENDER_STAGE_TERRAIN_CUTOUT ||
         renderStage == MC_RENDER_STAGE_TERRAIN_CUTOUT_MIPPED ||
         renderStage == MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
     ) {
-        correspondingBlockV = ivec3(floor(positionV.xyz + fractCamPos + at_midBlock/64) + 1000.5) - 1000 + voxelVolumeSize/2;
+        correspondingBlockV = ivec3(floor(positionV.xyz + fractCamPos + at_midBlock.xyz/64) + 1000.5) - 1000 + voxelVolumeSize/2;
         matV = int(mc_Entity.x + 0.5);
-        //positionV = vec4(correspondingBlockV - voxelVolumeSize/2 - fractCamPos + 0.5 - at_midBlock/64, 1.0);
+        #ifdef IRIS_FEATURE_BLOCK_EMISSION_ATTRIBUTE
+            lmCoordV.x = at_midBlock.w/15.0;
+        #endif
+        //positionV = vec4(correspondingBlockV - voxelVolumeSize/2 - fractCamPos + 0.5 - at_midBlock.xyz/64, 1.0);
     }
     vec4 position = positionV;
     #if defined WAVING_ANYTHING_TERRAIN || defined WAVING_WATER_VERTEX
