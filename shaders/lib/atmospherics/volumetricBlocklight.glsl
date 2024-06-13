@@ -27,7 +27,7 @@ vec3 GetVolumetricBlocklight(vec3 translucentMult, float lViewPos, vec3 nViewPos
         int sampleCount = vlSceneIntensity < 0.5 ? 15 : 30;
     #elif LIGHTSHAFT_QUALI == 2
         int sampleCount = vlSceneIntensity < 0.5 ? 10 : 20;
-    #elif LIGHTSHAFT_QUALI == 1
+    #else
         int sampleCount = vlSceneIntensity < 0.5 ? 6 : 12;
     #endif
     float addition = 1.0;
