@@ -16,12 +16,12 @@ in vec3 normal;
 
 in vec4 glColor;
 
-#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
+#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined SLANTED_BLOCK_EDGES
     in vec2 signMidCoordPos;
     flat in vec2 absMidCoordPos;
 #endif
 
-#if defined GENERATED_NORMALS || defined CUSTOM_PBR
+#if defined GENERATED_NORMALS || defined CUSTOM_PBR || defined SLANTED_BLOCK_EDGES
     flat in vec3 binormal, tangent;
 #endif
 
@@ -75,6 +75,10 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
 
 #ifdef GENERATED_NORMALS
     #include "/lib/materials/materialMethods/generatedNormals.glsl"
+#endif
+
+#ifdef SLANTED_BLOCK_EDGES
+    #include "/lib/materials/materialMethods/slantedEdges.glsl"
 #endif
 
 #ifdef COATED_TEXTURES
@@ -136,6 +140,10 @@ void main() {
         }
     #endif
 
+    #ifdef SLANTED_BLOCK_EDGES
+        GenerateEdgeSlopes(normalM);
+    #endif
+
     #ifdef GENERATED_NORMALS
         GenerateNormals(normalM, colorP);
     #endif
@@ -179,12 +187,12 @@ out vec3 normal;
 
 out vec4 glColor;
 
-#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
+#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined SLANTED_BLOCK_EDGES
     out vec2 signMidCoordPos;
     flat out vec2 absMidCoordPos;
 #endif
 
-#if defined GENERATED_NORMALS || defined CUSTOM_PBR
+#if defined GENERATED_NORMALS || defined CUSTOM_PBR || defined SLANTED_BLOCK_EDGES
     flat out vec3 binormal, tangent;
 #endif
 
@@ -195,11 +203,11 @@ out vec4 glColor;
 #endif
 
 //Attributes//
-#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
+#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined SLANTED_BLOCK_EDGES
     attribute vec4 mc_midTexCoord;
 #endif
 
-#if defined GENERATED_NORMALS || defined CUSTOM_PBR
+#if defined GENERATED_NORMALS || defined CUSTOM_PBR || defined SLANTED_BLOCK_EDGES
     attribute vec4 at_tangent;
 #endif
 
@@ -240,7 +248,7 @@ void main() {
         }*/
     #endif
 
-    #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM
+    #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined SLANTED_BLOCK_EDGES
         if (blockEntityId == 60008) { // Chest
             float fractWorldPosY = fract((gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex).y + cameraPosition.y);
             if (fractWorldPosY > 0.56 && 0.57 > fractWorldPosY) gl_Position.z -= 0.0001;
@@ -252,7 +260,7 @@ void main() {
         absMidCoordPos  = abs(texMinMidCoord);
     #endif
 
-    #if defined GENERATED_NORMALS || defined CUSTOM_PBR
+    #if defined GENERATED_NORMALS || defined CUSTOM_PBR || defined SLANTED_BLOCK_EDGES
         binormal = normalize(gl_NormalMatrix * cross(at_tangent.xyz, gl_Normal.xyz) * at_tangent.w);
         tangent  = normalize(gl_NormalMatrix * at_tangent.xyz);
     #endif

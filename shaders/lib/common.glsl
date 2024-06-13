@@ -60,7 +60,6 @@
     #ifdef OVERWORLD
         #define FRACTAL_GALAXY 0 //[0 1 2 3]
     #endif
-
     #if !defined DH_TERRAIN && !defined DH_WATER
         #define VOXEL_RT_REFLECTIONS
     #endif
@@ -73,6 +72,8 @@
     #ifdef ENTITY_SHADOWS_DEFINE > 0
         #define ENTITY_VOXELIZATION
     #endif
+  //#define SLANTED_BLOCK_EDGES
+
     #define SSAO_QUALI_DEFINE 2 //[0 2 3]
     #define FXAA_DEFINE 1 //[-1 1]
     #define DETAIL_QUALITY 2 //[0 2 3]

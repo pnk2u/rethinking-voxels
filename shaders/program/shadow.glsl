@@ -465,6 +465,9 @@ void main() {
                 vec2 relProjectedPos
                     = vec2(  vxPos[i][(bestNormalAxis+1)%3],   vxPos[i][(bestNormalAxis+2)%3])
                     - vec2(lowerBound[(bestNormalAxis+1)%3], lowerBound[(bestNormalAxis+2)%3]);
+                if (cnormal[bestNormalAxis] < 0) {
+                    relProjectedPos.x *= -1;
+                }
                 gl_Position = vec4((relProjectedPos * (1<<localResolution) + 0.09) / shadowMapResolution - 0.9, 0.999999, 1.0);
                 mat = matV[i];
                 texCoord = texCoordV[i];

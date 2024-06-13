@@ -16,13 +16,13 @@ in vec3 normal;
 
 in vec4 glColor;
 
-#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined IPBR && defined IS_IRIS
+#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined SLANTED_BLOCK_EDGES || defined IPBR && defined IS_IRIS
     in vec2 signMidCoordPos;
     flat in vec2 absMidCoordPos;
     flat in vec2 midCoord;
 #endif
 
-#if defined GENERATED_NORMALS || defined CUSTOM_PBR
+#if defined GENERATED_NORMALS || defined CUSTOM_PBR || defined SLANTED_BLOCK_EDGES
     flat in vec3 binormal, tangent;
 #endif
 
@@ -74,6 +74,10 @@ float shadowTime = shadowTimeVar2 * shadowTimeVar2;
     #include "/lib/materials/materialMethods/generatedNormals.glsl"
 #endif
 
+#ifdef SLANTED_BLOCK_EDGES
+    #include "/lib/materials/materialMethods/slantedEdges.glsl"
+#endif
+
 #ifdef COATED_TEXTURES
     #include "/lib/materials/materialMethods/coatedTextures.glsl"
 #endif
@@ -111,6 +115,9 @@ void main() {
         float smoothnessG = 0.0, highlightMult = 0.0, emission = 0.0, noiseFactor = 0.75;
         vec2 lmCoordM = lmCoord;
         vec3 shadowMult = vec3(1.0);
+        #ifdef SLANTED_BLOCK_EDGES
+            GenerateEdgeSlopes(normalM);
+        #endif
         #ifdef IPBR
             #include "/lib/materials/materialHandling/entityMaterials.glsl"
 
@@ -185,13 +192,13 @@ out vec3 normal;
 
 out vec4 glColor;
 
-#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined IPBR && defined IS_IRIS
+#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined SLANTED_BLOCK_EDGES || defined IPBR && defined IS_IRIS
     out vec2 signMidCoordPos;
     flat out vec2 absMidCoordPos;
     flat out vec2 midCoord;
 #endif
 
-#if defined GENERATED_NORMALS || defined CUSTOM_PBR
+#if defined GENERATED_NORMALS || defined CUSTOM_PBR || defined SLANTED_BLOCK_EDGES
     flat out vec3 binormal, tangent;
 #endif
 
@@ -202,11 +209,11 @@ out vec4 glColor;
 #endif
 
 //Attributes//
-#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined IPBR && defined IS_IRIS
+#if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined SLANTED_BLOCK_EDGES || defined IPBR && defined IS_IRIS
     attribute vec4 mc_midTexCoord;
 #endif
 
-#if defined GENERATED_NORMALS || defined CUSTOM_PBR
+#if defined GENERATED_NORMALS || defined CUSTOM_PBR || defined SLANTED_BLOCK_EDGES
     attribute vec4 at_tangent;
 #endif
 
@@ -235,14 +242,14 @@ void main() {
     northVec = normalize(gbufferModelView[2].xyz);
     sunVec = GetSunVector();
 
-    #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined IPBR && defined IS_IRIS
+    #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined SLANTED_BLOCK_EDGES || defined IPBR && defined IS_IRIS
         midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
         vec2 texMinMidCoord = texCoord - midCoord;
         signMidCoordPos = sign(texMinMidCoord);
         absMidCoordPos  = abs(texMinMidCoord);
     #endif
 
-    #if defined GENERATED_NORMALS || defined CUSTOM_PBR
+    #if defined GENERATED_NORMALS || defined CUSTOM_PBR || defined SLANTED_BLOCK_EDGES
         binormal = normalize(gl_NormalMatrix * cross(at_tangent.xyz, gl_Normal.xyz) * at_tangent.w);
         tangent  = normalize(gl_NormalMatrix * at_tangent.xyz);
     #endif

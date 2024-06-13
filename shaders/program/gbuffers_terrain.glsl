@@ -109,6 +109,10 @@ void DoOceanBlockTweaks(inout float smoothnessD) {
     #include "/lib/materials/materialMethods/generatedNormals.glsl"
 #endif
 
+#ifdef SLANTED_BLOCK_EDGES
+    #include "/lib/materials/materialMethods/slantedEdges.glsl"
+#endif
+
 #ifdef COATED_TEXTURES
     #include "/lib/materials/materialMethods/coatedTextures.glsl"
 #endif
@@ -165,6 +169,10 @@ void main() {
     #ifdef IPBR
         vec3 maRecolor = vec3(0.0);
         #include "/lib/materials/materialHandling/terrainMaterials.glsl"
+
+        #ifdef SLANTED_BLOCK_EDGES
+            GenerateEdgeSlopes(normalM, playerPos);
+        #endif
 
         #ifdef GENERATED_NORMALS
             if (!noGeneratedNormals) GenerateNormals(normalM, colorP);

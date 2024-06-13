@@ -1128,6 +1128,9 @@ option.LIGHT_COLOR_SATURATION.comment=This setting adjusts how much the saturati
 option.LIGHTSOURCE_SIZE_MULT=Light Source Size
 option.LIGHTSOURCE_SIZE_MULT.comment=Lower values increase sharpness of shadows cast by light sources by treating them as smaller than they actually are. §c[-]§rMay cause some light sources to cast weird shadows or stop working altogether at low values.
 
+option.SLANTED_BLOCK_EDGES=Slanted Block Edges
+option.SLANTED_BLOCK_EDGES.comment=Tilts face normals of full blocks outwards if at their edges if there is no block next to them.
+
 option.CONWAY=End Game of Life
 option.CONWAY.comment=Simulates Conway's game of life at the bottom of the end. Cells that are close to the player revive.
 value.CONWAY.0=Off
