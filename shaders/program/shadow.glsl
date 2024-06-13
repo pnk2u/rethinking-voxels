@@ -568,7 +568,7 @@ void main() {
     correspondingBlockV = ivec3(-1000);
     matV = blockEntityId;
     #ifdef IRIS_FEATURE_BLOCK_EMISSION_ATTRIBUTE
-        //lmCoordV.x = 0.0;
+        lmCoordV.x = 0.0;
     #endif
     if (
         renderStage == MC_RENDER_STAGE_TERRAIN_SOLID ||
