@@ -176,7 +176,7 @@ void main() {
         //if (heldItemId == 40000 && heldItemId2 != 40000) lightFogMult = 0.0; // Hold spider eye to disable light fog
 
         #ifdef OVERWORLD
-            lightFogMult *= 0.2 + 0.6 * max(caveFactor, 1.0 - sunFactor * invRainFactor);
+            lightFogMult *= 0.2 + 1.2 * max(caveFactor, 1.0 - sunFactor * invRainFactor);
         #elif defined NETHER
             lightFogMult *= VBL_NETHER_MULT;
         #elif defined END
@@ -203,7 +203,7 @@ void main() {
 
     color = pow(color, vec3(2.2));
 
-    #if defined LIGHTSHAFTS_ACTIVE || defined VOLUMETRIC_BLOCKLIGHT
+    #if defined LIGHTSHAFTS_ACTIVE
         #ifdef END
             volumetricEffect.rgb *= volumetricEffect.rgb;
         #endif
