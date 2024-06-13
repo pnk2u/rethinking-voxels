@@ -129,10 +129,21 @@ void main() {
         ivec4 prevFrameLight = imageLoad(colorimg11, writeTexelCoord);
         prevFrameLight.xyz += vxPosFrameOffset;
 
+        bool isStillLight = (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) != 0;
+        if (!isStillLight && prevFrameLight.w > 0) {
+            for (int k = 0; k < 6; k++) {
+                ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
+                if ((imageLoad(occupancyVolume, prevFrameLight.xyz + offset + voxelVolumeSize/2).r >> 16 & 1) != 0) {
+                    isStillLight = true;
+                    prevFrameLight.xyz += offset;
+                    break;
+                }
+            }
+        }
         uint hash = posToHash(prevFrameLight.xyz) % uint(128*32);
         bool known = (
             prevFrameLight.w <= 0 ||
-            (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0
+            !isStillLight
         );
         if (!known) {
             known = (atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) != 0;
