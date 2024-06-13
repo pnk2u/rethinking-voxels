@@ -32,6 +32,30 @@ void main() {
     #if FXAA_DEFINE == 1
         FXAA311(color);
     #endif
+    /*
+    if (texCoord.x < 0.5) {
+        color = 0.2 * getDistanceField(vec3(texCoord.xy * 10 - vec2(2.5, 5.0), fractCamPos)).xxx;
+    } else if (true) {
+//        color = texelFetch(colortex4, texelCoord, 0).gba;
+        vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
+        dir = normalize(dir * dir.w);
+        vec3 start = fractCamPos + 2 * dir.xyz;
+        vec3 normal;
+        vec3 hitPos = rayTrace(
+            start,
+            dir.xyz * 128,
+            fract(dot(
+                gl_FragCoord.xy,
+                vec2(
+                    0.5 + 0.5 * sqrt(5),
+                    pow2(0.5 + 0.5 * sqrt(5))
+                )
+            ))
+        );
+        //normal = normalize(distanceFieldGradient(hitPos));
+        //if (!(length(normal) > 0.5)) normal = vec3(0);
+        if (true) color = getColor(hitPos.xyz - 0.1 * normal).xyz + 0.2 * normal + 0.2;
+    }*/
     /* DRAWBUFFERS:3 */
     gl_FragData[0] = vec4(color, 1.0);
 }

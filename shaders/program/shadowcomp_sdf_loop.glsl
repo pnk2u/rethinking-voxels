@@ -18,11 +18,16 @@
     memoryBarrierShared();
     if (all(greaterThanEqual(localCoord, ivec3(0))) && all(lessThan(localCoord, ivec3(8)))) {
         #if j > 0
-            float prevDist = mix(
-                imageLoad(distanceFieldI, prevCoord)[(j-1)%4],
-                imageLoad(distanceFieldI, prevCoord + 2 * prevFractCoord - 1)[(j-1)%4],
-                0.25
-            );
+            float prevDist = 0.0;
+            for (int k = 0; k < 8; k++) {
+                ivec3 offset = ivec3(k%2, k/2%2, k/4%2) * (2 * prevFractCoord - 1);
+                vec3 distOffset = 0.75 - 0.5 * vec3(equal(offset, ivec3(0)));
+                prevDist = min(
+                    prevDist,
+                    min(min(distOffset.x, distOffset.y), distOffset.z)
+                     + imageLoad(distanceFieldI, prevCoord + offset)[(j-1)%4]
+                );
+            }
             if (prevDist < 3.0/(1<<j)) {
             #endif
             theseDists[j] = (thisOccupancy >> j & 1) == 1 ? -1.0/sqrt(3.0) / (1<<j) : ((thisOccupancy >> j+8 & 1) == 1 ? 0.5 : 1000);
