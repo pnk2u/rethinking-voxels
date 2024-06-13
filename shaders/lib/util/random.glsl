@@ -35,4 +35,16 @@ vec3 randomSphereSample() {
         1 - 2 * len2);
 }
 
+vec2 randomGaussian() {
+    float x1, x2;
+    float len2;
+    do {
+        x1 = nextFloat() * 2 - 1;
+        x2 = nextFloat() * 2 - 1;
+        len2 = x1 * x1 + x2 * x2;
+    } while (len2 >= 1);
+    float normfactor = sqrt(-2*log(len2)/len2);
+    return vec2(x1, x2) * normfactor;
+}
+
 #endif
