@@ -34,7 +34,7 @@ void main() {
     #endif
     /*
     if (texCoord.x < 0.5) {
-        color = 0.2 * getDistanceField(vec3(texCoord.xy * 10 - vec2(2.5, 5.0), fractCamPos)).xxx;
+        color = 0.7 * getDistanceField(vec3(texCoord.xy * 10 - vec2(2.5, 5.0), fractCamPos)).xxx;
     } else if (true) {
 //        color = texelFetch(colortex4, texelCoord, 0).gba;
         vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
@@ -52,8 +52,8 @@ void main() {
                 )
             ))
         );
-        //normal = normalize(distanceFieldGradient(hitPos));
-        //if (!(length(normal) > 0.5)) normal = vec3(0);
+        normal = normalize(distanceFieldGradient(hitPos));
+        if (!(length(normal) > 0.5)) normal = vec3(0);
         if (true) color = getColor(hitPos.xyz - 0.1 * normal).xyz + 0.2 * normal + 0.2;
     }*/
     /* DRAWBUFFERS:3 */
