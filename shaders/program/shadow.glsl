@@ -228,12 +228,22 @@ in vec4 positionV[3];
 flat in vec4 glColorV[3];
 flat in ivec3 correspondingBlockV[3];
 
+#ifdef CONNECTED_GLASS_EFFECT
+    in vec2 signMidCoordPosV[3];
+    flat in vec2 absMidCoordPosV[3];
+#endif
+
 flat out int mat;
 out vec2 texCoord;
 flat out vec3 sunVec, upVec;
 out vec4 position;
 flat out vec4 glColor;
 out vec3 vxPosF;
+
+#ifdef CONNECTED_GLASS_EFFECT
+    out vec2 signMidCoordPos;
+    flat out vec2 absMidCoordPos;
+#endif
 
 flat out int passType;
 flat out ivec3 correspondingBlock;
@@ -476,6 +486,10 @@ void main() {
                 position = positionV[i];
                 glColor = glColorV[i];
                 vxPosF = vxPos[i];
+                #ifdef CONNECTED_GLASS_EFFECT
+                    signMidCoordPos = signMidCoordPosV[i];
+                    absMidCoordPos = absMidCoordPosV[i];
+                #endif
                 passType = 1 + (localResolution << 1);
                 correspondingBlock = correspondingBlockV[i];
                 EmitVertex();
@@ -492,6 +506,10 @@ void main() {
             upVec = upVecV[i];
             position = positionV[i];
             glColor = glColorV[i];
+            #ifdef CONNECTED_GLASS_EFFECT
+                signMidCoordPos = signMidCoordPosV[i];
+                absMidCoordPos = absMidCoordPosV[i];
+            #endif
             passType = 0;
             correspondingBlock = correspondingBlockV[i];
             EmitVertex();
@@ -516,8 +534,8 @@ flat out vec4 glColorV;
 flat out ivec3 correspondingBlockV;
 
 #ifdef CONNECTED_GLASS_EFFECT
-    out vec2 signMidCoordPos;
-    flat out vec2 absMidCoordPos;
+    out vec2 signMidCoordPosV;
+    flat out vec2 absMidCoordPosV;
 #endif
 
 //Uniforms//
@@ -598,8 +616,8 @@ void main() {
     #ifdef CONNECTED_GLASS_EFFECT
         vec2 midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
         vec2 texMinMidCoord = texCoordV - midCoord;
-        signMidCoordPos = sign(texMinMidCoord);
-        absMidCoordPos  = abs(texMinMidCoord);
+        signMidCoordPosV = sign(texMinMidCoord);
+        absMidCoordPosV  = abs(texMinMidCoord);
     #endif
 
     #ifdef PERPENDICULAR_TWEAKS

@@ -268,6 +268,8 @@ void main() {
                 vlFactor = 0.0;
             #elif LIGHTSHAFT_BEHAVIOUR == 3
                 vlFactor = 1.0;
+            #else
+                vlFactor = 0.5;
             #endif
         #endif
     #endif
