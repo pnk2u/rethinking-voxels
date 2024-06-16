@@ -66,6 +66,11 @@
             } else {
                 theseDists[j] = prevDist;
             }
+            const float edgeDist = 4.0;
+            float edgeDecider = min(infnorm(max(abs(texCoord + 0.5 - 0.5 * voxelVolumeSize) + edgeDist - 0.5 * voxelVolumeSize, 0.0)) / edgeDist, 1.0);
+            if (edgeDecider > 0.01) {
+                theseDists[j] = mix(theseDists[j], prevDist, edgeDecider);
+            }
         #endif
     }
     barrier();
