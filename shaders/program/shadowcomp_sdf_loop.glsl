@@ -1,8 +1,8 @@
 {
     ivec3 prevTexCoord0 = texCoord + (1<<j) * floorCamPosOffset;
     ivec3 prevTexCoord = prevTexCoord0 + ivec3(0, (frameCounter % 2 * 2 + j/4) * voxelVolumeSize.y, 0);
-    ivec3 prevCoord = (prevTexCoord0) / 2 + voxelVolumeSize / 4 + ivec3(0, (frameCounter % 2 * 2 + (j-1)/4) * voxelVolumeSize.y, 0);
-    ivec3 prevFractCoord = (prevTexCoord0) % 2;
+    ivec3 prevCoord = prevTexCoord0 / 2 + voxelVolumeSize / 4 + ivec3(0, (frameCounter % 2 * 2 + (j-1)/4) * voxelVolumeSize.y, 0);
+    ivec3 prevFractCoord = prevTexCoord0 % 2;
     float prevDist = -1.0;
     if ((thisOccupancy >> j & 1) == 1) {
         fullDist[localCoord.x+1][localCoord.y+1][localCoord.z+1] = (1.0-1.0/sqrt(3.0)) / (1<<j);
@@ -23,7 +23,7 @@
                      + imageLoad(distanceFieldI, prevCoord + offset)[(j-1)%4]
                 );
             }
-            fullDist[localCoord.x+1][localCoord.y+1][localCoord.z+1] = prevDist;
+            fullDist[localCoord.x+1][localCoord.y+1][localCoord.z+1] = prevDist + 1.0/(1<<j);
         #else
             fullDist[localCoord.x+1][localCoord.y+1][localCoord.z+1] = 1000.0;
         #endif
@@ -61,10 +61,10 @@
             }
         #if j > 0
                 if (prevDist > 2.0/(1<<j)) {
-                    theseDists[j] = mix(theseDists[j], prevDist - 0.0 / (1<<j),  prevDist * (1<<j) - 2.0);
+                    theseDists[j] = mix(theseDists[j], prevDist,  prevDist * (1<<j) - 2.0);
                 }
             } else {
-                theseDists[j] = prevDist;// - 0.5/(1<<j);
+                theseDists[j] = prevDist;
             }
         #endif
     }
