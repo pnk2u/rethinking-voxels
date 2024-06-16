@@ -426,6 +426,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
 
     // Voxel-based Lighting
     vec3 vxPos = playerPos + fractCamPos;
+    vec3 worldNormalM = mat3(gbufferModelViewInverse) * normalM;
     #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
         vxPos = floor(vxPos * PIXEL_SHADOW + 0.001) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
     #endif
@@ -435,8 +436,14 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         #if defined PER_PIXEL_LIGHT && !defined GBUFFERS_WATER
             4.0 * texelFetch(colortex12, ivec2(gl_FragCoord.xy), 0).rgb;
         #else
-            4.0 * readSurfaceVoxelBlocklight(vxPos, mat3(gbufferModelViewInverse) * normalM);
+            4.0 * readSurfaceVoxelBlocklight(vxPos, worldNormalM);
         #endif
+    #if defined PER_PIXEL_LIGHT && !defined GBUFFERS_WATER
+        vec4 normalDepthData = texelFetch(colortex8, ivec2(gl_FragCoord), 0);
+        if (length(normalDepthData.rgb - worldNormalM) > 0.03 || abs(1.0 - normalDepthData.a - gl_FragCoord.z) > 0.01) {
+            voxelBlockLighting = 4.0 * readSurfaceVoxelBlocklight(vxPos, worldNormalM);
+        }
+    #endif
     #ifdef GI
         vec3 giLighting = readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM) * (1.0 - voxelFactor);
         float lGiLighting = length(giLighting);
