@@ -47,11 +47,6 @@
             if (prevDist < 3.0/(1<<j)) {
             #endif
             theseDists[j] = (thisOccupancy >> j & 1) == 1 ? -1.0/sqrt(3.0) / (1<<j) : ((thisOccupancy >> j+8 & 1) == 1 ? 0.5 : 1000);
-            #if j > 0
-                if (any(lessThan(texCoord, ivec3(1))) || any(greaterThanEqual(texCoord, voxelVolumeSize - 1))) {
-                    theseDists[j] = min(theseDists[j], prevDist);
-                }
-            #endif
 
             for (int k = 0; k < 27; k++) {
                 ivec3 c2 = localCoord + ivec3(k%3, k/3%3, k/9%3);
@@ -67,7 +62,7 @@
                 theseDists[j] = prevDist;
             }
             const float edgeDist = 4.0;
-            float edgeDecider = min(infnorm(max(abs(texCoord + 0.5 - 0.5 * voxelVolumeSize) + edgeDist - 0.5 * voxelVolumeSize, 0.0)) / edgeDist, 1.0);
+            float edgeDecider = min(infnorm(max(abs(texCoord + 0.5 - 0.5 * voxelVolumeSize) + edgeDist + 0.5 - 0.5 * voxelVolumeSize, 0.0)) / edgeDist, 1.0);
             if (edgeDecider > 0.01) {
                 theseDists[j] = mix(theseDists[j], prevDist, edgeDecider);
             }
