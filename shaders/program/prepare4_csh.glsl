@@ -104,7 +104,21 @@ void main() {
     }
     barrier();
     memoryBarrierShared();
-    ivec2 readTexelCoord = ivec2(gl_GlobalInvocationID.xy) * BLOCKLIGHT_RESOLUTION;// + ivec2(frameCounter % 2, frameCounter / 2 % 2);
+    ivec2 readTexelCoord
+        = ivec2(gl_GlobalInvocationID.xy) * BLOCKLIGHT_RESOLUTION
+        + ivec2(
+            BLOCKLIGHT_RESOLUTION
+            * fract(vec2(
+                frameCounter % 1000 * 1.618033988749895,
+                frameCounter % 1000 * 1.618033988749895 * 1.618033988749895
+            ) + vec2(
+                (gl_GlobalInvocationID.x) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895,
+                (gl_GlobalInvocationID.x) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895
+            ) + vec2(
+                (gl_GlobalInvocationID.y) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895,
+                (gl_GlobalInvocationID.y) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895
+            ))
+        );
     ivec2 writeTexelCoord = ivec2(gl_GlobalInvocationID.xy);
     vec4 normalDepthData = texelFetch(colortex8, readTexelCoord, 0);
     ivec3 vxPosFrameOffset = -floorCamPosOffset;

@@ -29,7 +29,22 @@ void main() {
         if (index < readSize.x * readSize.y) {
             ivec2 readCoords = ivec2(index % readSize.x, index / readSize.x);
             readColors[readCoords.x][readCoords.y] = texelFetch(colortex10, readCoords + lowerBound, 0).rgb;
-            vec4 normalDepthData = texelFetch(colortex8, BLOCKLIGHT_RESOLUTION * (readCoords + lowerBound), 0);
+            ivec2 hrReadCoords
+                = (readCoords + lowerBound) * BLOCKLIGHT_RESOLUTION
+                + ivec2(
+                    BLOCKLIGHT_RESOLUTION
+                    * fract(vec2(
+                        frameCounter % 1000 * 1.618033988749895,
+                        frameCounter % 1000 * 1.618033988749895 * 1.618033988749895
+                    ) + vec2(
+                        (readCoords.x + lowerBound.x) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895,
+                        (readCoords.x + lowerBound.x) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895
+                    ) + vec2(
+                        (readCoords.x + lowerBound.y) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895,
+                        (readCoords.x + lowerBound.y) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895
+                    ))
+                );
+            vec4 normalDepthData = texelFetch(colortex8, hrReadCoords, 0);
             normalDepthData.w *= 100.0;
             normalDepthDatas[readCoords.x][readCoords.y] = normalDepthData;
         }
@@ -53,7 +68,7 @@ void main() {
                     mix(1.0 - weights.y, weights.y, valueOffset.y);*/
                 writeColor += readColors[c.x][c.y] * weight;
                 totalWeight += weight;
-                if (weight > 0.8 && totalWeight > 1.9) break;
+                //if (totalWeight > 1.9) break;
             }
         }
         imageStore(colorimg12, texelCoord, vec4(writeColor / totalWeight, 1.0));
