@@ -1131,6 +1131,12 @@ option.LIGHTSOURCE_SIZE_MULT.comment=Lower values increase sharpness of shadows 
 option.SLANTED_BLOCK_EDGES=Slanted Block Edges
 option.SLANTED_BLOCK_EDGES.comment=Tilts face normals of full blocks outwards if at their edges if there is no block next to them.
 
+option.INTERACTIVE_WATER=Interactive Water Waves
+option.INTERACTIVE_WATER.comment=Allows players and entities that are crossing a water surface to produce waves on that surface.
+
+option.WATER_BUMP_INTERACTIVE=Interactive Water Bumpiness
+option.WATER_BUMP_INTERACTIVE=Controls the Wave strength of interactive water waves.
+
 option.CONWAY=End Game of Life
 option.CONWAY.comment=Simulates Conway's game of life at the bottom of the end. Cells that are close to the player revive.
 value.CONWAY.0=Off

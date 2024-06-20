@@ -11,8 +11,9 @@ const int colortex8Format = RGBA16F;        //reprojected normal and depth data 
 const int colortex9Format = R32UI;          //scaled depth for atomics in reprojection validation
 const int colortex10Format= RGBA16F;        //raw block lighting in bottom left quarter
 const int colortex11Format= RGBA16I;        //valid light sample storage in bottom left quarter
-const int colortex12Format= RGBA32F;        //accumulated block lighting
-const int colortex13Format= RGBA16F;        //denoised block lighting
+const int colortex12Format= RGBA32F;        //block lighting
+
+const int shadowcolor2Format = RGB16F;       //interactive water
 */
 
 const bool colortex0Clear = true;
@@ -30,6 +31,8 @@ const bool colortex11Clear = false;
 const bool colortex12Clear = false;
 const bool colortex13Clear = false;
 const bool colortex14Clear = false;
+
+const bool shadowcolor2Clear = false;
 
 const int noiseTextureResolution = 128;
 

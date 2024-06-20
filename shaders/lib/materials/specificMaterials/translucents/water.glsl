@@ -68,7 +68,10 @@
         vec3 normalMap = vec3(0.0, 0.0, 1.0);
         #if WATER_STYLE >= 2
             vec2 waterPosM = waterPos;
-
+            #ifdef INTERACTIVE_WATER
+                float waterCoordMul = min(8.0, floor(shadowMapResolution / far)) / shadowMapResolution;
+                vec2 interactiveWaterPos = playerPos.xz + cameraPositionFract.xz;
+            #endif
             #if WATER_SIZE_MULT != 100
                 #define WATER_SIZE_MULT_M WATER_SIZE_MULT * 0.01
                 waterPosM *= WATER_SIZE_MULT_M;
@@ -82,8 +85,19 @@
                 #if WATER_MAT_QUALITY >= 2
                     vec2 parallaxMult = -0.01 * viewVector.xy / viewVector.z;
                     for (int i = 0; i < 4; i++) {
-                        waterPosM += parallaxMult * texture2D(gaux4, waterPosM - wind).a;
-                        waterPosM += parallaxMult * texture2D(gaux4, waterPosM * 0.25 - 0.5 * wind).a;
+                        float offset1 = texture2D(gaux4, waterPosM - wind).a;
+                        #ifdef INTERACTIVE_WATER
+                            offset1 += 0.2 * texture2D(shadowcolor2, interactiveWaterPos * waterCoordMul + 0.5).r;
+                            interactiveWaterPos += 12.5 * parallaxMult * offset1;
+                        #endif
+                        waterPosM += parallaxMult * offset1;
+
+                        float offset2 = texture2D(gaux4, waterPosM * 0.25 - 0.5 * wind).a;
+                        #ifdef INTERACTIVE_WATER
+                            offset2 += 0.2 * texture2D(shadowcolor2, interactiveWaterPos * waterCoordMul + 0.5).r;
+                            interactiveWaterPos += 12.5 * parallaxMult * offset2;
+                        #endif
+                        waterPosM += parallaxMult * offset2;
                     }
                 #endif
 
@@ -91,12 +105,23 @@
                 vec2 normalSmall = texture2D(gaux4, waterPosM * 4.0 - 2.0 * wind).rg - 0.5;
                 vec2 normalBig = texture2D(gaux4, waterPosM * 0.25 - 0.5 * wind).rg - 0.5;
                      normalBig += texture2D(gaux4, waterPosM * 0.05 - 0.05 * wind).rg - 0.5;
+                #ifdef INTERACTIVE_WATER
+                    vec2 normalInteractive = vec2(
+                        texture2D(shadowcolor2, (interactiveWaterPos + vec2(0.05, 0)) * waterCoordMul + 0.5).r -
+                        texture2D(shadowcolor2, (interactiveWaterPos - vec2(0.05, 0)) * waterCoordMul + 0.5).r,
+                        texture2D(shadowcolor2, (interactiveWaterPos + vec2(0, 0.05)) * waterCoordMul + 0.5).r -
+                        texture2D(shadowcolor2, (interactiveWaterPos - vec2(0, 0.05)) * waterCoordMul + 0.5).r
+                    ) * 10.0;
+                #endif
 
                 normalMap.xy = normalMed * WATER_BUMP_MED + normalSmall * WATER_BUMP_SMALL + normalBig * WATER_BUMP_BIG;
                 normalMap.xy *= 6.0 * (1.0 - 0.7 * fresnel) * WATER_BUMPINESS_M;
             #endif
 
             normalMap.xy *= 0.03 * lmCoordM.y + 0.01;
+            #if WATER_STYLE >= 2 && defined INTERACTIVE_WATER
+                normalMap.xy += normalInteractive * WATER_BUMP_INTERACTIVE * 6.0 * (1.0 - 0.7 * fresnel) * WATER_BUMPINESS_M;
+            #endif
         #else
             float pNormalMult = 0.02 * rainFactor * inRainy * pow2(lmCoordM.y);
 

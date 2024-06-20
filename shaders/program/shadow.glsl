@@ -181,14 +181,14 @@ void main() {
             }
         }
     #endif
-
+        /* RENDERTARGETS:0 */
         gl_FragData[0] = color1; // Shadow Color
 
         #if SHADOW_QUALITY >= 1
             #if defined LIGHTSHAFTS_ACTIVE && LIGHTSHAFT_BEHAVIOUR == 1 && defined OVERWORLD
                 color2.a = 0.25 + max0(positionYM * 0.05); // consistencyMEJHRI7DG
             #endif
-
+            /* RENDERTARGETS:0,1 */
             gl_FragData[1] = color2; // Light Shaft Color
         #endif
     } else {
@@ -367,6 +367,12 @@ void main() {
                 coords * ivec3(1, 2, 1) + ivec3(0, 1, 0),
                 packedCol.y);
         }
+        if (matV[0] == 32000) {
+            imageAtomicOr(voxelCols, coords * ivec3(1, 2, 1), 1 << 26);
+        }
+        if (renderStage == MC_RENDER_STAGE_ENTITIES) {
+            imageAtomicOr(voxelCols, coords * ivec3(1, 2, 1), 1 << 27);
+        }
 
         #if HELD_LIGHTING_MODE == 0
             if (isHeldLight) emissive = false;
@@ -432,6 +438,7 @@ void main() {
             }
             vec3 meanPos = 1.0/3.0*(blockRelPos[0] + blockRelPos[1] + blockRelPos[2]) + 1.5;
             meanPos = clamp(meanPos, vec3(0), vec3(4));
+/*
             vec3 meanSquarePos = 1.0/6.0*(
                 blockRelPos[0] * blockRelPos[0] +
                 blockRelPos[1] * blockRelPos[1] +
@@ -440,6 +447,7 @@ void main() {
                 blockRelPos[1] * blockRelPos[2] +
                 blockRelPos[2] * blockRelPos[0]);
             vec3 variance = meanSquarePos - (meanPos - 1.5) * (meanPos - 1.5);
+*/
             uvec2 packedMeanPos = uvec2(
                 uint(meanPos.x * 32 + 0.5) | (uint(meanPos.y * 32 + 0.5) << 16),
                 uint(meanPos.z * 32 + 0.5) | uint(1<<16)

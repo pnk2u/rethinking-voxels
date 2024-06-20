@@ -33,7 +33,7 @@ vec4 getColor(vec3 pos) {
     );
     vec4 col = vec4(
         rawCol.r % (1<<13),
-        rawCol.r >> 13,
+        (rawCol.r >> 13) % (1<<13),
         rawCol.g % (1<<13),
         rawCol.g >> 13 & 0x3ff
     );

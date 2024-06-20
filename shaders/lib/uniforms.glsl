@@ -90,17 +90,19 @@ uniform ivec3 previousCameraPositionInt;
 uniform vec3 cameraPositionFract;
 uniform vec3 previousCameraPositionFract;
 
-#if SHADOW_QUALITY > -1 || defined LIGHTSHAFTS_ACTIVE || defined FF_BLOCKLIGHT
-    uniform sampler2D shadowcolor0;
-    uniform sampler2D shadowcolor1;
 
-    uniform sampler2DShadow shadowtex1;
+uniform sampler2D shadowcolor0;
+uniform sampler2D shadowcolor1;
+#ifdef IRIS_FEATURE_HIGHER_SHADOWCOLOR
+    uniform sampler2D shadowcolor2;
+#endif
 
-    #ifdef COMPOSITE
-        uniform sampler2D shadowtex0;
-    #else
-        uniform sampler2DShadow shadowtex0;
-    #endif
+uniform sampler2DShadow shadowtex1;
+
+#ifdef COMPOSITE
+    uniform sampler2D shadowtex0;
+#else
+    uniform sampler2DShadow shadowtex0;
 #endif
 
 #if !defined DH_TERRAIN && !defined DH_WATER
