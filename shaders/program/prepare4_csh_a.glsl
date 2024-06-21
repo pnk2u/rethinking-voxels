@@ -5,11 +5,19 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 uniform sampler2D colortex10;
+#ifdef BLOCKLIGHT_HIGHLIGHT
+    uniform sampler2D colortex13;
+    layout(rgba16f) uniform writeonly image2D colorimg14;
+    layout(rgba8) uniform writeonly image2D colorimg6;
+#endif
 layout(rgba16f) uniform writeonly image2D colorimg12;
 
 #include "/lib/util/random.glsl"
 
 shared vec3 readColors[14][14];
+#ifdef BLOCKLIGHT_HIGHLIGHT
+    shared vec3 readSpeculars[14][14];
+#endif
 shared vec4 normalDepthDatas[14][14];
 
 
@@ -21,6 +29,13 @@ void main() {
             texelCoord,
             texelFetch(colortex10, texelCoord, 0)
         );
+        #ifdef BLOCKLIGHT_HIGHLIGHT
+            imageStore(
+                colorimg14,
+                texelCoord,
+                texelFetch(colortex13, texelCoord, 0)
+            );
+        #endif
     #else
         int index = int(gl_LocalInvocationID.x) + 16 * int(gl_LocalInvocationID.y);
         ivec2 lowerBound = ivec2(gl_WorkGroupID.xy) * 16 / BLOCKLIGHT_RESOLUTION - 2;
@@ -29,6 +44,9 @@ void main() {
         if (index < readSize.x * readSize.y) {
             ivec2 readCoords = ivec2(index % readSize.x, index / readSize.x);
             readColors[readCoords.x][readCoords.y] = texelFetch(colortex10, readCoords + lowerBound, 0).rgb;
+            #ifdef BLOCKLIGHT_HIGHLIGHT
+                readSpeculars[readCoords.x][readCoords.y] = texelFetch(colortex13, readCoords + lowerBound, 0).rgb;
+            #endif
             ivec2 hrReadCoords
                 = (readCoords + lowerBound) * BLOCKLIGHT_RESOLUTION
                 + ivec2(
@@ -51,6 +69,9 @@ void main() {
         barrier();
         memoryBarrierShared();
         vec3 writeColor = vec3(0);
+        #ifdef BLOCKLIGHT_HIGHLIGHT
+            vec3 writeSpecular = vec3(0);
+        #endif
         float totalWeight = 1e-5;
         vec2 lrTexelCoord = vec2(texelCoord + 0.5) / BLOCKLIGHT_RESOLUTION;
         vec2 localLrTexCoord = vec2(lrTexelCoord) - lowerBound;
@@ -67,11 +88,24 @@ void main() {
                     mix(1.0 - weights.x, weights.x, valueOffset.x) *
                     mix(1.0 - weights.y, weights.y, valueOffset.y);*/
                 writeColor += readColors[c.x][c.y] * weight;
+                #ifdef BLOCKLIGHT_HIGHLIGHT
+                    writeSpecular += readSpeculars[c.x][c.y] * weight;
+                #endif
                 totalWeight += weight;
                 //if (totalWeight > 1.9) break;
             }
         }
         imageStore(colorimg12, texelCoord, vec4(writeColor / totalWeight, 1.0));
+        #ifdef BLOCKLIGHT_HIGHLIGHT
+            imageStore(colorimg14, texelCoord, vec4(writeSpecular / totalWeight, 1.0));
+        #endif
+    #endif
+    #ifdef BLOCKLIGHT_HIGHLIGHT
+        imageStore(
+            colorimg6,
+            texelCoord,
+            vec4(0)
+        );
     #endif
 }
 #endif

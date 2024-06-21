@@ -25,7 +25,7 @@ noperspective in vec2 texCoord;
 #include "/lib/vx/voxelReading.glsl"
 
 vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
-uniform sampler2D colortex12;
+uniform sampler2D colortex14;
 void main() {
     vec3 color = texelFetch(colortex3, texelCoord, 0).rgb;
         
@@ -34,7 +34,7 @@ void main() {
     #endif
     /*
     if (texCoord.x < 0.5) {
-        color = texelFetch(colortex8, texelCoord, 0).rgb;
+        //color = texelFetch(colortex14, texelCoord, 0).rgb;
     } else if (true) {
         //color = texelFetch(colortex12, texelCoord, 0).rgb;
         vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));

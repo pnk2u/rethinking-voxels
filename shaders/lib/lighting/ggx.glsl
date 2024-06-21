@@ -51,8 +51,11 @@ float GGX(vec3 normalM, vec3 viewPos, vec3 lightVec, float NdotLmax0, float smoo
     float D = roughness / (3.141592653589793 * pow2(denom));
     float f0 = 0.05;
     float F = exp2((-5.55473 * dotLH - 6.98316) * dotLH) * (1.0 - f0) + f0;
-
-    float NdotLmax0M = sqrt3(NdotLmax0 * max0(dot(normal, lightVec)));
+    #ifndef CSH
+        float NdotLmax0M = sqrt3(NdotLmax0 * max0(dot(normal, lightVec)));
+    #else
+        float NdotLmax0M = NdotLmax0;
+    #endif
     float specular = max0(NdotLmax0M * D * F / pow2(dotLH));
     specular = specular / (0.125 * specular + 1.0);
 

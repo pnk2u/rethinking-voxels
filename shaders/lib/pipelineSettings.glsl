@@ -9,9 +9,11 @@ const int colortex6Format = RGBA8;          //smoothnessD & materialMask & skyLi
 const int colortex7Format = RGBA16F;        //(cloud/water map on gbuffer) | temporal filter
 const int colortex8Format = RGBA16F;        //reprojected normal and depth data in prepare
 const int colortex9Format = R32UI;          //scaled depth for atomics in reprojection validation
-const int colortex10Format= RGBA16F;        //raw block lighting in bottom left quarter
+const int colortex10Format= RGBA16F;        //raw block lighting
 const int colortex11Format= RGBA16I;        //valid light sample storage in bottom left quarter
-const int colortex12Format= RGBA32F;        //block lighting
+const int colortex12Format= RGBA16F;        //block lighting
+const int colortex13Format= RGBA16F;        //raw specular lighting
+const int colortex14Format= RGBA16F;        //specular lighting
 
 const int shadowcolor2Format = RGB16F;       //interactive water
 */

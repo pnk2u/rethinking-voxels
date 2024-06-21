@@ -18,6 +18,9 @@ layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 #endif
 vec2 view = vec2(viewWidth, viewHeight);
 layout(rgba16f) uniform image2D colorimg10;
+#ifdef BLOCKLIGHT_HIGHLIGHT
+    layout(rgba16f) uniform image2D colorimg13;
+#endif
 layout(rgba16i) uniform iimage2D colorimg11;
 
 vec3 fractCamPos =
@@ -28,10 +31,14 @@ ivec3 floorCamPosOffset =
     cameraPositionInt.y == -98257195 ?
     ivec3((floor(cameraPosition) - floor(previousCameraPosition)) * 1.001) :
     cameraPositionInt - previousCameraPositionInt;
+
 #include "/lib/vx/SSBOs.glsl"
 #include "/lib/vx/voxelReading.glsl"
 #include "/lib/util/random.glsl"
 #include "/lib/vx/positionHashing.glsl"
+#ifdef BLOCKLIGHT_HIGHLIGHT
+    #include "/lib/lighting/ggx.glsl"
+#endif
 
 #if MAX_TRACE_COUNT < 128
     #define MAX_LIGHT_COUNT 128
@@ -121,6 +128,9 @@ void main() {
         );
     ivec2 writeTexelCoord = ivec2(gl_GlobalInvocationID.xy);
     vec4 normalDepthData = texelFetch(colortex8, readTexelCoord, 0);
+    #ifdef BLOCKLIGHT_HIGHLIGHT
+        float smoothness = texelFetch(colortex3, readTexelCoord, 0).r;
+    #endif
     ivec3 vxPosFrameOffset = -floorCamPosOffset;
     bool validData = (normalDepthData.a < 1.5 && length(normalDepthData.rgb) > 0.1 && all(lessThan(readTexelCoord, ivec2(view + 0.1))));
     for (int k = 1; k < BLOCKLIGHT_RESOLUTION; k++) {
@@ -135,6 +145,7 @@ void main() {
             }
         }
     }
+    vec4 playerPos = vec4(1000);
     vec3 vxPos = vec3(1000);
     vec3 biasedVxPos = vec3(1000);
     ivec3 lightStorageCoords = ivec3(-1);
@@ -176,7 +187,7 @@ void main() {
     barrier();
 
     if (validData) {
-        vec4 playerPos =
+        playerPos =
             gbufferModelViewInverse *
             (gbufferProjectionInverse *
             (vec4((readTexelCoord + 0.5) / view,
@@ -320,6 +331,9 @@ void main() {
     memoryBarrierShared();
 
     vec3 writeColor = vec3(0);
+    #ifdef BLOCKLIGHT_HIGHLIGHT
+        vec3 writeSpecular = vec3(0);
+    #endif
     uint traceNum = 0;
     if (validData) {
         for (uint thisLightIndex = 0; thisLightIndex < MAX_LIGHT_COUNT; thisLightIndex++) {
@@ -339,13 +353,23 @@ void main() {
             if (dirLen < thisTraceLen * LIGHT_TRACE_LENGTH && ndotl0 > 0.001) {
                 float lightBrightness = 1.5 * thisTraceLen;
                 lightBrightness *= lightBrightness;
-                float ndotl = ndotl0 * lightBrightness;
                 vec4 rayHit1 = coneTrace(biasedVxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, lightSize * LIGHTSOURCE_SIZE_MULT / dirLen, dither);
                 if (rayHit1.w > 0.01) {
                     vec3 lightColor = 1.0/32.0 * vec3(packedLightCol.x & 0xffff, packedLightCol.x>>16, packedLightCol.y & 0xffff) / (packedLightSubPos.y >> 16);
-                    float totalBrightness = ndotl * (sqrt(1 - dirLen / (LIGHT_TRACE_LENGTH * thisTraceLen))) / (dirLen + 0.1);
-                    writeColor += lightColor * rayHit1.rgb * rayHit1.w * totalBrightness;
-                    int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);
+                    float brightness = (sqrt(1 - dirLen / (LIGHT_TRACE_LENGTH * thisTraceLen))) / (dirLen + 0.1);
+                    vec3 thisBaseCol = lightColor * rayHit1.rgb * rayHit1.w * brightness * lightBrightness;
+                    writeColor += thisBaseCol * ndotl0;
+                    #ifdef BLOCKLIGHT_HIGHLIGHT
+                        float specularBrightness = GGX(
+                            normalDepthData.xyz,
+                            normalize(playerPos.xyz - gbufferModelView[3].xyz),
+                            normalize(lightPos - vxPos),
+                            ndotl0,
+                            smoothness
+                        );
+                        writeSpecular += thisBaseCol * lightBrightness * specularBrightness;
+                    #endif
+                    int thisWeight = int(10000.5 * length(thisBaseCol * ndotl0));
                     atomicMax(positions[thisLightIndex].w, thisWeight);
                 }
                 traceNum++;
@@ -359,6 +383,13 @@ void main() {
     if (lWriteColor > 0.01) {
         writeColor *= log(lWriteColor+1)/lWriteColor;
     }
+    #ifdef BLOCKLIGHT_HIGHLIGHT
+        float lWriteSpecular = length(writeSpecular);
+        if (lWriteSpecular > 0.01) {
+            writeSpecular *= log(lWriteSpecular+1)/lWriteSpecular;
+        }
+    imageStore(colorimg13, writeTexelCoord, vec4(writeSpecular, 1));
+    #endif
     imageStore(colorimg10, writeTexelCoord, vec4(writeColor, 1));
     ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
     imageStore(colorimg11, writeTexelCoord, lightPosToStore);

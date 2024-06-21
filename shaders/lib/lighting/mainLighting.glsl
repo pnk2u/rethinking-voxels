@@ -22,6 +22,9 @@ vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : ca
 
 #if defined PER_PIXEL_LIGHT && !defined GBUFFERS_WATER
     uniform sampler2D colortex12;
+    #ifdef BLOCKLIGHT_HIGHLIGHT
+        uniform sampler2D colortex14;
+    #endif
 #endif
 #include "/lib/vx/irradianceCache.glsl"
 
@@ -437,9 +440,11 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
             4.0 * readSurfaceVoxelBlocklight(vxPos, worldNormalM);
         #endif
     #if defined PER_PIXEL_LIGHT && !defined GBUFFERS_WATER && !defined GBUFFERS_HAND
+        float allowPerPixelLight = 1.0;
         vec4 normalDepthData = texelFetch(colortex8, ivec2(gl_FragCoord), 0);
         if (length(normalDepthData.rgb - worldNormalM) > 0.3 || abs(1.0 - normalDepthData.a - gl_FragCoord.z) > 0.001) {
             voxelBlockLighting = 4.0 * readSurfaceVoxelBlocklight(vxPos, worldNormalM);
+            allowPerPixelLight = 0.0;
         }
     #endif
     #ifdef GI
@@ -533,6 +538,12 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         #endif
     #endif
 
+    #if defined BLOCKLIGHT_HIGHLIGHT && defined PER_PIXEL_LIGHT && !defined GBUFFERS_WATER
+        #ifdef GBUFFERS_HAND
+            const float allowPerPixelLight = 1.0;
+        #endif
+        lightHighlight += allowPerPixelLight * 4 * texelFetch(colortex14, texelCoord, 0).rgb;
+    #endif
     // Mix Colors
     vec3 finalDiffuse = pow2(directionShade * vanillaAO) * (blockLighting + pow2(sceneLighting) + minLighting) + pow2(emission);
     finalDiffuse = sqrt(max(finalDiffuse, vec3(0.0))); // sqrt() for a bit more realistic light mix, max() to prevent NaNs

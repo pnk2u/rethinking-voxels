@@ -23,12 +23,21 @@ void main() {
     float dither = nextFloat();
     ivec2 texelCoord = ivec2(gl_FragCoord.xy);
     vec4 writeData = texelFetch(colortex8, texelCoord, 0);
+    #ifdef BLOCKLIGHT_HIGHLIGHT
+        vec4 writeMatData = texelFetch(colortex3, texelCoord, 0);
+    #endif
     if (writeData.a > 1.5) {
         vec4 avgAroundData = vec4(0);
+        #ifdef BLOCKLIGHT_HIGHLIGHT
+            vec4 avgMatData = vec4(0);
+        #endif
         int validAroundCount = 0;
         bool extendable = true;
         for (int k = 0, invalidInARow = 0; k < 10; k++) {
             vec4 aroundData = texelFetch(colortex8, texelCoord + offsets[k%8], 0);
+            #ifdef BLOCKLIGHT_HIGHLIGHT
+                vec4 aroundMatData = texelFetch(colortex3, texelCoord + offsets[k%8], 0);
+            #endif
             if (aroundData.a > 1.5) {
                 invalidInARow++;
                 if (invalidInARow >= 4) {
@@ -39,13 +48,22 @@ void main() {
             }
             invalidInARow = 0;
             if (k < 8) {
+                #ifdef BLOCKLIGHT_HIGHLIGHT
+                    avgMatData += aroundMatData;
+                #endif
                 avgAroundData += aroundData;
                 validAroundCount++;
             }
         }
         if (extendable) {
             writeData = avgAroundData / validAroundCount;
+            #ifdef BLOCKLIGHT_HIGHLIGHT
+                writeMatData = avgMatData / validAroundCount;
+            #endif
         } else {
+            #ifdef BLOCKLIGHT_HIGHLIGHT
+                writeMatData = vec4(0.0);
+            #endif
             // fuck view bobbing!
             vec3 rayHit = rayTrace(
                 fractCamPos - gbufferModelView[3].xyz
@@ -65,6 +83,10 @@ void main() {
     }
     /*RENDERTARGETS:8*/
     gl_FragData[0] = writeData;
+    #ifdef BLOCKLIGHT_HIGHLIGHT
+        /*RENDERTARGETS:8,3*/
+        gl_FragData[1] = writeMatData;
+    #endif
 }
 #endif
 

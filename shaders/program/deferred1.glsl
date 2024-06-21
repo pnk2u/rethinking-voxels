@@ -206,6 +206,8 @@ void main() {
     vec3 nightNebula = vec3(0.0);
     vec3 texture5 = texelFetch(colortex5, texelCoord, 0).rgb;
     vec3 normalM = mat3(gbufferModelView) * texture5;
+    float smoothnessD = 0.0;
+    float intenseFresnel = 0.0;
 
     #ifdef TEMPORAL_FILTER
         vec4 refToWrite = vec4(0.0);
@@ -226,8 +228,6 @@ void main() {
 
         bool entityOrHand = z0 < 0.56;
         int materialMaskInt = int(texture6.g * 255.1);
-        float intenseFresnel = 0.0;
-        float smoothnessD = texture6.r;
         vec3 reflectColor = vec3(1.0);
 
         #ifdef IPBR
@@ -476,13 +476,14 @@ void main() {
         if (clouds.a < 0.5) DoDarkOutline(color, skyFade, z0, dither);
     #endif
 
-    /*DRAWBUFFERS:054*/
+    /*RENDERTARGETS:0,5,4,8*/
     gl_FragData[0] = vec4(color, 1.0);
     gl_FragData[1] = vec4(waterRefColor, 1.0 - skyFade);
     gl_FragData[2] = vec4(cloudLinearDepth, texture5 * 0.5 + 0.5);
+    gl_FragData[3] = vec4(smoothnessD, intenseFresnel, 0, 1);
     #ifdef TEMPORAL_FILTER
-        /*DRAWBUFFERS:0547*/
-        gl_FragData[3] = refToWrite;
+        /*RENDERTARGETS:0,5,4,8,7*/
+        gl_FragData[4] = refToWrite;
     #endif
 }
 

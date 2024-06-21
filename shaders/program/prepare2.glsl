@@ -11,6 +11,9 @@ uniform sampler2D colortex1;
 uniform sampler2D colortex10;
 
 layout(rgba16f) uniform image2D colorimg8;
+#ifdef BLOCKLIGHT_HIGHLIGHT
+    layout(rgba8) uniform image2D colorimg3;
+#endif
 layout(r32ui) uniform restrict readonly uimage2D colorimg9;
 
 #define MATERIALMAP_ONLY
@@ -41,7 +44,12 @@ void main() {
         if (imageLoad(colorimg9, writePixelCoord).r == depth) {
             vec2 prevSampleCoord = (gl_FragCoord.xy - fract(diff)) / view;
             vec4 writeData = vec4(newClipPos.z < 0.999998 ? texture(colortex4, prevSampleCoord).gba * 2 - 1 : vec3(0), 1 - newClipPos.z);
+            #ifdef BLOCKLIGHT_HIGHLIGHT
+                vec4 materialData = texture(colortex6, prevSampleCoord);
+                imageStore(colorimg3, writePixelCoord, materialData);
+            #endif
             imageStore(colorimg8, writePixelCoord, writeData);
+            
         }
     }
     /*DRAWBUFFERS:1*/

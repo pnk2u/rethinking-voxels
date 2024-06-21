@@ -40,6 +40,7 @@ void main() {
         uint depth = uint((1<<30) * newClipPos.z);
         imageAtomicMin(colorimg9, writePixelCoord, depth);
     }
+    discard;
     /*DRAWBUFFERS:3*/
 }
 #endif
