@@ -23,9 +23,7 @@ vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : ca
 #if defined PER_PIXEL_LIGHT && !defined GBUFFERS_WATER
     uniform sampler2D colortex12;
 #endif
-#if !defined PER_PIXEL_LIGHT || defined GBUFFERS_WATER || defined GI
-    #include "/lib/vx/irradianceCache.glsl"
-#endif
+#include "/lib/vx/irradianceCache.glsl"
 
 #include "/lib/materials/shadowChecks.glsl"
 
