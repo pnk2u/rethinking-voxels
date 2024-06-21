@@ -195,7 +195,7 @@ void main() {
             bias = 1.0/(1<<thisResolution);
         }
         float dfValMargin = 0.01;
-        if (normalDepthData.a > 0.44) {
+        if (normalDepthData.a > 0.44) { // hand
             dfValMargin = 0.5;
         }
         for (int k = 0; k < 4; k++) {
@@ -227,15 +227,18 @@ void main() {
         vec3 rayNormal0;
         vec4 rayHit0 = voxelTrace(biasedVxPos, LIGHT_TRACE_LENGTH * dir, rayNormal0);
         ivec3 rayHit0Coords = ivec3(rayHit0.xyz - 0.5 * rayNormal0 + 1000) - 1000;
-        if (rayHit0.a > 16 && (imageLoad(occupancyVolume, rayHit0Coords + voxelVolumeSize/2).r >> 16 & 1) != 0) {
-            uint hash = posToHash(rayHit0.xyz - 0.5 * rayNormal0) % uint(128*32);
+        int offsetDecider = 26 - int(nextFloat() * 100);
+        rayHit0Coords += int(offsetDecider >= 0) * (ivec3(
+            offsetDecider%3, offsetDecider/3%3, offsetDecider/9%3
+        ) - 1);
+        if ((imageLoad(occupancyVolume, rayHit0Coords + voxelVolumeSize/2).r >> 16 & 1) != 0) {
+            uint hash = posToHash(rayHit0Coords) % uint(128*32);
             if ((atomicOr(lightHashMap[hash/32], 1<<hash%32) & uint(1)<<hash%32) == 0) {
                 int lightIndex = atomicAdd(lightCount, 1);
                 if (lightIndex < MAX_LIGHT_COUNT) {
                     positions[lightIndex] = ivec4(rayHit0Coords, 1);
-                    vec3 lightPos = positions[lightIndex].xyz + 0.5;
-                    float ndotl = rayHit0Coords == positions[lightIndex].xyz ? 1.0 :
-                        max(0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
+                    vec3 lightPos = rayHit0Coords + 0.5;
+                    float ndotl = max(0, dot(normalize(lightPos - vxPos), normalDepthData.xyz));
                     float dirLen = length(lightPos - vxPos);
                     weights[lightIndex] =
                         length(getColor(lightPos).xyz) *
