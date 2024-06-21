@@ -295,6 +295,15 @@ void main() {
         #include "/lib/misc/showLightLevels.glsl"
     #endif
 
+    vec3 worldNormalM = mat3(gbufferModelViewInverse) * normalM;
+    if (dot(worldNormalM, worldGeoNormal) < 0.5) {
+        worldNormalM = normalize(
+            worldNormalM +
+            worldGeoNormal *
+            (0.5 - dot(worldNormalM, worldGeoNormal))
+        );
+    }
+
     DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, geoNormal, normalM,
                worldGeoNormal, lmCoordM, noSmoothLighting, noDirectionalShading, noVanillaAO,
                centerShadowBias, subsurfaceMode, smoothnessG, highlightMult, emission);
@@ -318,7 +327,7 @@ void main() {
     /* DRAWBUFFERS:065 */
     gl_FragData[0] = color;
     gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
-    gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
+    gl_FragData[2] = vec4(worldNormalM, 1.0);
 }
 
 #endif
