@@ -1135,7 +1135,7 @@ option.INTERACTIVE_WATER=Interactive Water Waves
 option.INTERACTIVE_WATER.comment=Allows players and entities that are crossing a water surface to produce waves on that surface.
 
 option.WATER_BUMP_INTERACTIVE=Interactive Water Bumpiness
-option.WATER_BUMP_INTERACTIVE=Controls the Wave strength of interactive water waves.
+option.WATER_BUMP_INTERACTIVE=Controls the wave strength of interactive water waves.
 
 option.CONWAY=End Game of Life
 option.CONWAY.comment=Simulates Conway's game of life at the bottom of the end. Cells that are close to the player revive.

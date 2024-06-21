@@ -111,7 +111,7 @@
                         texture2D(shadowcolor2, (interactiveWaterPos - vec2(0.05, 0)) * waterCoordMul + 0.5).r,
                         texture2D(shadowcolor2, (interactiveWaterPos + vec2(0, 0.05)) * waterCoordMul + 0.5).r -
                         texture2D(shadowcolor2, (interactiveWaterPos - vec2(0, 0.05)) * waterCoordMul + 0.5).r
-                    ) * 10.0;
+                    ) * 2.5;
                 #endif
 
                 normalMap.xy = normalMed * WATER_BUMP_MED + normalSmall * WATER_BUMP_SMALL + normalBig * WATER_BUMP_BIG;
