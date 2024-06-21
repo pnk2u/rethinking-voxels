@@ -193,6 +193,13 @@ void main() {
         #endif
     } else {
         vec4 col = textureLod(tex, texCoord, 0);
+
+        vec2 readSize = min(abs(dFdx(texCoord)), abs(dFdy(texCoord)));
+        for (int k = 0; k < 4; k++) {
+            vec2 offset = vec2(k%2, k/2%2) * 0.5 - 0.25;
+            vec4 col2 = textureLod(tex, texCoord + offset * readSize, 0);
+            if (col2.a > col.a) col = col2;
+        }
         col.rgb *= glColor.rgb;
         if (col.a > 0.1) {
             for (int k = 0; k < passType >> 1; k++) {
@@ -400,8 +407,16 @@ void main() {
                 localMat == 10988 || // smallest cocoa stage
                 localMat == 10992 || // nether wart
             #endif
-            false) {
-                shouldVoxelize = false;
+            (area > 0.8 && length(center + 0.5 * cnormal - coords + voxelVolumeSize/2 - 0.5) < 0.1) ||
+            any(lessThan(
+                vec3(
+                    length(vxPos[1] - vxPos[0]),
+                    length(vxPos[2] - vxPos[1]),
+                    length(vxPos[0] - vxPos[2])
+                ), vec3(min(0.5, 2.5 / (1<<localResolution)))
+            ))
+        ) {
+            shouldVoxelize = false;
         }
 
         // campfires
@@ -486,7 +501,7 @@ void main() {
                 if (cnormal[bestNormalAxis] < 0) {
                     relProjectedPos.x *= -1;
                 }
-                gl_Position = vec4((relProjectedPos * (1<<localResolution) + 0.09) / shadowMapResolution - 0.9, 0.999999, 1.0);
+                gl_Position = vec4((relProjectedPos * (1<<localResolution) + 0.0981292) / shadowMapResolution - 0.9, 0.999999, 1.0);
                 mat = matV[i];
                 texCoord = texCoordV[i];
                 sunVec = sunVecV[i];
@@ -594,6 +609,7 @@ void main() {
     sunVecV = GetSunVector();
     upVecV = normalize(gbufferModelView[1].xyz);
     positionV = shadowModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
+    positionV /= positionV.w;
     correspondingBlockV = ivec3(-1000);
     matV = blockEntityId;
     #ifdef IRIS_FEATURE_BLOCK_EMISSION_ATTRIBUTE

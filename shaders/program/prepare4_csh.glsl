@@ -194,6 +194,10 @@ void main() {
         ) {
             bias = 1.0/(1<<thisResolution);
         }
+        float dfValMargin = 0.01;
+        if (normalDepthData.a > 0.44) {
+            dfValMargin = 0.5;
+        }
         for (int k = 0; k < 4; k++) {
             biasedVxPos = vxPos + bias * normalDepthData.xyz;
             vec3 dfGrad = distanceFieldGradient(biasedVxPos);
@@ -205,8 +209,8 @@ void main() {
                 float resolution = min(VOXEL_DETAIL_AMOUNT, -log2(infnorm(abs(vxPos) / voxelVolumeSize) - 0.5));
                 dfVal = min(dfVal, getDistanceField(biasedVxPos - dfGradPerp / (pow(2, resolution + 1) * dfGradPerpLength)));
             }
-            if (dfVal > 0.01) break;
-            bias += max(0.01, -dfVal);
+            if (dfVal > dfValMargin) break;
+            bias += max(0.01, dfValMargin - dfVal);
         }
         biasedVxPos = vxPos + min(1.1, bias) * normalDepthData.xyz;
         lightStorageCoords = ivec3(biasedVxPos + voxelVolumeSize/2)/8*8;

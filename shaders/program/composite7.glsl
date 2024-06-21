@@ -34,7 +34,7 @@ void main() {
     #endif
     /*
     if (texCoord.x < 0.5) {
-        color = 0.7 * getDistanceField(vec3(texCoord.xy * 10 - vec2(2.5, 5.0), fractCamPos)).xxx;
+        color = texelFetch(colortex8, texelCoord, 0).rgb;
     } else if (true) {
         //color = texelFetch(colortex12, texelCoord, 0).rgb;
         vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
