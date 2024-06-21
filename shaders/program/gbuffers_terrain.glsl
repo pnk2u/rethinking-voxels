@@ -296,13 +296,6 @@ void main() {
     #endif
 
     vec3 worldNormalM = mat3(gbufferModelViewInverse) * normalM;
-    if (dot(worldNormalM, worldGeoNormal) < 0.5) {
-        worldNormalM = normalize(
-            worldNormalM +
-            worldGeoNormal *
-            (0.5 - dot(worldNormalM, worldGeoNormal))
-        );
-    }
 
     DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, geoNormal, normalM,
                worldGeoNormal, lmCoordM, noSmoothLighting, noDirectionalShading, noVanillaAO,
