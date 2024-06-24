@@ -68,7 +68,7 @@ void main() {
     #ifndef GBUFFERS_LINE
         DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, geoNormal, normalM,
                    worldGeoNormal, lmCoord, false, false, false,
-                   false, 0, 0.0, 0.0, 0.0);
+                   false, 0, 0.0, materialMask, 0.0, 0.0);
     #endif
 
     #if SELECT_OUTLINE != 1 || defined SELECT_OUTLINE_AUTO_HIDE

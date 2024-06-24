@@ -17,7 +17,7 @@
         #ifdef ACL_VOXELIZATION
             // remove edges between blocks with same voxel ID
             if (edge != ivec3(0) && CheckInsideVoxelVolume(voxelPos)) {
-                ivec3 coords = ivec3(voxelPos - 0.1 * normalM);
+                ivec3 coords = ivec3(voxelPos - 0.05 * normalM);
                 uint this_mat = texelFetch(voxel_sampler, coords, 0).r;
                 for (int k = 0; k < 3; k++) {
                     if (edge[k] == 0) continue;

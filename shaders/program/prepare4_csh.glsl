@@ -119,17 +119,19 @@ void main() {
                 frameCounter % 1000 * 1.618033988749895,
                 frameCounter % 1000 * 1.618033988749895 * 1.618033988749895
             ) + vec2(
-                (gl_GlobalInvocationID.x) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895,
-                (gl_GlobalInvocationID.x) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895
+                gl_GlobalInvocationID.x * 1.618033988749895 * 1.618033988749895 * 1.618033988749895,
+                gl_GlobalInvocationID.x * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895
             ) + vec2(
-                (gl_GlobalInvocationID.y) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895,
-                (gl_GlobalInvocationID.y) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895
+                gl_GlobalInvocationID.y * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895,
+                gl_GlobalInvocationID.y * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895
             ))
         );
     ivec2 writeTexelCoord = ivec2(gl_GlobalInvocationID.xy);
     vec4 normalDepthData = texelFetch(colortex8, readTexelCoord, 0);
     #ifdef BLOCKLIGHT_HIGHLIGHT
-        float smoothness = texelFetch(colortex3, readTexelCoord, 0).r;
+        vec3 pbrMat = texelFetch(colortex3, readTexelCoord, 0).rgb;
+        float smoothness = pbrMat.r;
+        float materialMask = pbrMat.g;
     #endif
     ivec3 vxPosFrameOffset = -floorCamPosOffset;
     bool validData = (normalDepthData.a < 1.5 && length(normalDepthData.rgb) > 0.1 && all(lessThan(readTexelCoord, ivec2(view + 0.1))));
@@ -198,6 +200,11 @@ void main() {
         #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
             vxPos = floor(vxPos * PIXEL_SHADOW + 0.5 * normalDepthData.xyz) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
         #endif
+
+        normalDepthData.xyz = normalize(
+            normalDepthData.xyz - max(0.0, dot(normalDepthData.xyz, playerPos.xyz)) / pow2(length(playerPos.xyz)) * playerPos.xyz
+        );
+
         float bias = max(0.6/(1<<VOXEL_DETAIL_AMOUNT), 1.2 * infnorm(vxPos/voxelVolumeSize));
         int thisResolution = getVoxelResolution(vxPos);
         if (
@@ -388,7 +395,7 @@ void main() {
         if (lWriteSpecular > 0.01) {
             writeSpecular *= log(lWriteSpecular+1)/lWriteSpecular;
         }
-    imageStore(colorimg13, writeTexelCoord, vec4(writeSpecular, 1));
+        imageStore(colorimg13, writeTexelCoord, vec4(writeSpecular, 1));
     #endif
     imageStore(colorimg10, writeTexelCoord, vec4(writeColor, 1));
     ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);

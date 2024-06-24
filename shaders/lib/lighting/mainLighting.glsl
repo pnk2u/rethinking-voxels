@@ -35,7 +35,7 @@ vec3 highlightColor = normalize(pow(lightColor, vec3(0.37))) * (0.3 + 1.5 * sunV
 //Lighting//
 void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 viewPos, float lViewPos, vec3 geoNormal, vec3 normalM,
                 vec3 worldGeoNormal, vec2 lightmap, bool noSmoothLighting, bool noDirectionalShading, bool noVanillaAO,
-                bool centerShadowBias, int subsurfaceMode, float smoothnessG, float highlightMult, float emission) {
+                bool centerShadowBias, int subsurfaceMode, float smoothnessG, float materialMask, float highlightMult, float emission) {
     float lightmapY2 = pow2(lightmap.y);
     float lightmapYM = smoothstep1(lightmap.y);
     float subsurfaceHighlight = 0.0;
@@ -542,7 +542,18 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         #ifdef GBUFFERS_HAND
             const float allowPerPixelLight = 1.0;
         #endif
-        lightHighlight += allowPerPixelLight * 4 * texelFetch(colortex14, texelCoord, 0).rgb;
+        vec3 blocklightHighlight = allowPerPixelLight * 4 * texelFetch(colortex14, texelCoord, 0).rgb;
+        #ifdef CUSTOM_PBR
+            #if RP_MODE == 2 // seusPBR
+                float metalness = materialMask * 255.1 < 240.0 ? materialMask * 255.1/240.0 : 0.0;
+            #elif RP_MODE == 3 // labPBR
+                float metalness = float(materialMask > 230.0/255.1 && materialMask < 241.0 / 255.1);
+            #else
+                float metalness = 0.0;
+            #endif
+            blocklightHighlight *= mix(vec3(1.0), color.rgb / length(color.rgb + 0.0001), metalness);
+        #endif
+        lightHighlight += blocklightHighlight;
     #endif
     // Mix Colors
     vec3 finalDiffuse = pow2(directionShade * vanillaAO) * (blockLighting + pow2(sceneLighting) + minLighting) + pow2(emission);

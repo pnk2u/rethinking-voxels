@@ -207,7 +207,7 @@ void main() {
     vec3 texture5 = texelFetch(colortex5, texelCoord, 0).rgb;
     vec3 normalM = mat3(gbufferModelView) * texture5;
     float smoothnessD = 0.0;
-    float intenseFresnel = 0.0;
+    int materialMaskInt = 0;
 
     #ifdef TEMPORAL_FILTER
         vec4 refToWrite = vec4(0.0);
@@ -227,7 +227,8 @@ void main() {
         #endif
 
         bool entityOrHand = z0 < 0.56;
-        int materialMaskInt = int(texture6.g * 255.1);
+        materialMaskInt = int(texture6.g * 255.1);
+        float intenseFresnel = 0.0;
         vec3 reflectColor = vec3(1.0);
 
         #ifdef IPBR
@@ -480,7 +481,7 @@ void main() {
     gl_FragData[0] = vec4(color, 1.0);
     gl_FragData[1] = vec4(waterRefColor, 1.0 - skyFade);
     gl_FragData[2] = vec4(cloudLinearDepth, texture5 * 0.5 + 0.5);
-    gl_FragData[3] = vec4(smoothnessD, intenseFresnel, 0, 1);
+    gl_FragData[3] = vec4(smoothnessD, materialMaskInt / 255.0, 0, 1);
     #ifdef TEMPORAL_FILTER
         /*RENDERTARGETS:0,5,4,8,7*/
         gl_FragData[4] = refToWrite;

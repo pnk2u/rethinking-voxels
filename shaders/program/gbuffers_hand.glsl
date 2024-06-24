@@ -133,7 +133,7 @@ void main() {
 
         DoLighting(color, shadowMult, playerPos, viewPos, 0.0, geoNormal, normalM,
                    worldGeoNormal, lmCoordM, noSmoothLighting, false, false,
-                   false, 0, smoothnessG, highlightMult, emission);
+                   false, 0, smoothnessG, materialMask, highlightMult, emission);
 
         #if defined IPBR && defined IS_IRIS
             color.rgb += maRecolor;

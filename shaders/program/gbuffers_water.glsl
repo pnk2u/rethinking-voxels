@@ -159,9 +159,7 @@ void main() {
         if (pow2(cloudLinearDepth + OSIEBCA * dither) * renderDistance < min(lViewPos, renderDistance)) discard;
     #endif
 
-    #if WATER_MAT_QUALITY >= 3
-        float materialMask = 0.0;
-    #endif
+    float materialMask = 0.0;
 
     vec3 nViewPos = normalize(viewPos);
     float VdotU = dot(nViewPos, upVec);
@@ -210,7 +208,7 @@ void main() {
     // Lighting
     DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, geoNormal, normalM,
                worldGeoNormal, lmCoordM, noSmoothLighting, noDirectionalShading, false,
-               false, subsurfaceMode, smoothnessG, highlightMult, emission);
+               false, subsurfaceMode, smoothnessG, materialMask, highlightMult, emission);
 
     // Reflections
     #if WATER_REFLECT_QUALITY >= 0

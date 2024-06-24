@@ -159,7 +159,7 @@ void main() {
 
     DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, geoNormal, normalM,
                worldGeoNormal, lmCoordM, noSmoothLighting, false, true,
-               false, 0, 0.0, 1.0, emission);
+               false, 0, 0.0, materialMask, 1.0, emission);
 
     #if MC_VERSION >= 11500
         vec3 nViewPos = normalize(viewPos);
