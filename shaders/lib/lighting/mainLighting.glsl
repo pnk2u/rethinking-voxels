@@ -551,7 +551,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
             #else
                 float metalness = 0.0;
             #endif
-            blocklightHighlight *= mix(vec3(1.0), color.rgb / length(color.rgb + 0.0001), metalness);
+            blocklightHighlight *= mix(vec3(1.0), pow2(color.rgb / infnorm(color.rgb + 0.0001)), metalness);
         #endif
         lightHighlight += blocklightHighlight;
     #endif
