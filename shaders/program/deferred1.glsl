@@ -229,6 +229,7 @@ void main() {
         bool entityOrHand = z0 < 0.56;
         materialMaskInt = int(texture6.g * 255.1);
         float intenseFresnel = 0.0;
+        smoothnessD = texture6.r;
         vec3 reflectColor = vec3(1.0);
 
         #ifdef IPBR
