@@ -24,7 +24,9 @@ const bool colortex2Clear = false;
 const bool colortex3Clear = true;
 const bool colortex4Clear = false;
 const bool colortex5Clear = false;
-const bool colortex6Clear = false;
+#ifdef BLOCKLIGHT_HIGHLIGHT
+    const bool colortex6Clear = false;
+#endif
 const bool colortex7Clear = false;
 const bool colortex8Clear = false;
 const bool colortex9Clear = false;
