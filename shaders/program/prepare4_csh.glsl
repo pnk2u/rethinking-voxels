@@ -207,11 +207,6 @@ void main() {
 
         float bias = max(0.6/(1<<VOXEL_DETAIL_AMOUNT), 1.2 * infnorm(vxPos/voxelVolumeSize));
         int thisResolution = getVoxelResolution(vxPos);
-        if (
-            thisResolution != getVoxelResolution(vxPos + 1.0/(1<<thisResolution) * normalDepthData.xyz)
-        ) {
-            bias = 1.0/(1<<thisResolution);
-        }
         float dfValMargin = 0.01;
         if (normalDepthData.a > 0.44) { // hand
             dfValMargin = 0.5;

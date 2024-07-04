@@ -408,12 +408,12 @@ void main() {
                 localMat == 10992 || // nether wart
             #endif
             (area > 0.8 && length(center + 0.5 * cnormal - coords + voxelVolumeSize/2 - 0.5) < 0.1) ||
-            any(lessThan(
+            all(lessThan(
                 vec3(
                     length(vxPos[1] - vxPos[0]),
                     length(vxPos[2] - vxPos[1]),
                     length(vxPos[0] - vxPos[2])
-                ), vec3(min(0.5, 2.5 / (1<<localResolution)))
+                ), vec3(min(0.6, 4.5 / (1<<localResolution)))
             ))
         ) {
             shouldVoxelize = false;
