@@ -54,7 +54,10 @@ void main() {
         );
         normal = normalize(distanceFieldGradient(hitPos));
         if (!(length(normal) > 0.5)) normal = vec3(0);
-        if (true) color = getColor(hitPos.xyz - 0.1 * normal).xyz + 0.2 * normal + 0.2;
+        if (true) color =
+            //getColor(hitPos.xyz - 0.1 * normal).xyz
+            vec3(ivec3(getVoxelResolution(hitPos.xyz)) % ivec3(2, 4, 8)) / vec3(1, 3, 7)
+             + 0.2 * normal + 0.2;
     }*/
     /* DRAWBUFFERS:3 */
     gl_FragData[0] = vec4(color, 1.0);

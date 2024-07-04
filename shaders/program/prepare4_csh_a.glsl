@@ -85,6 +85,13 @@ void main() {
             vec3 writeSpecular = imageLoad(colorimg14, ivec2(view * prevClipPos.xy)).rgb;
         #endif
         float totalWeight = 1.0;
+        if (length(texture(colortex4, prevClipPos.xy).gba * 2 - 1 - normalDepthData.xyz) > 0.3) {
+            totalWeight = 1e-5;
+            writeColor = vec3(0.0);
+            #ifdef BLOCKLIGHT_HIGHLIGHT
+                writeSpecular = vec3(0.0);
+            #endif
+        }
         normalDepthData.w *= 100.0;
         for (int k = 0; k < 8; k++) {
             vec2 texCoordOffset = randomGaussian() * 0.5;
