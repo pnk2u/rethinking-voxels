@@ -165,11 +165,11 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
     #endif
     // End Step 2
 
-    #ifdef VOXEL_RT_REFLECTIONS
+    #if defined VOXEL_RT_REFLECTIONS && (defined DEFERRED1 || (WATER_REFLECT_QUALITY >= 2 && !defined DISTANT_HORIZONS && !defined DH_WATER))
         vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
         // Step 2.5: fill missing reflections with voxel data
         if (reflection.a < 1.0 ) {
-            vec3 voxelVector = mat3(gbufferModelViewInverse) * normalize(vector);
+            vec3 voxelVector = mat3(gbufferModelViewInverse) * vector;
             vec4 voxelStart = gbufferModelViewInverse * vec4(start, 1.0);
             voxelStart.xyz += fractCamPos;
             vec3 hitPos = rayTrace(voxelStart.xyz + 0.1 * voxelVector, 50.0 * voxelVector, dither);

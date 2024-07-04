@@ -107,7 +107,6 @@ void main() {
                     writeSpecular += readSpeculars[c.x][c.y] * weight;
                 #endif
                 totalWeight += weight;
-                //if (totalWeight > 1.9) break;
             }
         }
         imageStore(colorimg12, texelCoord, vec4(writeColor / totalWeight, 1.0));
