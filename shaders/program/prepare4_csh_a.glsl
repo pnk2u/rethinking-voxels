@@ -106,13 +106,15 @@ void main() {
                     max(1e-5, 1.0 - 5.0 * length(normalDepthData - normalDepthDatas[c.x][c.y])); /*
                     mix(1.0 - weights.x, weights.x, valueOffset.x) *
                     mix(1.0 - weights.y, weights.y, valueOffset.y);*/
-                writeColor += readColors[c.x][c.y] * weight;
-                colorBounds[0] = min(colorBounds[0], readColors[c.x][c.y]);
-                colorBounds[1] = max(colorBounds[1], readColors[c.x][c.y]);
+                vec3 thisCol = readColors[c.x][c.y];
+                writeColor += thisCol * weight;
+                colorBounds[0] = min(colorBounds[0], thisCol);
+                colorBounds[1] = max(colorBounds[1], thisCol);
                 #ifdef BLOCKLIGHT_HIGHLIGHT
-                    writeSpecular += readSpeculars[c.x][c.y] * weight;
-                specularBounds[0] = min(specularBounds[0], readSpeculars[c.x][c.y]);
-                specularBounds[1] = max(specularBounds[1], readSpeculars[c.x][c.y]);
+                    vec3 thisSpecular = readSpeculars[c.x][c.y];
+                    writeSpecular += thisSpecular * weight;
+                    specularBounds[0] = min(specularBounds[0], thisSpecular);
+                    specularBounds[1] = max(specularBounds[1], thisSpecular);
                 #endif
                 totalWeight += weight;
             }
