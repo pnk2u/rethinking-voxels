@@ -360,19 +360,23 @@ void main() {
                     vec3 lightColor = 1.0/32.0 * vec3(packedLightCol.x & 0xffff, packedLightCol.x>>16, packedLightCol.y & 0xffff) / (packedLightSubPos.y >> 16);
                     float brightness = (sqrt(1 - dirLen / (LIGHT_TRACE_LENGTH * thisTraceLen))) / (dirLen + 0.1);
                     vec3 thisBaseCol = lightColor * rayHit1.rgb * rayHit1.w * brightness * lightBrightness;
-                    writeColor += thisBaseCol * ndotl0;
-                    #ifdef BLOCKLIGHT_HIGHLIGHT
-                        float specularBrightness = GGX(
-                            normalDepthData.xyz,
-                            normalize(playerPos.xyz - gbufferModelView[3].xyz),
-                            normalize(lightPos - vxPos),
-                            ndotl0,
-                            smoothness
-                        );
-                        writeSpecular += thisBaseCol * lightBrightness * specularBrightness;
-                    #endif
-                    int thisWeight = int(10000.5 * length(thisBaseCol * ndotl0));
-                    atomicMax(positions[thisLightIndex].w, thisWeight);
+                    if (!any(isnan(thisBaseCol)) && !isnan(ndotl0)) {
+                        writeColor += thisBaseCol * ndotl0;
+                        #ifdef BLOCKLIGHT_HIGHLIGHT
+                            float specularBrightness = GGX(
+                                normalDepthData.xyz,
+                                normalize(playerPos.xyz - gbufferModelView[3].xyz),
+                                normalize(lightPos - vxPos),
+                                ndotl0,
+                                smoothness
+                            );
+                            if (!isnan(specularBrightness)) {
+                                writeSpecular += thisBaseCol * lightBrightness * specularBrightness;
+                            }
+                        #endif
+                        int thisWeight = int(10000.5 * length(thisBaseCol * ndotl0));
+                        atomicMax(positions[thisLightIndex].w, thisWeight);
+                    }
                 }
                 traceNum++;
                 if (traceNum >= MAX_TRACE_COUNT) break;
