@@ -93,6 +93,10 @@ void main() {
             #endif
         }
         normalDepthData.w *= 100.0;
+        vec3[2] colorBounds = vec3[2](vec3(10000), vec3(0));
+        #ifdef BLOCKLIGHT_HIGHLIGHT
+            vec3[2] specularBounds = vec3[2](vec3(10000), vec3(0));
+        #endif
         for (int k = 0; k < 8; k++) {
             vec2 texCoordOffset = randomGaussian() * 0.5;
             ivec2 valueOffset = ivec2(k%2, k/2);
@@ -103,14 +107,20 @@ void main() {
                     mix(1.0 - weights.x, weights.x, valueOffset.x) *
                     mix(1.0 - weights.y, weights.y, valueOffset.y);*/
                 writeColor += readColors[c.x][c.y] * weight;
+                colorBounds[0] = min(colorBounds[0], readColors[c.x][c.y]);
+                colorBounds[1] = max(colorBounds[1], readColors[c.x][c.y]);
                 #ifdef BLOCKLIGHT_HIGHLIGHT
                     writeSpecular += readSpeculars[c.x][c.y] * weight;
+                specularBounds[0] = min(specularBounds[0], readSpeculars[c.x][c.y]);
+                specularBounds[1] = max(specularBounds[1], readSpeculars[c.x][c.y]);
                 #endif
                 totalWeight += weight;
             }
         }
+        writeColor = clamp(writeColor, totalWeight * colorBounds[0], totalWeight * colorBounds[1]);
         imageStore(colorimg12, texelCoord, vec4(writeColor / totalWeight, 1.0));
         #ifdef BLOCKLIGHT_HIGHLIGHT
+            writeSpecular = clamp(writeSpecular, totalWeight * specularBounds[0], totalWeight * specularBounds[1]);
             imageStore(colorimg14, texelCoord, vec4(writeSpecular / totalWeight, 1.0));
         #endif
     #endif

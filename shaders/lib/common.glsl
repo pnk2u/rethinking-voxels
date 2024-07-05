@@ -31,8 +31,9 @@
     #define PER_PIXEL_LIGHT
     #ifndef PER_PIXEL_LIGHT
         #define PER_BLOCK_LIGHT
+    #else
+        #define BLOCKLIGHT_HIGHLIGHT
     #endif
-    //#define BLOCKLIGHT_HIGHLIGHT
     #define GI_STRENGTH 1 //[0 1 2]
 
     #if GI_STRENGTH > 0
