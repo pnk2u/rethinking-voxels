@@ -132,12 +132,12 @@ void main() {
     #endif
 
     #if defined LIGHTSHAFTS_ACTIVE || RAINBOWS > 0 && defined OVERWORLD || defined VOLUMETRIC_BLOCKLIGHT
-        vec3 nViewPos = normalize(viewPos.xyz);
+        vec3 nViewPos = normalize(viewPos1.xyz);
         float VdotL = dot(nViewPos, lightVec);
     #endif
 
     #if defined NETHER_STORM || defined COLORED_LIGHT_FOG
-        vec3 playerPos = ViewToPlayer(viewPos.xyz);
+        vec3 playerPos = ViewToPlayer(viewPos1.xyz);
         vec3 nPlayerPos = normalize(playerPos);
     #endif
 
@@ -164,8 +164,7 @@ void main() {
     #endif
 
     #ifdef NETHER_STORM
-        if (isEyeInWater == 0) color = mix(color, volumetricEffect.rgb, volumetricEffect.a);
-        volumetricEffect = vec4(0.0);
+        color = mix(color, volumetricEffect.rgb, volumetricEffect.a);
     #endif
 
     #ifdef VOLUMETRIC_BLOCKLIGHT
