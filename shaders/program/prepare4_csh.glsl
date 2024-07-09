@@ -238,7 +238,7 @@ void main() {
             dir *= -1;
         }
         vec3 rayNormal0;
-        vec4 rayHit0 = voxelTrace(biasedVxPos, LIGHT_TRACE_LENGTH * dir, rayNormal0);
+        vec4 rayHit0 = voxelTrace(biasedVxPos, LIGHT_TRACE_LENGTH * dir, rayNormal0, 1|1<<16);
         ivec3 rayHit0Coords = ivec3(rayHit0.xyz - 0.5 * rayNormal0 + 1000) - 1000;
         int offsetDecider = 26 - int(nextFloat() * 100);
         rayHit0Coords += int(offsetDecider >= 0) * (ivec3(

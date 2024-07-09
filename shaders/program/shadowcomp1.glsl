@@ -427,7 +427,7 @@ void main() {
                     maxDFVal = max(max(dplus, dminus), maxDFVal);
                 }
                 normal = normalize(normal);
-                if (maxDFVal > 0.1) {
+                if (maxDFVal > 0.1 && length(normal) > 0.5) {
                     vec4 GILight = imageLoad(irradianceCacheI, coords);
                     float weight = 1.0;
                     for (int k = 0; k < 6; k++) {
@@ -439,16 +439,25 @@ void main() {
                     }
                     GILight /= weight;
                     vxPos -= min(0.3, thisDFval - 0.1) * normal;
+                    vec4 ambientContribution = vec4(0);
                     for (int sampleNum = 0; sampleNum < GI_SAMPLE_COUNT; sampleNum++) {
                         vec3 dir = randomSphereSample();
                         if (dot(dir, normal) < 0.0) dir = -dir;
                         float ndotl = dot(dir, normal);
                         vec3 hitPos = rayTrace(vxPos, LIGHT_TRACE_LENGTH * dir, dither);
+                        vec3 translucentNormal;
+                        vec4 translucentPos = voxelTrace(vxPos, LIGHT_TRACE_LENGTH * dir, translucentNormal, 1<<8);
+                        vec4 translucentCol = vec4(1);
+                        if (translucentPos.w > 1) {
+                            translucentCol = getColor(translucentPos.xyz - 0.1 * translucentNormal);
+                            translucentCol.xyz = mix(vec3(1), translucentCol.xyz, translucentCol.w);
+                        }
                         #ifdef GL_CAVE_FACTOR
-                            vec3 hitCol = ambientColor * clamp(dir.y + 1.6, 0.6, 1) * (1-GetCaveFactor(cameraPosition.y + vxPos.y)) / GI_STRENGTH;
+                            vec3 ambientHitCol = AMBIENT_MULT * 0.04 * ambientColor * clamp(dir.y + 1.6, 0.6, 1) * (1-GetCaveFactor(cameraPosition.y + vxPos.y)) / GI_STRENGTH;
                         #else
-                            vec3 hitCol = ambientColor * clamp(dir.y + 1.6, 0.6, 1) / GI_STRENGTH;
+                            vec3 ambientHitCol = AMBIENT_MULT * 0.04 * ambientColor * clamp(dir.y + 1.6, 0.6, 1) / GI_STRENGTH;
                         #endif
+                        vec3 hitCol = vec3(0);
                         if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5) {
                             vec3 hitBlocklight = imageLoad(irradianceCacheI, ivec3(hitPos + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
                             vec4 hitGIColor = imageLoad(irradianceCacheI, ivec3(hitPos + 0.5 * voxelVolumeSize - vec3(0.5)));
@@ -465,15 +474,14 @@ void main() {
                                 const float hitSunlight = 0.0;
                             #endif
                             vec3 hitAlbedo = getColor(hitPos - 0.1 * hitNormal).rgb;
-                            hitCol = mix(
-                                ((hitBlocklight + hitSunlight) * 4 + hitGIlight) * hitAlbedo,
-                                hitCol,
-                                pow2(length(hitPos - vxPos) / LIGHT_TRACE_LENGTH)
-                            );
+                            hitCol = ((hitBlocklight + hitSunlight) * 4 + hitGIlight) * hitAlbedo;
+                            ambientHitCol *= pow2(length(hitPos - vxPos) / LIGHT_TRACE_LENGTH);
                         }
-                        vec3 hitContrib = hitCol * ndotl;
+                        vec3 hitContrib = hitCol * translucentCol.xyz * ndotl;
+                        if (all(greaterThanEqual(ambientHitCol, vec3(0)))) ambientContribution += vec4(ambientHitCol * translucentCol.xyz, 1.0) * ndotl;
                         if (all(greaterThanEqual(hitContrib, vec3(0)))) GILight += vec4(hitContrib, ndotl);
                     }
+                    GILight += min(ambientContribution, vec4(ambientColor * 2.0, 1.0) * ambientContribution.a);
                     imageStore(irradianceCacheI, coords, GILight);
                 }
             }
