@@ -385,8 +385,8 @@ void main() {
             if (isHeldLight) emissive = false;
         #endif
 
-        int skyLight = int(5.49 * lmCoordV[0].y + 0.5);
-        int writeSkyLight = (1<<skyLight/2) | (1<<(skyLight-1)/2);
+        int skyLight = int(3.5 * lmCoordV[0].y);
+        int writeSkyLight = ivec4(0, 1, 3, 2)[skyLight];
         imageAtomicOr(occupancyVolume, coords, writeSkyLight << 28);
         bool shouldVoxelize = true;
         if (

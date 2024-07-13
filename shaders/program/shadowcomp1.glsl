@@ -416,13 +416,16 @@ void main() {
         if (insideFrustrum) {
             float thisDFval = getDistanceField(vxPos);
             if (thisDFval < 0.7 || nextUint() % 37 == 0) {
-                bool isOccluded = (imageLoad(occupancyVolume, coords).r & 1) != 0;
+                int thisOccupancy = imageLoad(occupancyVolume, coords).r;
+                bool isOccluded = (thisOccupancy & 1) != 0;
                 float maxDFVal = thisDFval;
                 for (int k = 0; k < 3; k++) {
                     float dplus = getDistanceField(vxPos + mat3(0.5)[k]);
                     float dminus = getDistanceField(vxPos - mat3(0.5)[k]);
-                    if (isOccluded) dplus = -dplus;
-                    if (isOccluded) dminus = -dminus;
+                    if (isOccluded) {
+                        dplus = -dplus;
+                        dminus = -dminus;
+                    }
                     normal[k] = dplus - dminus;
                     maxDFVal = max(max(dplus, dminus), maxDFVal);
                 }
@@ -430,13 +433,17 @@ void main() {
                 if (maxDFVal > 0.1 && length(normal) > 0.5) {
                     vec4 GILight = imageLoad(irradianceCacheI, coords);
                     float weight = 1.0;
+                    int intSkyLight = 0; 
                     for (int k = 0; k < 6; k++) {
                         ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
-                        if ((imageLoad(occupancyVolume, coords + offset).r & 1) != 0 || getDistanceField(vxPos + 0.5 * offset) < 0.2) continue;
+                        int aroundOccupancy = imageLoad(occupancyVolume, coords + offset).r;
+                        intSkyLight |= aroundOccupancy >> 28 & 3;
+                        if ((aroundOccupancy & 1) != 0 || getDistanceField(vxPos + 0.5 * offset) < 0.2) continue;
                         float otherWeight = 0.01;
                         GILight += otherWeight * imageLoad(irradianceCacheI, coords + offset);
                         weight += otherWeight;
                     }
+                    float skyLight = vec4(0.0, 0.333, 1.0, 0.666)[intSkyLight];
                     GILight /= weight;
                     vxPos -= min(0.3, thisDFval - 0.1) * normal;
                     vec4 ambientContribution = vec4(0);
@@ -453,9 +460,9 @@ void main() {
                             translucentCol.xyz = mix(vec3(1), translucentCol.xyz, translucentCol.w);
                         }
                         #ifdef GL_CAVE_FACTOR
-                            vec3 ambientHitCol = AMBIENT_MULT * 0.04 * ambientColor * clamp(dir.y + 1.6, 0.6, 1) * (1-GetCaveFactor(cameraPosition.y + vxPos.y)) / GI_STRENGTH;
+                            vec3 ambientHitCol = AMBIENT_MULT * 0.04 * ambientColor * (skyLight * 0.6 + 0.4) * clamp(dir.y + 1.6, 0.6, 1) * (1-GetCaveFactor(cameraPosition.y + vxPos.y)) / GI_STRENGTH;
                         #else
-                            vec3 ambientHitCol = AMBIENT_MULT * 0.04 * ambientColor * clamp(dir.y + 1.6, 0.6, 1) / GI_STRENGTH;
+                            vec3 ambientHitCol = AMBIENT_MULT * 0.04 * ambientColor * (skyLight * 0.6 + 0.4) * clamp(dir.y + 1.6, 0.6, 1) / GI_STRENGTH;
                         #endif
                         vec3 hitCol = vec3(0);
                         if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5) {
