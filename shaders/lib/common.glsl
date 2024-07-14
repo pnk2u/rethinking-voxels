@@ -31,7 +31,7 @@
     #define PER_PIXEL_LIGHT
     #ifndef PER_PIXEL_LIGHT
         #define PER_BLOCK_LIGHT
-    #else
+    #elif BLOCK_REFLECT_QUALITY > 0
         #define BLOCKLIGHT_HIGHLIGHT
     #endif
     #define GI_STRENGTH 1 //[0 1 2]
@@ -39,7 +39,7 @@
     #if GI_STRENGTH > 0
         #define GI
         #define GI_SAMPLE_COUNT 7 //[1 3 7 13]
-        #define GI_AMBIENT_MIN 0.35 //[0 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00]
+        #define GI_AMBIENT_MIN 0.50 //[0 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00]
     #endif
 
     #define BLOCKLIGHT_I 1.0 //[0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.5 10.0]
@@ -66,6 +66,7 @@
     #if !defined DH_TERRAIN && !defined DH_WATER
         #define VOXEL_RT_REFLECTIONS
     #endif
+  //#define WHITE_WORLD
     #define REALTIME_SHADOWS
     #define SHADOW_QUALITY 2 //[-1 0 1 2 3 4 5]
     const float shadowDistance = 128.0; //[64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0]

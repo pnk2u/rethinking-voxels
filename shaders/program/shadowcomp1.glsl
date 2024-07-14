@@ -443,7 +443,7 @@ void main() {
                         GILight += otherWeight * imageLoad(irradianceCacheI, coords + offset);
                         weight += otherWeight;
                     }
-                    float skyLight = vec4(0.0, 0.333, 1.0, 0.666)[intSkyLight];
+                    float skyLight = mix(vec4(0.0, 0.333, 1.0, 0.666)[intSkyLight], 1.0, 0.4 * eyeBrightness.y / 240.0);
                     GILight /= weight;
                     vxPos -= min(0.3, thisDFval - 0.1) * normal;
                     vec4 ambientContribution = vec4(0);
@@ -460,9 +460,9 @@ void main() {
                             translucentCol.xyz = mix(vec3(1), translucentCol.xyz, translucentCol.w);
                         }
                         #ifdef GL_CAVE_FACTOR
-                            vec3 ambientHitCol = AMBIENT_MULT * 0.04 * ambientColor * (skyLight * 0.6 + 0.4) * clamp(dir.y + 1.6, 0.6, 1) * (1-GetCaveFactor(cameraPosition.y + vxPos.y)) / GI_STRENGTH;
+                            vec3 ambientHitCol = AMBIENT_MULT * 0.04 * skyLight * ambientColor * clamp(dir.y + 1.6, 0.6, 1) * (1-GetCaveFactor(cameraPosition.y + vxPos.y)) / GI_STRENGTH;
                         #else
-                            vec3 ambientHitCol = AMBIENT_MULT * 0.04 * ambientColor * (skyLight * 0.6 + 0.4) * clamp(dir.y + 1.6, 0.6, 1) / GI_STRENGTH;
+                            vec3 ambientHitCol = AMBIENT_MULT * 0.04 * skyLight * ambientColor * clamp(dir.y + 1.6, 0.6, 1) / GI_STRENGTH;
                         #endif
                         vec3 hitCol = vec3(0);
                         if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5) {
@@ -477,7 +477,9 @@ void main() {
                             if (!(length(hitNormal) > 0.5)) hitNormal = vec3(0);
                             #if defined REALTIME_SHADOWS && defined OVERWORLD
                                 vec3 sunShadowPos = GetShadowPos(hitPos - fractCamPos);
-                                vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0) * lightColor * max(dot(hitNormal, sunVec), 0);
+                                vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0) * lightColor * max(dot(hitNormal, sunVec), 0) * float(skyLight > 0.1 || dot(hitNormal, hitPos) < 0.0);
+                            #elif defined OVERWORLD
+                                vec3 hitSunlight = lightColor * float(skyLight > 0.8);
                             #else
                                 const float hitSunlight = 0.0;
                             #endif

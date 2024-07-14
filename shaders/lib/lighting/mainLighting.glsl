@@ -355,10 +355,6 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #ifdef OVERWORLD
         ambientMult = mix(lightmapYM, pow2(lightmapYM) * lightmapYM, rainFactor);
 
-        #ifdef GI
-            ambientMult = mix(1, ambientMult, voxelFactor);
-        #endif
-
         #if SHADOW_QUALITY == -1
             float tweakFactor = 1.0 + 0.6 * (1.0 - pow2(pow2(pow2(noonFactor))));
             lightColorM /= tweakFactor;
@@ -461,7 +457,9 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         #else
             float vanillaAmbience = 1.0;
         #endif
-        ambientColorM = mix(max(giLighting, ambientColorM * vanillaAmbience * GI_AMBIENT_MIN), ambientColorM, voxelFactor);
+        ambientColorM = mix(max(giLighting, ambientColorM * ambientMult * GI_AMBIENT_MIN), ambientColorM * ambientMult, voxelFactor);
+
+        ambientMult = 1.0;//mix(1, ambientMult, voxelFactor);
     #endif
 
     int localMat = 
@@ -572,4 +570,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     color.rgb *= finalDiffuse;
     color.rgb += lightHighlight;
     color.rgb *= pow2(1.0 - darknessLightFactor);
+    #ifdef WHITE_WORLD
+    color.rgb = finalDiffuse + lightHighlight;
+    #endif
 }
