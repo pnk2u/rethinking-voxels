@@ -469,12 +469,13 @@ void main() {
                             vec3 hitBlocklight = imageLoad(irradianceCacheI, ivec3(hitPos + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
                             vec4 hitGIColor = imageLoad(irradianceCacheI, ivec3(hitPos + 0.5 * voxelVolumeSize - vec3(0.5)));
                             vec3 hitGIlight = min(hitGIColor.rgb / max(hitGIColor.a, 0.0001), vec3(1));
+                            vec3 hitNormal = vec3(0);
+                            for (int k = 0; k < 3; k++) {
+                                hitNormal[k] = getDistanceField(hitPos + mat3(0.5)[k]) - getDistanceField(hitPos - mat3(0.5)[k]);
+                            }
+                            hitNormal = normalize(hitNormal);
+                            if (!(length(hitNormal) > 0.5)) hitNormal = vec3(0);
                             #if defined REALTIME_SHADOWS && defined OVERWORLD
-                                vec3 hitNormal = vec3(0);
-                                for (int k = 0; k < 3; k++) {
-                                    hitNormal[k] = getDistanceField(hitPos + mat3(0.5)[k]) - getDistanceField(hitPos - mat3(0.5)[k]);
-                                }
-                                hitNormal = normalize(hitNormal);
                                 vec3 sunShadowPos = GetShadowPos(hitPos - fractCamPos);
                                 vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0) * lightColor * max(dot(hitNormal, sunVec), 0);
                             #else
