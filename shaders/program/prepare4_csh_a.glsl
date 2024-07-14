@@ -19,6 +19,7 @@ layout(rgba16f) uniform image2D colorimg12;
 shared vec3 readColors[14][14];
 #ifdef BLOCKLIGHT_HIGHLIGHT
     shared vec3 readSpeculars[14][14];
+    shared float smoothnesses[14][14];
 #endif
 shared vec4 normalDepthDatas[14][14];
 
@@ -67,6 +68,9 @@ void main() {
             vec4 normalDepthData = texelFetch(colortex8, hrReadCoords, 0);
             normalDepthData.w *= 100.0;
             normalDepthDatas[readCoords.x][readCoords.y] = normalDepthData;
+            #ifdef BLOCKLIGHT_HIGHLIGHT
+                smoothnesses[readCoords.x][readCoords.y] = texelFetch(colortex3, hrReadCoords, 0).r;
+            #endif
         }
         barrier();
         memoryBarrierShared();
@@ -74,6 +78,7 @@ void main() {
         vec2 localLrTexCoord = vec2(lrTexelCoord) - lowerBound;
         vec2 weights = fract(lrTexelCoord);
         vec4 normalDepthData = texelFetch(colortex8, texelCoord, 0);
+        float thisSmoothness = texelFetch(colortex3, texelCoord, 0).r;
         vec4 clipPos = vec4((texelCoord + 0.5) / view, 1.0 - normalDepthData.a, 1.0) * 2.0 - 1.0;
         vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * clipPos);
         playerPos.xyz += playerPos.w * (cameraPosition - previousCameraPosition);
@@ -98,14 +103,15 @@ void main() {
             vec3[2] specularBounds = vec3[2](vec3(10000), vec3(0));
         #endif
         for (int k = 0; k < 8; k++) {
-            vec2 texCoordOffset = randomGaussian() * 0.5;
-            ivec2 valueOffset = ivec2(k%2, k/2);
+            vec2 texCoordOffset = randomGaussian() * 0.8;
             ivec2 c = ivec2(localLrTexCoord + texCoordOffset);
             if (c == clamp(c, ivec2(0), readSize - 1)) {
-                float weight =
-                    max(1e-5, 1.0 - 5.0 * length(normalDepthData - normalDepthDatas[c.x][c.y])); /*
-                    mix(1.0 - weights.x, weights.x, valueOffset.x) *
-                    mix(1.0 - weights.y, weights.y, valueOffset.y);*/
+                float weight = max(1e-5, 1.0 - 5.0 * (
+                        length(normalDepthData - normalDepthDatas[c.x][c.y])
+                        #ifdef BLOCKLIGHT_HIGHLIGHT
+                            + 3 * abs(thisSmoothness - smoothnesses[c.x][c.y])
+                        #endif
+                    )) * exp(-dot(texCoordOffset, texCoordOffset));
                 vec3 thisCol = readColors[c.x][c.y];
                 writeColor += thisCol * weight;
                 colorBounds[0] = min(colorBounds[0], thisCol);

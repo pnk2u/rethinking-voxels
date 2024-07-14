@@ -1113,6 +1113,7 @@ value.BLOCKLIGHT_RESOLUTION.3=0.33
 value.BLOCKLIGHT_RESOLUTION.4=0.25
 value.BLOCKLIGHT_RESOLUTION.6=0.17
 value.BLOCKLIGHT_RESOLUTION.8=0.13
+value.BLOCKLIGHT_RESOLUTION.10=0.1
 
 option.BLOCKLIGHT_HIGHLIGHT=Specular Blocklight Highlights
 option.BLOCKLIGHT_HIGHLIGHT.comment=Makes light from blocklight sources reflect from surfaces in a way that accounts for their smoothness.

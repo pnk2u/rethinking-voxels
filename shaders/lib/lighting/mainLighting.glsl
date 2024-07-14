@@ -558,8 +558,12 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
             #else
                 float metalness = 0.0;
             #endif
-            blocklightHighlight *= mix(vec3(1.0), pow2(color.rgb / infnorm(color.rgb + 0.0001)), metalness);
+        #elif defined IPBR
+            float metalness = materialMask * 255.1 < 4.0 ? vec4(0.0, 0.7, 1.0, 0.7)[int(materialMask * 255.1)] : 0.0;
+        #else
+            float metalness = 0.0;
         #endif
+        blocklightHighlight *= mix(vec3(1.0), pow2(color.rgb / infnorm(color.rgb + 0.0001)), metalness);
         lightHighlight += blocklightHighlight;
     #endif
     // Mix Colors

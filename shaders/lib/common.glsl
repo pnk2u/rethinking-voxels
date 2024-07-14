@@ -31,8 +31,6 @@
     #define PER_PIXEL_LIGHT
     #ifndef PER_PIXEL_LIGHT
         #define PER_BLOCK_LIGHT
-    #elif BLOCK_REFLECT_QUALITY > 0
-        #define BLOCKLIGHT_HIGHLIGHT
     #endif
     #define GI_STRENGTH 1 //[0 1 2]
 
@@ -43,7 +41,7 @@
     #endif
 
     #define BLOCKLIGHT_I 1.0 //[0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.5 10.0]
-    #define BLOCKLIGHT_RESOLUTION 3 //[8 6 4 3 2 1]
+    #define BLOCKLIGHT_RESOLUTION 3 //[10 8 6 4 3 2 1]
     #define LIGHT_TRACE_LENGTH 30.0 //[10.0 12.0 15.0 18.0 22.0 26.0 30.0 35.0 40.0 47.0 55.0 65.0 76.0 88.0 100.0]
     #define LIGHT_COLOR_SATURATION 0.5 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
     #define LIGHTSOURCE_SIZE_MULT 0.6 //[0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
@@ -86,6 +84,10 @@
     #define WATER_REFLECT_QUALITY 2 //[-1 0 1 2]
     #define BLOCK_REFLECT_QUALITY 3 //[0 1 2 3]
     #define ANISOTROPIC_FILTER 0 //[0 4 8 16]
+
+    #if defined PER_PIXEL_LIGHT && BLOCK_REFLECT_QUALITY > 0
+        #define BLOCKLIGHT_HIGHLIGHT
+    #endif
 
     #define PORTAL_EDGE_EFFECT
     #ifndef IRIS_HAS_CONNECTED_TEXTURES
