@@ -11,7 +11,7 @@
     const ivec3 workGroups = ivec3(64, 16, 64);
 #endif
 
-layout(local_size_x = 10, local_size_y = 10, local_size_z = 10) in;
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 layout(rgba16f) uniform image3D distanceFieldI;
 layout(r32i) uniform restrict iimage3D occupancyVolume;
@@ -42,7 +42,7 @@ shared float fullDist[10][10][10];
 
 void main() {
     ivec3 baseCoord = ivec3(gl_WorkGroupID) * 8;
-    ivec3 localCoord = ivec3(gl_LocalInvocationID) - 1;
+    ivec3 localCoord = ivec3(gl_LocalInvocationID);
     ivec3 texCoord = baseCoord + localCoord;
     float[8] theseDists;
     for (int k = 0; k < 8; k++) theseDists[k] = 1000;
