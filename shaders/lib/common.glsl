@@ -71,7 +71,7 @@
     #define PLAYER_VOXELIZATION
   //#define FOLIAGE_VOXELIZATION
     #define ENTITY_SHADOWS_DEFINE -1 //[-1 1]
-    #ifdef ENTITY_SHADOWS_DEFINE > 0
+    #if ENTITY_SHADOWS_DEFINE > 0
         #define ENTITY_VOXELIZATION
     #endif
   //#define SLANTED_BLOCK_EDGES

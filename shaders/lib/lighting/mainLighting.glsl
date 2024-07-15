@@ -448,7 +448,11 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         }
     #endif
     #ifdef GI
-        vec3 giLighting = 1.8 * readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM) * GI_STRENGTH;
+        #ifndef GBUFFERS_WATER
+            vec3 giLighting = 1.8 * readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM) * GI_STRENGTH;
+        #else
+            vec3 giLighting = 1.8 * readIrradianceCache(vxPos, -0.5 * mat3(gbufferModelViewInverse) * normalM) * GI_STRENGTH;
+        #endif
         float lGiLighting = length(giLighting);
         if (lGiLighting > 0.01) giLighting *= log(lGiLighting + 1.0) / lGiLighting;
 
@@ -457,7 +461,12 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         #else
             float vanillaAmbience = 1.0;
         #endif
-        ambientColorM = mix(max(giLighting, ambientColorM * ambientMult * GI_AMBIENT_MIN), ambientColorM * ambientMult, voxelFactor);
+        #if defined GBUFFERS_ENTITIES && !defined ENTITY_VOXELIZATION
+            float vanillaAmbientFactor = 1.0;
+        #else
+            float vanillaAmbientFactor = GI_AMBIENT_MIN;
+        #endif
+        ambientColorM = mix(max(giLighting, ambientColorM * ambientMult * vanillaAmbientFactor), ambientColorM * ambientMult, voxelFactor);
 
         ambientMult = 1.0;//mix(1, ambientMult, voxelFactor);
     #endif

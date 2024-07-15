@@ -337,18 +337,18 @@ void main() {
 
 // This program calculates GI
 #ifdef CSH_B
-#if VX_VOL_SIZE == 0 || !defined GI
-    const ivec3 workGroups = ivec3(12, 8, 12);
-#elif VX_VOL_SIZE == 1
-    const ivec3 workGroups = ivec3(16, 12, 16);
-#elif VX_VOL_SIZE == 2
-    const ivec3 workGroups = ivec3(32, 16, 32);
-#elif VX_VOL_SIZE == 3
-    const ivec3 workGroups = ivec3(64, 16, 64);
-#endif
-
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 #ifdef GI
+    #if VX_VOL_SIZE == 0
+        const ivec3 workGroups = ivec3(12, 8, 12);
+    #elif VX_VOL_SIZE == 1
+        const ivec3 workGroups = ivec3(16, 12, 16);
+    #elif VX_VOL_SIZE == 2
+        const ivec3 workGroups = ivec3(32, 16, 32);
+    #elif VX_VOL_SIZE == 3
+        const ivec3 workGroups = ivec3(64, 16, 64);
+    #endif
+
+    layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
     layout(rgba16f) uniform image3D irradianceCacheI;
     #include "/lib/vx/SSBOs.glsl"
@@ -356,6 +356,9 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
     #include "/lib/util/random.glsl"
 
     shared vec3[5] frustrumSides;
+
+    shared ivec3[512] activeLocs;
+    shared int activeCount;
 
     const vec2[4] squareCorners = vec2[4](vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1));
     #if defined REALTIME_SHADOWS && defined OVERWORLD
@@ -381,10 +384,16 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
     #include "/lib/colors/lightAndAmbientColors.glsl"
 
     vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
+#else
+    const ivec3 workGroups = ivec3(1, 1, 1);
+    layout(local_size_x = 1) in;
 #endif
 void main() {
     #ifdef GI
-        int index = int(gl_LocalInvocationID.x + gl_WorkGroupSize.x * (gl_LocalInvocationID.y + gl_WorkGroupSize.y * gl_LocalInvocationID.z));
+        if (gl_LocalInvocationID == uvec3(0)) {
+            activeCount = 0;
+        }
+        int index = int(gl_LocalInvocationIndex);
         float dither = nextFloat();
         if (index < 4) {
             vec4 pos = vec4(squareCorners[index], 0.9999, 1);
@@ -415,85 +424,93 @@ void main() {
 
         if (insideFrustrum) {
             float thisDFval = getDistanceField(vxPos);
-            if (thisDFval < 0.7 || nextUint() % 37 == 0) {
-                int thisOccupancy = imageLoad(occupancyVolume, coords).r;
-                bool isOccluded = (thisOccupancy & 1) != 0;
-                float maxDFVal = thisDFval;
-                for (int k = 0; k < 3; k++) {
-                    float dplus = getDistanceField(vxPos + mat3(0.5)[k]);
-                    float dminus = getDistanceField(vxPos - mat3(0.5)[k]);
-                    if (isOccluded) {
-                        dplus = -dplus;
-                        dminus = -dminus;
-                    }
-                    normal[k] = dplus - dminus;
-                    maxDFVal = max(max(dplus, dminus), maxDFVal);
+            if (thisDFval < 0.7 || (nextUint() % 37 == 0 && thisDFval < 1.7)) {
+                activeLocs[atomicAdd(activeCount, 1)] = coords;
+            }
+        }
+        barrier();
+        memoryBarrierShared();
+        if (index < activeCount) {
+            coords = activeLocs[index];
+            vxPos = coords - 0.5 * voxelVolumeSize + vec3(0.51, 0.49, 0.502);
+            float thisDFval = getDistanceField(vxPos);
+            int thisOccupancy = imageLoad(occupancyVolume, coords).r;
+            bool isOccluded = (thisOccupancy & 1) != 0;
+            float maxDFVal = thisDFval;
+            for (int k = 0; k < 3; k++) {
+                float dplus = getDistanceField(vxPos + mat3(0.5)[k]);
+                float dminus = getDistanceField(vxPos - mat3(0.5)[k]);
+                if (isOccluded) {
+                    dplus = -dplus;
+                    dminus = -dminus;
                 }
-                normal = normalize(normal);
-                if (maxDFVal > 0.1 && length(normal) > 0.5) {
-                    vec4 GILight = imageLoad(irradianceCacheI, coords);
-                    float weight = 1.0;
-                    int intSkyLight = 0; 
-                    for (int k = 0; k < 6; k++) {
-                        ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
-                        int aroundOccupancy = imageLoad(occupancyVolume, coords + offset).r;
-                        intSkyLight |= aroundOccupancy >> 28 & 3;
-                        if ((aroundOccupancy & 1) != 0 || getDistanceField(vxPos + 0.5 * offset) < 0.2) continue;
-                        float otherWeight = 0.01;
-                        GILight += otherWeight * imageLoad(irradianceCacheI, coords + offset);
-                        weight += otherWeight;
+                normal[k] = dplus - dminus;
+                maxDFVal = max(max(dplus, dminus), maxDFVal);
+            }
+            normal = normalize(normal);
+            if (maxDFVal > 0.1 && length(normal) > 0.5) {
+                vec4 GILight = imageLoad(irradianceCacheI, coords);
+                float weight = 1.0;
+                int intSkyLight = 0; 
+                for (int k = 0; k < 6; k++) {
+                    ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
+                    int aroundOccupancy = imageLoad(occupancyVolume, coords + offset).r;
+                    intSkyLight |= aroundOccupancy >> 28 & 3;
+                    if ((aroundOccupancy & 1) != 0 || getDistanceField(vxPos + 0.5 * offset) < 0.2) continue;
+                    float otherWeight = 0.01;
+                    GILight += otherWeight * imageLoad(irradianceCacheI, coords + offset);
+                    weight += otherWeight;
+                }
+                float skyLight = mix(vec4(0.0, 0.333, 1.0, 0.666)[intSkyLight], 1.0, 0.4 * eyeBrightness.y / 240.0);
+                GILight /= weight;
+                vxPos -= min(0.3, thisDFval - 0.1) * normal;
+                vec4 ambientContribution = vec4(0);
+                for (int sampleNum = 0; sampleNum < GI_SAMPLE_COUNT; sampleNum++) {
+                    vec3 dir = randomSphereSample();
+                    if (dot(dir, normal) < 0.0) dir = -dir;
+                    float ndotl = dot(dir, normal);
+                    vec3 hitPos = rayTrace(vxPos, LIGHT_TRACE_LENGTH * dir, dither);
+                    vec3 translucentNormal;
+                    vec4 translucentPos = voxelTrace(vxPos, LIGHT_TRACE_LENGTH * dir, translucentNormal, 1<<8);
+                    vec4 translucentCol = vec4(1);
+                    if (translucentPos.w > 1) {
+                        translucentCol = getColor(translucentPos.xyz - 0.1 * translucentNormal);
+                        translucentCol.xyz = mix(vec3(1), translucentCol.xyz, translucentCol.w);
                     }
-                    float skyLight = mix(vec4(0.0, 0.333, 1.0, 0.666)[intSkyLight], 1.0, 0.4 * eyeBrightness.y / 240.0);
-                    GILight /= weight;
-                    vxPos -= min(0.3, thisDFval - 0.1) * normal;
-                    vec4 ambientContribution = vec4(0);
-                    for (int sampleNum = 0; sampleNum < GI_SAMPLE_COUNT; sampleNum++) {
-                        vec3 dir = randomSphereSample();
-                        if (dot(dir, normal) < 0.0) dir = -dir;
-                        float ndotl = dot(dir, normal);
-                        vec3 hitPos = rayTrace(vxPos, LIGHT_TRACE_LENGTH * dir, dither);
-                        vec3 translucentNormal;
-                        vec4 translucentPos = voxelTrace(vxPos, LIGHT_TRACE_LENGTH * dir, translucentNormal, 1<<8);
-                        vec4 translucentCol = vec4(1);
-                        if (translucentPos.w > 1) {
-                            translucentCol = getColor(translucentPos.xyz - 0.1 * translucentNormal);
-                            translucentCol.xyz = mix(vec3(1), translucentCol.xyz, translucentCol.w);
+                    #ifdef GL_CAVE_FACTOR
+                        vec3 ambientHitCol = AMBIENT_MULT * 0.04 * skyLight * ambientColor * clamp(dir.y + 1.6, 0.6, 1) * (1-GetCaveFactor(cameraPosition.y + vxPos.y)) / GI_STRENGTH;
+                    #else
+                        vec3 ambientHitCol = AMBIENT_MULT * 0.04 * skyLight * ambientColor * clamp(dir.y + 1.6, 0.6, 1) / GI_STRENGTH;
+                    #endif
+                    vec3 hitCol = vec3(0);
+                    if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5) {
+                        vec3 hitBlocklight = imageLoad(irradianceCacheI, ivec3(hitPos + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
+                        vec4 hitGIColor = imageLoad(irradianceCacheI, ivec3(hitPos + 0.5 * voxelVolumeSize - vec3(0.5)));
+                        vec3 hitGIlight = min(hitGIColor.rgb / max(hitGIColor.a, 0.0001), vec3(1));
+                        vec3 hitNormal = vec3(0);
+                        for (int k = 0; k < 3; k++) {
+                            hitNormal[k] = getDistanceField(hitPos + mat3(0.5)[k]) - getDistanceField(hitPos - mat3(0.5)[k]);
                         }
-                        #ifdef GL_CAVE_FACTOR
-                            vec3 ambientHitCol = AMBIENT_MULT * 0.04 * skyLight * ambientColor * clamp(dir.y + 1.6, 0.6, 1) * (1-GetCaveFactor(cameraPosition.y + vxPos.y)) / GI_STRENGTH;
+                        hitNormal = normalize(hitNormal);
+                        if (!(length(hitNormal) > 0.5)) hitNormal = vec3(0);
+                        #if defined REALTIME_SHADOWS && defined OVERWORLD
+                            vec3 sunShadowPos = GetShadowPos(hitPos - fractCamPos);
+                            vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0) * lightColor * max(dot(hitNormal, sunVec), 0) * float(skyLight > 0.1 || dot(hitNormal, hitPos) < 0.0);
+                        #elif defined OVERWORLD
+                            vec3 hitSunlight = lightColor * float(skyLight > 0.8);
                         #else
-                            vec3 ambientHitCol = AMBIENT_MULT * 0.04 * skyLight * ambientColor * clamp(dir.y + 1.6, 0.6, 1) / GI_STRENGTH;
+                            const float hitSunlight = 0.0;
                         #endif
-                        vec3 hitCol = vec3(0);
-                        if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5) {
-                            vec3 hitBlocklight = imageLoad(irradianceCacheI, ivec3(hitPos + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
-                            vec4 hitGIColor = imageLoad(irradianceCacheI, ivec3(hitPos + 0.5 * voxelVolumeSize - vec3(0.5)));
-                            vec3 hitGIlight = min(hitGIColor.rgb / max(hitGIColor.a, 0.0001), vec3(1));
-                            vec3 hitNormal = vec3(0);
-                            for (int k = 0; k < 3; k++) {
-                                hitNormal[k] = getDistanceField(hitPos + mat3(0.5)[k]) - getDistanceField(hitPos - mat3(0.5)[k]);
-                            }
-                            hitNormal = normalize(hitNormal);
-                            if (!(length(hitNormal) > 0.5)) hitNormal = vec3(0);
-                            #if defined REALTIME_SHADOWS && defined OVERWORLD
-                                vec3 sunShadowPos = GetShadowPos(hitPos - fractCamPos);
-                                vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0) * lightColor * max(dot(hitNormal, sunVec), 0) * float(skyLight > 0.1 || dot(hitNormal, hitPos) < 0.0);
-                            #elif defined OVERWORLD
-                                vec3 hitSunlight = lightColor * float(skyLight > 0.8);
-                            #else
-                                const float hitSunlight = 0.0;
-                            #endif
-                            vec3 hitAlbedo = getColor(hitPos - 0.1 * hitNormal).rgb;
-                            hitCol = ((hitBlocklight + hitSunlight) * 4 + hitGIlight) * hitAlbedo;
-                            ambientHitCol *= pow2(length(hitPos - vxPos) / LIGHT_TRACE_LENGTH);
-                        }
-                        vec3 hitContrib = hitCol * translucentCol.xyz * ndotl;
-                        if (all(greaterThanEqual(ambientHitCol, vec3(0)))) ambientContribution += vec4(ambientHitCol * translucentCol.xyz, 1.0) * ndotl;
-                        if (all(greaterThanEqual(hitContrib, vec3(0)))) GILight += vec4(hitContrib, ndotl);
+                        vec3 hitAlbedo = getColor(hitPos - 0.1 * hitNormal).rgb;
+                        hitCol = ((hitBlocklight + hitSunlight) * 4 + hitGIlight) * hitAlbedo;
+                        ambientHitCol *= pow2(length(hitPos - vxPos) / LIGHT_TRACE_LENGTH);
                     }
-                    GILight += min(ambientContribution, vec4(ambientColor * 2.0, 1.0) * ambientContribution.a);
-                    imageStore(irradianceCacheI, coords, GILight);
+                    vec3 hitContrib = hitCol * translucentCol.xyz * ndotl;
+                    if (all(greaterThanEqual(ambientHitCol, vec3(0)))) ambientContribution += vec4(ambientHitCol * translucentCol.xyz, 1.0) * ndotl;
+                    if (all(greaterThanEqual(hitContrib, vec3(0)))) GILight += vec4(hitContrib, ndotl);
                 }
+                GILight += min(ambientContribution, vec4(ambientColor * 2.0, 1.0) * ambientContribution.a);
+                imageStore(irradianceCacheI, coords, GILight);
             }
         }
     #endif
