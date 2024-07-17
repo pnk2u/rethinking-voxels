@@ -257,7 +257,6 @@ flat out ivec3 correspondingBlock;
 //Uniforms//
 
 uniform int renderStage;
-uniform vec3 eyePosition;
 
 layout(r32i) restrict uniform iimage3D voxelCols;
 layout(r32i) restrict uniform iimage3D occupancyVolume;
@@ -306,14 +305,11 @@ void main() {
         bool isHeldLight = false;
         if (entityId == 50016 && emissive && length(center) < 8) { // handheld item
             isHeldLight = true;
-            vec3 floorCamPosRelEyePos = (cameraPositionInt - eyePosition);
-            if (cameraPositionInt.y == -98257195) {
-                floorCamPosRelEyePos = (floor(cameraPosition) - eyePosition);
-            }
+            vec3 floorCamPosRelEyePos = fractCamPos - relativeEyePosition;
             #ifdef PLAYER_VOXELIZATION
-                vec3 offset = 0.5 * normalize((center - 0.025 * cnormal + floorCamPosRelEyePos) * vec3(1, 0, 1));
+                vec3 offset = vec3(0.5 * (center.xz - floorCamPosRelEyePos.xz), 0).xzy;
             #else
-                vec3 offset = -0.8 * (center - 0.025 * cnormal + floorCamPosRelEyePos) * vec3(1, 0.5, 1);
+                vec3 offset = -0.8 * (center - floorCamPosRelEyePos);
             #endif
             center += offset;
             for (int i = 0; i < 3; i++) {

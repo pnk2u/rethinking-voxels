@@ -91,7 +91,6 @@ uniform ivec3 previousCameraPositionInt;
 uniform vec3 cameraPositionFract;
 uniform vec3 previousCameraPositionFract;
 
-
 uniform sampler2D shadowcolor0;
 uniform sampler2D shadowcolor1;
 #ifdef IRIS_FEATURE_HIGHER_SHADOWCOLOR
