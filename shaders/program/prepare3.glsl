@@ -65,13 +65,13 @@ void main() {
                 writeMatData = vec4(0.0);
             #endif
             // fuck view bobbing!
-            vec3 rayHit = rayTrace(
-                fractCamPos - gbufferModelView[3].xyz
-                #ifdef PLAYER_VOXELIZATION
-                    + normalize(dir)
-                #endif
-                , dir, dither
-            );
+            vec3 rayStartPos = fractCamPos + gbufferModelViewInverse[3].xyz;
+            #ifdef PLAYER_VOXELIZATION
+                if (firstPersonCamera) {
+                    rayStartPos += 0.5 * playerSize * normalize(dir);
+                }
+            #endif
+            vec3 rayHit = rayTrace(rayStartPos, dir, dither);
             float hitDF = getDistanceField(rayHit);
             if (hitDF < 0.1) {
                 writeData.rgb = normalize(distanceFieldGradient(rayHit));

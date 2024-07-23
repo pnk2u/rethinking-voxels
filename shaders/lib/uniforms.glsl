@@ -13,6 +13,8 @@
 
 ---------------------------------------------------------------------------------------------*/
 
+uniform bool firstPersonCamera;
+
 uniform int blockEntityId;
 uniform int currentRenderedItemId;
 uniform int entityId;
@@ -44,6 +46,7 @@ uniform float viewWidth;
 uniform float wetness;
 uniform float sunAngle;
 uniform float playerMood;
+uniform float playerSize;
 
 uniform ivec2 atlasSize;
 uniform ivec2 eyeBrightness;
