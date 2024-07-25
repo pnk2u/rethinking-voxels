@@ -40,6 +40,8 @@ shared float fullDist[10][10][10];
 #define WRITE_TO_SSBOS
 #include "/lib/vx/SSBOs.glsl"
 
+const float levelFadeDist = 2.0;
+
 void main() {
     ivec3 baseCoord = ivec3(gl_WorkGroupID) * 8;
     ivec3 localCoord = ivec3(gl_LocalInvocationID);
@@ -85,45 +87,42 @@ void main() {
         #include "/program/shadowcomp_sdf_loop.glsl"
         #undef j
     #endif
-    if (all(greaterThanEqual(localCoord, ivec3(0))) && all(lessThan(localCoord, ivec3(8)))) {
-        imageStore(
-            distanceFieldI,
-            texCoord + ivec3(0, (frameCounter+1)%2 * 2 * voxelVolumeSize.y, 0),
-            vec4(theseDists[0], theseDists[1], theseDists[2], theseDists[3]));
-        imageStore(
-            distanceFieldI,
-            texCoord + ivec3(0, ((frameCounter+1)%2 * 2 + 1) * voxelVolumeSize.y, 0),
-            vec4(theseDists[4], theseDists[5], theseDists[6], theseDists[7]));
+    imageStore(
+        distanceFieldI,
+        texCoord + ivec3(0, (frameCounter+1)%2 * 2 * voxelVolumeSize.y, 0),
+        vec4(theseDists[0], theseDists[1], theseDists[2], theseDists[3]));
+    imageStore(
+        distanceFieldI,
+        texCoord + ivec3(0, ((frameCounter+1)%2 * 2 + 1) * voxelVolumeSize.y, 0),
+        vec4(theseDists[4], theseDists[5], theseDists[6], theseDists[7]));
 
-        ivec2 rawCol = ivec2(
-            imageLoad(voxelCols, texCoord * ivec3(1, 2, 1)).r,
-            imageLoad(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 1, 0)).r
-        );
-        if ((rawCol.g >> 23) == 0) {
-            for (int k = 0; k < 6; k++) {
-                ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
-                ivec2 otherRawCol = ivec2(
-                    imageLoad(voxelCols, (texCoord + offset) * ivec3(1, 2, 1)).r,
-                    imageLoad(voxelCols, (texCoord + offset) * ivec3(1, 2, 1) + ivec3(0, 1, 0)).r
-                );
-                if ((otherRawCol.g >> 23) > (rawCol.g >> 23)) {
-                    rawCol = otherRawCol;
-                    rawCol.g &= ~(0x3ff << 13);
-                }
-            }
-            if ((rawCol.g >> 23) > 0) {
-                imageStore(voxelCols, texCoord * ivec3(1, 2, 1), ivec4(rawCol.r));
-                imageStore(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 1, 0), ivec4(rawCol.g));
+    // extend colour data into adjacent air for less artefacts in corners etc
+    ivec2 rawCol = ivec2(
+        imageLoad(voxelCols, texCoord * ivec3(1, 2, 1)).r,
+        imageLoad(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 1, 0)).r
+    );
+    if ((rawCol.g >> 23) == 0) {
+        for (int k = 0; k < 6; k++) {
+            ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
+            ivec2 otherRawCol = ivec2(
+                imageLoad(voxelCols, (texCoord + offset) * ivec3(1, 2, 1)).r,
+                imageLoad(voxelCols, (texCoord + offset) * ivec3(1, 2, 1) + ivec3(0, 1, 0)).r
+            );
+            if ((otherRawCol.g >> 23) > (rawCol.g >> 23)) {
+                rawCol = otherRawCol;
+                rawCol.g &= ~(0x3ff << 13);
             }
         }
-        if ((thisOccupancy >> 16 & 1) != 0) {
-            uint hash0 = posToHash(texCoord - voxelVolumeSize/2) % uint(1<<18);
-            globalLightHashMap[hash0*4+3] |= 0xffff0000u;
-            globalLightHashMap[hash0*4+3] &= (16 + (16 << 5) + (16 << 10)) << 16 | 0xffffu;
+        if ((rawCol.g >> 23) > 0) {
+            imageStore(voxelCols, texCoord * ivec3(1, 2, 1), ivec4(rawCol.r));
+            imageStore(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 1, 0), ivec4(rawCol.g));
         }
     }
-    barrier();
-    memoryBarrierBuffer();
+    if ((thisOccupancy >> 16 & 1) != 0) {
+        uint hash0 = posToHash(texCoord - voxelVolumeSize/2) % uint(1<<18);
+        globalLightHashMap[hash0*4+3] |= 0xffff0000u;
+        globalLightHashMap[hash0*4+3] &= (16 + (16 << 5) + (16 << 10)) << 16 | 0xffffu;
+    }
 }
 #endif
 
