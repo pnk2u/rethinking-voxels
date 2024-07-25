@@ -15,6 +15,7 @@ uniform sampler2D colortex10;
 layout(rgba16f) uniform image2D colorimg12;
 
 #include "/lib/util/random.glsl"
+#include "/lib/vx/irradianceCache.glsl"
 
 shared vec3 readColors[14][14];
 #ifdef BLOCKLIGHT_HIGHLIGHT
@@ -25,6 +26,20 @@ shared vec4 normalDepthDatas[14][14];
 
 
 void main() {
+    vec3 fractCamPos =
+        cameraPositionInt.y == -98257195 ?
+        fract(cameraPosition) :
+        cameraPositionFract;
+    vec3 prevFractCamPos = 
+        cameraPositionInt.y == -98257195 ?
+        fract(previousCameraPosition) :
+        previousCameraPositionFract;
+    ivec3 floorCamPosOffset =
+        cameraPositionInt.y == -98257195 ?
+        ivec3((floor(cameraPosition) - floor(previousCameraPosition)) * 1.001) :
+        cameraPositionInt - previousCameraPositionInt;
+    vec3 fractCamPosOffset = fractCamPos - prevFractCamPos;
+
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID);
     #if BLOCKLIGHT_RESOLUTION == 1
         imageStore(
@@ -81,7 +96,8 @@ void main() {
         float thisSmoothness = texelFetch(colortex3, texelCoord, 0).r;
         vec4 clipPos = vec4((texelCoord + 0.5) / view, 1.0 - normalDepthData.a, 1.0) * 2.0 - 1.0;
         vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * clipPos);
-        playerPos.xyz += playerPos.w * (cameraPosition - previousCameraPosition);
+        vec3 vxPos = playerPos.xyz / playerPos.w + fractCamPos;
+        playerPos.xyz += playerPos.w * (fractCamPosOffset + floorCamPosOffset);
         vec4 prevClipPos = gbufferPreviousProjection * (gbufferPreviousModelView * playerPos);
         prevClipPos = prevClipPos / prevClipPos.w * 0.5 + 0.5;
 
@@ -90,9 +106,9 @@ void main() {
             vec3 writeSpecular = imageLoad(colorimg14, ivec2(view * prevClipPos.xy)).rgb;
         #endif
         float totalWeight = 1.0;
-        if (length(texture(colortex4, prevClipPos.xy).gba * 2 - 1 - normalDepthData.xyz) > 0.3) {
+        if (length(texture(colortex4, prevClipPos.xy).gba * 2 - 1 - normalDepthData.xyz) > 0.3 || clamp(prevClipPos.xy, vec2(0), vec2(1)) != prevClipPos.xy) {
             totalWeight = 1e-5;
-            writeColor = vec3(0.0);
+            writeColor = 1e-5 * readSurfaceVoxelBlocklight(vxPos, normalDepthData.xyz);
             #ifdef BLOCKLIGHT_HIGHLIGHT
                 writeSpecular = vec3(0.0);
             #endif
@@ -106,12 +122,27 @@ void main() {
             vec2 texCoordOffset = randomGaussian() * 0.8;
             ivec2 c = ivec2(localLrTexCoord + texCoordOffset);
             if (c == clamp(c, ivec2(0), readSize - 1)) {
+                vec2 coffset
+                    = ivec2(
+                        BLOCKLIGHT_RESOLUTION
+                        * fract(vec2(
+                            frameCounter % 1000 * 1.618033988749895,
+                            frameCounter % 1000 * 1.618033988749895 * 1.618033988749895
+                        ) + vec2(
+                            (c.x + lowerBound.x) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895,
+                            (c.x + lowerBound.x) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895
+                        ) + vec2(
+                            (c.y + lowerBound.y) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895,
+                            (c.y + lowerBound.y) * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895 * 1.618033988749895
+                        ))
+                    ) / float(BLOCKLIGHT_RESOLUTION);
+                texCoordOffset = c + coffset - localLrTexCoord;
                 float weight = max(1e-5, 1.0 - 5.0 * (
                         length(normalDepthData - normalDepthDatas[c.x][c.y])
                         #ifdef BLOCKLIGHT_HIGHLIGHT
                             + 3 * abs(thisSmoothness - smoothnesses[c.x][c.y])
                         #endif
-                    )) * exp(-dot(texCoordOffset, texCoordOffset));
+                    )) * exp(-dot(texCoordOffset, texCoordOffset)*0.8);
                 vec3 thisCol = readColors[c.x][c.y];
                 writeColor += thisCol * weight;
                 colorBounds[0] = min(colorBounds[0], thisCol);
