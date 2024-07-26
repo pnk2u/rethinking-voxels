@@ -65,7 +65,7 @@ void main() {
                 writeMatData = vec4(0.0);
             #endif
             // fuck view bobbing!
-            vec3 rayStartPos = fractCamPos;// + gbufferModelViewInverse[3].xyz;
+            vec3 rayStartPos = fractCamPos + gbufferModelViewInverse[3].xyz;
             #ifdef PLAYER_VOXELIZATION
                 if (firstPersonCamera) {
                     rayStartPos += 0.5 * playerSize * normalize(dir);
