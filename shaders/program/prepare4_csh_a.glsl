@@ -107,8 +107,8 @@ void main() {
         #endif
         float totalWeight = 1.0;
         if (length(texture(colortex4, prevClipPos.xy).gba * 2 - 1 - normalDepthData.xyz) > 0.3 || clamp(prevClipPos.xy, vec2(0), vec2(1)) != prevClipPos.xy) {
-            totalWeight = 1e-5;
-            writeColor = 1e-5 * readSurfaceVoxelBlocklight(vxPos, normalDepthData.xyz);
+            totalWeight = 1e-2;
+            writeColor = 1e-2 * readSurfaceVoxelBlocklight(vxPos, normalDepthData.xyz);
             #ifdef BLOCKLIGHT_HIGHLIGHT
                 writeSpecular = vec3(0.0);
             #endif

@@ -442,7 +442,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #if defined PER_PIXEL_LIGHT && !defined GBUFFERS_WATER && !defined GBUFFERS_HAND
         float allowPerPixelLight = 1.0;
         vec4 normalDepthData = texelFetch(colortex8, ivec2(gl_FragCoord), 0);
-        if (length(normalDepthData.rgb - worldNormalM) > 0.3 || abs(1.0 - normalDepthData.a - gl_FragCoord.z) > 0.001) {
+        if (length(normalDepthData.rgb - worldNormalM) > 0.3 || abs(1.0 - normalDepthData.a - gl_FragCoord.z) > 0.001 + 0.01 * (1 - gl_FragCoord.z)) {
             voxelBlockLighting = 4.0 * readSurfaceVoxelBlocklight(vxPos, worldNormalM);
             allowPerPixelLight = 0.0;
         }

@@ -46,7 +46,7 @@ uniform float viewWidth;
 uniform float wetness;
 uniform float sunAngle;
 uniform float playerMood;
-uniform float playerSize;
+uniform float playerSize = 1.8;
 
 uniform ivec2 atlasSize;
 uniform ivec2 eyeBrightness;
