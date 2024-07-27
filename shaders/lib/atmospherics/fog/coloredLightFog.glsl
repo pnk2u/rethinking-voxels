@@ -43,7 +43,9 @@ vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, f
     }
 
     #ifdef NETHER
-        lightFog *= netherColor * 5.0;
+        lightFog *= netherColor * 2 * VBL_NETHER_MULT;
+    #elif defined END
+        lightFog *= VBL_END_MULT;
     #endif
 
     lightFog *= 1.0 - maxBlindnessDarkness;
