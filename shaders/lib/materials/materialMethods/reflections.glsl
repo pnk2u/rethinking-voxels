@@ -175,7 +175,7 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
         vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
         // Step 2.5: fill missing reflections with voxel data
         if (reflection.a < 1.0 ) {
-            vec3 voxelVector = mat3(gbufferModelViewInverse) * vector;
+            vec3 voxelVector = mat3(gbufferModelViewInverse) * reflect(nViewPos, normalize(normalMR));
             vec4 voxelStart = gbufferModelViewInverse * vec4(start, 1.0);
             voxelStart.xyz += fractCamPos;
             vec3 hitPos = rayTrace(voxelStart.xyz + 0.1 * voxelVector, 50.0 * voxelVector, dither);
@@ -187,13 +187,7 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
                 #if defined REALTIME_SHADOWS && defined OVERWORLD
                     vec3 shadowHitPos = GetShadowPos(hitPos - fractCamPos + 0.2 * hitNormal);
                 #endif
-                float skyLight = 0.0;
-                int liveBitCount = 0;
-                for (int k = 0; k < 3; k++) {
-                    skyLight += 0.33 * ((occupancyData >> (28 + k)) & 1) * (k+1);
-                    liveBitCount += ((occupancyData >> (28 + k)) & 1);
-                }
-                skyLight /= max(1, liveBitCount);
+                float skyLight = (vec4(0, 1, 3, 2) * 0.4)[occupancyData>>28&3];
                 skyLight *= 0.5 * hitNormal.y + 0.5;
                 #if defined REALTIME_SHADOWS && defined OVERWORLD
                     vec3 sunShadow = SampleShadow(shadowHitPos, 1.2 + 3.8 * skyLight, 1.1 - 0.6 * skyLight);
