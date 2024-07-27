@@ -3,11 +3,13 @@ vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, f
 
     float stepMult = 8.0;
 
-    float maxDist = min(effectiveACLdistance * 0.5, far);
+    float maxDist = min(voxelVolumeSize.x * 0.5, far);
     float halfMaxDist = maxDist * 0.5;
     int sampleCount = int(maxDist / stepMult + 0.001);
     vec3 traceAdd = nPlayerPos * stepMult;
     vec3 tracePos = traceAdd * dither;
+
+    vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : cameraPositionFract;
 
     for (int i = 0; i < sampleCount; i++) {
         tracePos += traceAdd;
@@ -15,11 +17,9 @@ vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, f
         float lTracePos = length(tracePos);
         if (lTracePos > lViewPos1) break;
 
-        vec3 voxelPos = SceneToVoxel(tracePos);
-        voxelPos = clamp01(voxelPos / vec3(voxelVolumeSize));
+        vec3 voxelPos = tracePos + fractCamPos;
 
-        vec4 lightVolume = GetLightVolume(voxelPos);
-        vec3 lightSample = lightVolume.rgb;
+        vec3 lightSample = readVolumetricBlocklight(voxelPos);
 
         float lTracePosM = length(vec3(tracePos.x, tracePos.y * 2.0, tracePos.z));
         lightSample *= max0(1.0 - lTracePosM / maxDist);

@@ -49,8 +49,8 @@
     #define RT_STEPS 70 //[30 50 70 100]
     #define TRANSLUCENT_LIGHT_TINT
     //#define LIGHT_CLUMPING
-    #define VOLUMETRIC_BLOCKLIGHT
-    #define VBL_STRENGTH 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
+    #define COLORED_LIGHT_FOG
+    #define COLORED_LIGHT_FOG_I 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
     #define VBL_NETHER_MULT 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
     #define VBL_END_MULT 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
 

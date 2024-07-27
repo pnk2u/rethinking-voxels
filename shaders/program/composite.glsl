@@ -57,10 +57,6 @@ vec2 view = vec2(viewWidth, viewHeight);
     #include "/lib/atmospherics/volumetricLight.glsl"
 #endif
 
-#ifdef VOLUMETRIC_BLOCKLIGHT
-    #include "/lib/atmospherics/volumetricBlocklight.glsl"
-#endif
-
 #if WATER_MAT_QUALITY >= 3 || defined NETHER_STORM || defined COLORED_LIGHT_FOG
     #include "/lib/util/spaceConversion.glsl"
 #endif
@@ -82,6 +78,11 @@ vec2 view = vec2(viewWidth, viewHeight);
 
 #if RAINBOWS > 0 && defined OVERWORLD
     #include "/lib/atmospherics/rainbow.glsl"
+#endif
+
+#ifdef COLORED_LIGHT_FOG
+    #include "/lib/vx/irradianceCache.glsl"
+    #include "/lib/atmospherics/fog/coloredLightFog.glsl"
 #endif
 
 //Program//
@@ -131,7 +132,7 @@ void main() {
         lViewPos1 = min(lViewPos1, length(viewPos1DH.xyz));
     #endif
 
-    #if defined LIGHTSHAFTS_ACTIVE || RAINBOWS > 0 && defined OVERWORLD || defined VOLUMETRIC_BLOCKLIGHT
+    #if defined LIGHTSHAFTS_ACTIVE || RAINBOWS > 0 && defined OVERWORLD
         vec3 nViewPos = normalize(viewPos1.xyz);
         float VdotL = dot(nViewPos, lightVec);
     #endif
@@ -167,19 +168,15 @@ void main() {
         color = mix(color, volumetricEffect.rgb, volumetricEffect.a);
     #endif
 
-    #ifdef VOLUMETRIC_BLOCKLIGHT
+    #ifdef COLORED_LIGHT_FOG
         float caveFactor = GetCaveFactor();
 
-        vec3 lightFog = GetVolumetricBlocklight(translucentMult, lViewPos1, nViewPos, texCoord, z0, z1, dither);
-        float lightFogMult = VBL_STRENGTH;
+        vec3 lightFog = GetColoredLightFog(nPlayerPos, translucentMult, lViewPos, lViewPos1, dither, caveFactor);
+        float lightFogMult = COLORED_LIGHT_FOG_I;
         //if (heldItemId == 40000 && heldItemId2 != 40000) lightFogMult = 0.0; // Hold spider eye to disable light fog
 
         #ifdef OVERWORLD
-            lightFogMult *= 0.2 + 1.2 * max(caveFactor, 1.0 - sunFactor * invRainFactor);
-        #elif defined NETHER
-            lightFogMult *= VBL_NETHER_MULT;
-        #elif defined END
-            lightFogMult *= VBL_END_MULT;
+            lightFogMult *= 0.2 + 0.6 * max(caveFactor, 1.0 - sunFactor * invRainFactor);
         #endif
 
         color /= 1.0 + pow2(GetLuminance(lightFog)) * lightFogMult * 2.0;
@@ -202,7 +199,7 @@ void main() {
 
     color = pow(color, vec3(2.2));
 
-    #if defined LIGHTSHAFTS_ACTIVE
+    #ifdef LIGHTSHAFTS_ACTIVE
         #ifdef END
             volumetricEffect.rgb *= volumetricEffect.rgb;
         #endif
@@ -259,7 +256,7 @@ void main() {
     upVec = normalize(gbufferModelView[1].xyz);
     sunVec = GetSunVector();
 
-    #if defined LIGHTSHAFTS_ACTIVE
+    #ifdef LIGHTSHAFTS_ACTIVE
         #if LIGHTSHAFT_BEHAVIOUR == 1 && SHADOW_QUALITY >= 1 || defined END
             vlFactor = texelFetch(colortex4, ivec2(viewWidth-1, viewHeight-1), 0).r;
         #else
@@ -267,8 +264,6 @@ void main() {
                 vlFactor = 0.0;
             #elif LIGHTSHAFT_BEHAVIOUR == 3
                 vlFactor = 1.0;
-            #else
-                vlFactor = 0.5;
             #endif
         #endif
     #endif
