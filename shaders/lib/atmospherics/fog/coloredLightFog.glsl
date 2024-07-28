@@ -1,4 +1,5 @@
 vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, float lViewPos1, float dither, float caveFactor) {
+    caveFactor = 1.0;
     vec3 lightFog = vec3(0.0);
 
     float stepMult = 8.0;
@@ -24,6 +25,7 @@ vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, f
         float lTracePosM = length(vec3(tracePos.x, tracePos.y * 2.0, tracePos.z));
         lightSample *= max0(1.0 - lTracePosM / maxDist);
         lightSample *= pow2(min1(lTracePos * 0.03125));
+        lightSample *= 40 * log(1 + 5 * lightSample * dot(lightSample, lightSample));
 
         #ifdef CAVE_SMOKE
             if (caveFactor > 0.00001) {
