@@ -21,6 +21,8 @@ vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, f
         vec3 voxelPos = tracePos + fractCamPos;
 
         vec3 lightSample = readVolumetricBlocklight(voxelPos);
+        float lLightSample = length(lightSample);
+        if (lLightSample > 0.01) lightSample *= log(lLightSample + 1.0) / lLightSample;
 
         float lTracePosM = length(vec3(tracePos.x, tracePos.y * 2.0, tracePos.z));
         lightSample *= max0(1.0 - lTracePosM / maxDist);
