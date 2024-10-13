@@ -7,7 +7,6 @@ in mat4 unprojectionMatrix, projectionMatrix;
 
 vec2 view = vec2(viewWidth, viewHeight);
 
-uniform sampler2D colortex1;
 uniform sampler2D colortex10;
 
 layout(rgba16f) uniform image2D colorimg8;

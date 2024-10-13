@@ -569,11 +569,11 @@ in vec4 at_midBlock;
 
 //Common Variables//
 #if COLORED_LIGHTING_INTERNAL > 0
+    layout(r8ui) writeonly uniform uimage3D voxel_img;
     vec2 lmCoord;
-
-    #ifdef PUDDLE_VOXELIZATION
-        writeonly uniform uimage2D puddle_img;
-    #endif
+#endif
+#ifdef PUDDLE_VOXELIZATION
+    writeonly uniform uimage2D puddle_img;
 #endif
 
 //Common Functions//

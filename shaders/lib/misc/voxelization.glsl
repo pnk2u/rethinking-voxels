@@ -20,58 +20,6 @@
         return clamp01(voxelPos) == voxelPos;
     }
 
-    vec4 GetLightVolume(vec3 pos) {
-        vec4 lightVolume;
-
-        #ifdef COMPOSITE
-            #undef ACL_CORNER_LEAK_FIX
-        #endif
-
-        #ifdef ACL_CORNER_LEAK_FIX
-            float minMult = 1.5;
-            ivec3 posTX = ivec3(pos * voxelVolumeSize);
-
-            ivec3[6] adjacentOffsets = ivec3[](
-                ivec3( 1, 0, 0),
-                ivec3(-1, 0, 0),
-                ivec3( 0, 1, 0),
-                ivec3( 0,-1, 0),
-                ivec3( 0, 0, 1),
-                ivec3( 0, 0,-1)
-            );
-
-            int adjacentCount = 0;
-            for (int i = 0; i < 6; i++) {
-                int voxel = int(texelFetch(voxel_sampler, posTX + adjacentOffsets[i], 0).r);
-                if (voxel == 1 || voxel >= 200) adjacentCount++;
-            }
-
-            if (int(texelFetch(voxel_sampler, posTX, 0).r) >= 200) adjacentCount = 6;
-        #endif
-
-        if ((frameCounter & 1) == 0) {
-            lightVolume = texture(floodfill_sampler_copy, pos);
-            #ifdef ACL_CORNER_LEAK_FIX
-                if (adjacentCount >= 3) {
-                    vec4 lightVolumeTX = texelFetch(floodfill_sampler_copy, posTX, 0);
-                    if (dot(lightVolumeTX, lightVolumeTX) > 0.01)
-                    lightVolume.rgb = min(lightVolume.rgb, lightVolumeTX.rgb * minMult);
-                }
-            #endif
-        } else {
-            lightVolume = texture(floodfill_sampler, pos);
-            #ifdef ACL_CORNER_LEAK_FIX
-                if (adjacentCount >= 3) {
-                    vec4 lightVolumeTX = texelFetch(floodfill_sampler, posTX, 0);
-                    if (dot(lightVolumeTX, lightVolumeTX) > 0.01)
-                    lightVolume.rgb = min(lightVolume.rgb, lightVolumeTX.rgb * minMult);
-                }
-            #endif
-        }
-
-        return lightVolume;
-    }
-
     int GetVoxelIDs(int mat) {
         /* These return IDs must be consistent across the following files:
         "voxelization.glsl", "blocklightColors.glsl", "item.properties"
@@ -291,7 +239,7 @@
                 mat < 30000 && mat % 4 == 1 // Non-solid terrain
             ) return;
 
-            vec3 modelPos = gl_Vertex.xyz + at_midBlock / 64.0;
+            vec3 modelPos = gl_Vertex.xyz + at_midBlock.xyz / 64.0;
             vec3 viewPos = transform(gl_ModelViewMatrix, modelPos);
             vec3 scenePos = transform(shadowModelViewInverse, viewPos);
             vec3 voxelPos = SceneToVoxel(scenePos);
