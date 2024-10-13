@@ -20,7 +20,7 @@ layout(r32ui) uniform restrict readonly uimage2D colorimg9;
 
 void main() {
     ivec2 texelCoord = ivec2(gl_FragCoord.xy);
-    float prevDepth = 1 - texelFetch(colortex2, texelCoord, 0).w;
+    float prevDepth = texelFetch(colortex1, texelCoord, 0).r;
     vec4 prevClipPos = vec4(gl_FragCoord.xy / view, prevDepth, 1) * 2 - 1;
     vec4 newClipPos = prevClipPos;
     if (prevDepth > 0.56) {
@@ -51,8 +51,8 @@ void main() {
             
         }
     }
-    /*DRAWBUFFERS:3*/
-    gl_FragData[0] = vec4(0);
+    /*DRAWBUFFERS:0*/
+    gl_FragData[0] = vec4(fogColor, 1.0);
 }
 #endif
 

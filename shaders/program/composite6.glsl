@@ -41,15 +41,10 @@ void main() {
         DoTAA(color, temp, z1);
     #endif
 
-    /* DRAWBUFFERS:32 */
+    /* DRAWBUFFERS:321 */
     gl_FragData[0] = vec4(color, 1.0);
     gl_FragData[1] = vec4(temp, 1.0);
-
-    // Supposed to be #ifdef TEMPORAL_FILTER but Optifine bad
-    #if BLOCK_REFLECT_QUALITY >= 3 && RP_MODE >= 1
-        /* DRAWBUFFERS:321 */
-        gl_FragData[2] = vec4(z1, 1.0, 1.0, 1.0);
-    #endif
+    gl_FragData[2] = vec4(z1, 1.0, 1.0, 1.0);
 }
 
 #endif

@@ -17,7 +17,7 @@ layout(r32ui) uniform uimage2D colorimg9;
 
 void main() {
     ivec2 texelCoord = ivec2(gl_FragCoord.xy);
-    float prevDepth = 1 - texelFetch(colortex2, texelCoord, 0).w;
+    float prevDepth = texelFetch(colortex1, texelCoord, 0).r;
     vec4 prevClipPos = vec4(gl_FragCoord.xy / view, prevDepth, 1) * 2 - 1;
     vec4 newClipPos = prevClipPos;
     if (prevDepth > 0.56) {
@@ -39,7 +39,7 @@ void main() {
         uint depth = uint((1<<30) * newClipPos.z);
         imageAtomicMin(colorimg9, writePixelCoord, depth);
     }
-    /*DRAWBUFFERS:3*/
+    /*DRAWBUFFERS:0*/
 }
 #endif
 
