@@ -35,6 +35,7 @@ bvec4 or(bvec4 a, bvec4 b) {
 }
 
 shared float fullDist[10][10][10];
+shared uint isActive;
 
 #include "/lib/vx/positionHashing.glsl"
 #define WRITE_TO_SSBOS

@@ -28,6 +28,7 @@
         const ivec3 voxelVolumeSize = ivec3(512, 128, 512);
     #endif
 
+    #define SDF_UPDATE_INTERVAL 2 //[0 1 2 3 4 5 6 8 10 13 16 20]
     #define PER_PIXEL_LIGHT
     #ifndef PER_PIXEL_LIGHT
         #define PER_BLOCK_LIGHT

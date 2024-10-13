@@ -1206,6 +1206,9 @@ option.RT_STEPS.comment=Adjusts the maximum amount of steps the raytracing algor
 option.TRANSLUCENT_LIGHT_TINT=Translucent Blocklight Tint
 option.TRANSLUCENT_LIGHT_TINT.comment=When enabled, translucents such as stained glass and water can tint block lighting that passes through them. §c[-]§r High performance impact.
 
+option.SDF_UPDATE_INTERVAL=SDF Update Interval
+option.SDF_UPDATE_INTERVAL.comment=Controls how many frames are allowed to pass between updates to the same part of the acceleration structure used for raytracing. Lower values cost more performance, but result in more responsive shadows. 1/2 means that updates propagate through the acceleration structure twice per frame.
+value.SDF_UPDATE_INTERVAL.0=1/2
 option.CAULDRON_BRIGHTNESS_LAVA=Lava Cauldron Brightness
 option.BRIGHTNESS_LAVA=Lava Brightness
 option.BRIGHTNESS_FIRE=Fire Brightness
