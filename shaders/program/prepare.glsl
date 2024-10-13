@@ -11,9 +11,8 @@ void main() {
     /*RENDERTARGETS:8*/
     gl_FragData[0] = vec4(2);
     #ifdef BLOCKLIGHT_HIGHLIGHT
-        /*RENDERTARGETS:8,6,3*/
+        /*RENDERTARGETS:8,6*/
         gl_FragData[1] = texelFetch(colortex8, ivec2(gl_FragCoord.xy), 0);
-        gl_FragData[2] = vec4(0);
     #endif
 }
 #endif

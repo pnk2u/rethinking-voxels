@@ -568,7 +568,7 @@ in vec4 at_midBlock;
 #endif
 
 //Common Variables//
-#ifdef ACL_VOXELIZATION
+#if COLORED_LIGHTING_INTERNAL > 0
     vec2 lmCoord;
 
     #ifdef PUDDLE_VOXELIZATION
@@ -585,7 +585,7 @@ in vec4 at_midBlock;
     #include "/lib/materials/materialMethods/wavingBlocks.glsl"
 #endif
 
-#ifdef ACL_VOXELIZATION
+#if COLORED_LIGHTING_INTERNAL > 0
     #include "/lib/misc/voxelization.glsl"
 #endif
 #ifdef PUDDLE_VOXELIZATION

@@ -26,6 +26,9 @@ vec3 fractCamPos = cameraPositionInt.y == -98257195 ? fract(cameraPosition) : ca
         uniform sampler2D colortex14;
     #endif
 #endif
+#if COLORED_LIGHTING_INTERNAL > 0
+    #include "/lib/misc/voxelization.glsl"
+#endif
 #include "/lib/vx/irradianceCache.glsl"
 
 #include "/lib/materials/shadowChecks.glsl"
@@ -504,7 +507,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     // Vanilla Ambient Occlusion
     float vanillaAO = 1.0;
     #if VANILLAAO_I > 0
-        if (subsurfaceMode != 0) vanillaAO = min1(glColor.a * 1.15);
+        if (subsurfaceMode != 0) vanillaAO = mix(min1(glColor.a * 1.15), 1.0, shadowMult.g);
         else if (!noVanillaAO) {
             #ifdef GBUFFERS_TERRAIN
                 vanillaAO = min1(glColor.a + 0.08);

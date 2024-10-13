@@ -40,8 +40,6 @@ shared float fullDist[10][10][10];
 #define WRITE_TO_SSBOS
 #include "/lib/vx/SSBOs.glsl"
 
-const float levelFadeDist = 2.0;
-
 void main() {
     ivec3 baseCoord = ivec3(gl_WorkGroupID) * 8;
     ivec3 localCoord = ivec3(gl_LocalInvocationID);

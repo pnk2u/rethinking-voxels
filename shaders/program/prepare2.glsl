@@ -52,8 +52,8 @@ void main() {
             
         }
     }
-    /*DRAWBUFFERS:1*/
-    gl_FragData[0] = vec4(1);
+    /*DRAWBUFFERS:3*/
+    gl_FragData[0] = vec4(0);
 }
 #endif
 

@@ -234,6 +234,10 @@ if (mat < 11024) {
                                     #if defined COATED_TEXTURES && defined GBUFFERS_TERRAIN
                                         doTileRandomisation = false;
                                     #endif
+
+                                    #ifdef DISTANT_LIGHT_BOKEH
+                                        DoDistantLightBokehMaterial(emission, 4.5, lViewPos);
+                                    #endif
                                 }
                             } else {
                                 if (mat < 10076) { // Fire
@@ -660,9 +664,8 @@ if (mat < 11024) {
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/terrain/ironBlock.glsl"
                                 }
-                                else /*if (mat < 10264)*/ { // Iron Door, Iron Trapdoor
-                                    noSmoothLighting = true;
-                                    #include "/lib/materials/specificMaterials/terrain/ironBlock.glsl"
+                                else /*if (mat < 10264)*/ { //
+
                                 }
                             } else {
                                 if (mat < 10268) { // Iron Block, Heavy Weighted Pressure Plate
@@ -1072,6 +1075,10 @@ if (mat < 11024) {
 
                                     emission = max0(color.g - 0.3) * 4.6;
                                     color.rg += emission * vec2(0.15, 0.05);
+
+                                    #ifdef DISTANT_LIGHT_BOKEH
+                                        DoDistantLightBokehMaterial(emission, 2.0, lViewPos);
+                                    #endif
                                 }
                             }
                         }
@@ -1168,6 +1175,10 @@ if (mat < 11024) {
                                     emission *= 0.4 + max0(0.6 - 0.006 * lViewPos);
 
                                     color.rb *= vec2(1.13, 1.1);
+
+                                    #ifdef DISTANT_LIGHT_BOKEH
+                                        DoDistantLightBokehMaterial(emission, 2.0, lViewPos);
+                                    #endif
 
                                     #ifdef COATED_TEXTURES
                                         noiseFactor = 0.5;
@@ -1327,6 +1338,10 @@ if (mat < 11024) {
                                         }
                                     #endif
 
+                                    #ifdef DISTANT_LIGHT_BOKEH
+                                        DoDistantLightBokehMaterial(color, vec4(1.0, 0.6, 0.2, 1.0), emission, 5.0, lViewPos);
+                                    #endif
+
                                     emission += 0.0001; // No light reducing during noon
                                 }
                                 else /*if (mat < 10504)*/ { // End Rod
@@ -1348,6 +1363,10 @@ if (mat < 11024) {
                                         color.rgb = pow2(color.rgb);
                                         color.g *= 0.95;
                                     }
+
+                                    #ifdef DISTANT_LIGHT_BOKEH
+                                        DoDistantLightBokehMaterial(emission, 4.0, lViewPos);
+                                    #endif
                                 }
                             } else {
                                 if (mat < 10508) { // Chorus Plant
@@ -1420,6 +1439,10 @@ if (mat < 11024) {
                                         color.r = min1(color.r + 0.1);
                                     }
                                     emission += 0.0001; // No light reducing during noon
+
+                                    #ifdef DISTANT_LIGHT_BOKEH
+                                        DoDistantLightBokehMaterial(color, vec4(0.5, 1.0, 1.0, 1.0), emission, 3.0, lViewPos);
+                                    #endif
 
                                     #ifdef SNOWY_WORLD
                                         snowFactor = 0.0;
@@ -1559,6 +1582,10 @@ if (mat < 11024) {
                                     emission = 4.3 * max0(color.r - color.b);
                                     emission += min(pow2(pow2(0.75 * dot(color.rgb, color.rgb))), 5.0);
                                     color.gb *= pow(vec2(0.8, 0.7), vec2(sqrt(emission) * 0.5));
+                                    
+                                    #ifdef DISTANT_LIGHT_BOKEH
+                                        DoDistantLightBokehMaterial(color, vec4(1.0, 0.6, 0.2, 1.0), emission, 5.0, lViewPos);
+                                    #endif
 
                                     #ifdef SNOWY_WORLD
                                         snowFactor = 0.0;
@@ -1572,6 +1599,10 @@ if (mat < 11024) {
 
                                     emission = 1.45 * max0(color.g - color.r * 2.0);
                                     emission += 1.17 * min(pow2(pow2(0.55 * dot(color.rgb, color.rgb))), 3.5);
+
+                                    #ifdef DISTANT_LIGHT_BOKEH
+                                        DoDistantLightBokehMaterial(color, vec4(0.5, 1.0, 1.0, 1.0), emission, 3.0, lViewPos);
+                                    #endif
 
                                     #ifdef SNOWY_WORLD
                                         snowFactor = 0.0;
@@ -1615,14 +1646,8 @@ if (mat < 11024) {
                                     }
                                 }
                             } else {
-                                if (mat < 10588) { // Candles:Lit
-                                    noSmoothLighting = true;
-
-                                    color.rgb *= 1.0 + pow2(max(-signMidCoordPos.y, float(NdotU > 0.9) * 1.2));
-
-                                    #ifdef SNOWY_WORLD
-                                        snowFactor = 0.0;
-                                    #endif
+                                if (mat < 10588) { //
+                                
                                 }
                                 else /*if (mat < 10592)*/ { // Respawn Anchor:Unlit
                                     noSmoothLighting = true;
@@ -1661,7 +1686,8 @@ if (mat < 11024) {
                                 else /*if (mat < 10600)*/ { // Redstone Wire:Lit
                                     #include "/lib/materials/specificMaterials/terrain/redstoneBlock.glsl"
 
-                                    emission = pow2(min(color.r, 0.9)) * 4.0;
+                                    vec3 colorP = color.rgb / glColor.rgb;
+                                    emission = pow2((colorP.r + color.r) * 0.5) * 3.5;
 
                                     color.gb *= 0.25;
                                 }
@@ -1672,6 +1698,10 @@ if (mat < 11024) {
                                 else /*if (mat < 10608)*/ { // Redstone Torch
                                     #include "/lib/materials/specificMaterials/terrain/redstoneTorch.glsl"
                                     emission += 0.0001; // No light reducing during noon
+
+                                    #ifdef DISTANT_LIGHT_BOKEH
+                                        DoDistantLightBokehMaterial(color, vec4(1.0, 0.0, 0.0, 1.0), emission, 5.0, lViewPos);
+                                    #endif
                                 }
                             }
                         }
@@ -1787,6 +1817,10 @@ if (mat < 11024) {
                                         color.rgb = pow1_5(color.rgb);
                                         maRecolor = vec3(emission * 0.2);
                                     }
+
+                                    #ifdef DISTANT_LIGHT_BOKEH
+                                        DoDistantLightBokehMaterial(emission, 5.0, lViewPos);
+                                    #endif
                                 }
                                 else /*if (mat < 10648)*/ { // Repeater, Comparator
                                     #if ANISOTROPIC_FILTER > 0
@@ -1815,6 +1849,10 @@ if (mat < 11024) {
 
                                     float dotColor = dot(color.rgb, color.rgb);
                                     emission = min(pow2(pow2(pow2(dotColor * 0.6))), 6.0) * 0.8 + 0.5;
+
+                                    #ifdef DISTANT_LIGHT_BOKEH
+                                        DoDistantLightBokehMaterial(emission, 2.5, lViewPos);
+                                    #endif
                                 }
                                 else /*if (mat < 10656)*/ { // Campfire:Lit
                                     #ifdef GBUFFERS_TERRAIN
@@ -1987,8 +2025,6 @@ if (mat < 11024) {
                                     smoothnessG = color.r * 0.3;
                                     smoothnessD = smoothnessG;
 
-                                    /* Tweak to make caves with Glow Lichen look better lit and closer to vanilla Minecraft. */
-                                    lmCoordM = pow(lmCoordM + 0.0001, vec2(0.65));
                                 }
                                 else /*if (mat < 10720)*/ { // Clay
                                     highlightMult = 2.0;
@@ -2213,11 +2249,11 @@ if (mat < 11024) {
                                     }
                                 }
                             } else {
-                                if (mat < 10796) { // Oak Door, Oak Trapdoor
+                                if (mat < 10796) { // Oak Door
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/planks/oakPlanks.glsl"
                                 }
-                                else /*if (mat < 10800)*/ { // Spruce Door, Spruce Trapdoor
+                                else /*if (mat < 10800)*/ { // Spruce Door
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/planks/sprucePlanks.glsl"
                                 }
@@ -2226,40 +2262,40 @@ if (mat < 11024) {
                     } else {
                         if (mat < 10816) {
                             if (mat < 10808) {
-                                if (mat < 10804) { // Birch Door, Birch Trapdoor
+                                if (mat < 10804) { // Birch Door
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/planks/birchPlanks.glsl"
                                 }
-                                else /*if (mat < 10808)*/ { // Jungle Door, Jungle Trapdoor
+                                else /*if (mat < 10808)*/ { // Jungle Door
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/planks/junglePlanks.glsl"
                                 }
                             } else {
-                                if (mat < 10812) { // Acacia Door, Acacia Trapdoor
+                                if (mat < 10812) { // Acacia Door
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/planks/acaciaPlanks.glsl"
                                 }
-                                else /*if (mat < 10816)*/ { // Dark Oak Door, Dark Oak Trapdoor
+                                else /*if (mat < 10816)*/ { // Dark Oak Door
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/planks/darkOakPlanks.glsl"
                                 }
                             }
                         } else {
                             if (mat < 10824) {
-                                if (mat < 10820) { // Mangrove Door, Mangrove Trapdoor
+                                if (mat < 10820) { // Mangrove Door
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/planks/mangrovePlanks.glsl"
                                 }
-                                else /*if (mat < 10824)*/ { // Crimson Door, Crimson Trapdoor
+                                else /*if (mat < 10824)*/ { // Crimson Door
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/planks/crimsonPlanks.glsl"
                                 }
                             } else {
-                                if (mat < 10828) { // Warped Door, Warped Trapdoor
+                                if (mat < 10828) { // Warped Door
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/planks/warpedPlanks.glsl"
                                 }
-                                else /*if (mat < 10832)*/ { // Bamboo Door, Bamboo Trapdoor
+                                else /*if (mat < 10832)*/ { // Bamboo Door
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/planks/bambooPlanks.glsl"
                                 }
@@ -2270,7 +2306,7 @@ if (mat < 11024) {
                     if (mat < 10864) {
                         if (mat < 10848) {
                             if (mat < 10840) {
-                                if (mat < 10836) { // Cherry Door, Cherry Trapdoor
+                                if (mat < 10836) { // Cherry Door
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/planks/cherryPlanks.glsl"
                                 }
@@ -2336,7 +2372,7 @@ if (mat < 11024) {
                                     #include "/lib/materials/specificMaterials/terrain/copperBulb.glsl"
                                     emission *= 0.85;
                                 }
-                                else /*if (mat < 10864)*/ { // Copper Door+, Copper Trapdoor+
+                                else /*if (mat < 10864)*/ { // Copper Door+
                                     noSmoothLighting = true;
                                     #include "/lib/materials/specificMaterials/terrain/copperBlock.glsl"
                                 }
@@ -2345,8 +2381,8 @@ if (mat < 11024) {
                     } else {
                         if (mat < 10880) {
                             if (mat < 10872) {
-                                if (mat < 10868) { // Candles:Unlit
-
+                                if (mat < 10868) { // Copper Trapdoor+
+                                    #include "/lib/materials/specificMaterials/terrain/copperBlock.glsl"
                                 }
                                 else /*if (mat < 10872)*/ { // Trial Spawner:NotOminous:Active, Vault:NotOminous:Active
                                     smoothnessG = max0(color.b - color.r * 0.5);
@@ -2396,8 +2432,10 @@ if (mat < 11024) {
                                     highlightMult *= 1.5;
                                     smoothnessD = float(color.r > color.g * 2.0) * 0.3;
                                 }
-                                else /*if (mat < 10896)*/ { //
-
+                                else /*if (mat < 10896)*/ { // Iron Door
+                                    noSmoothLighting = true;
+                                    #include "/lib/materials/specificMaterials/terrain/ironBlock.glsl"
+                                    color.rgb *= 0.9;
                                 }
                             }
                         }
@@ -2406,38 +2444,15 @@ if (mat < 11024) {
             } else {
                 if (mat < 10960) {
                     if (mat < 10928) {
-                        if (mat < 10912) {
-                            if (mat < 10904) {
-                                if (mat < 10900) { //
+                        if (mat < 10900) { // Iron Trapdoor
+                            #include "/lib/materials/specificMaterials/terrain/ironBlock.glsl"
+                            color.rgb *= 0.9;
+                        }
+                        else if (mat < 10924) { // Candles:Lit, Candle Cakes:Lit
+                            #include "/lib/materials/specificMaterials/terrain/candle.glsl"
+                        }
+                        else /*if (mat < 10928)*/ { //
 
-                                }
-                                else /*if (mat < 10904)*/ { //
-
-                                }
-                            } else {
-                                if (mat < 10908) { //
-
-                                }
-                                else /*if (mat < 10912)*/ { //
-
-                                }
-                            }
-                        } else {
-                            if (mat < 10920) {
-                                if (mat < 10916) { //
-
-                                }
-                                else /*if (mat < 10920)*/ { //
-
-                                }
-                            } else {
-                                if (mat < 10924) { //
-
-                                }
-                                else /*if (mat < 10928)*/ { //
-
-                                }
-                            }
                         }
                     } else {
                         if (mat < 10944) {

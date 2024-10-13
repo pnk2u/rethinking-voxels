@@ -70,6 +70,7 @@ uniform mat4 shadowProjection;
 uniform mat4 shadowProjectionInverse;
 
 uniform sampler2D colortex0;
+uniform sampler2D colortex1;
 uniform sampler2D colortex2;
 uniform sampler2D colortex3;
 uniform sampler2D colortex4;
@@ -121,6 +122,10 @@ uniform sampler2DShadow shadowtex1;
     
     uniform sampler2D dhDepthTex;
     uniform sampler2D dhDepthTex1;
+#endif
+
+#if COLORED_LIGHTING_INTERNAL > 0
+    uniform usampler3D voxel_sampler;
 #endif
 
 #ifdef PUDDLE_VOXELIZATION
