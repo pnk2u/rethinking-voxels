@@ -80,10 +80,11 @@ layout(rgba16i) uniform iimage3D lightStorage;
 #endif
 shared int lightCount;
 shared bool anyInFrustrum;
-shared ivec4[MAX_LIGHT_COUNT] positions;
+shared ivec4[MAX_LIGHT_COUNT] lightCoords;
+shared vec3[MAX_LIGHT_COUNT] lightPositions;
+shared vec3[MAX_LIGHT_COUNT] lightCols;
 shared int[MAX_LIGHT_COUNT] extraData;
 shared float[MAX_LIGHT_COUNT] weights;
-shared int[MAX_LIGHT_COUNT] mergeOffsets;
 shared uint[128] lightHashMap;
 shared vec3[5] frustrumSides;
 
@@ -106,10 +107,10 @@ void flipPair(int index, int stage) {
         indexPair.y < lightCount && 
         weights[indexPair.x] < weights[indexPair.y]
     ) {
-        ivec4 temp = positions[indexPair.x];
+        ivec4 temp = lightCoords[indexPair.x];
         float temp2 = weights[indexPair.x];
-        positions[indexPair.x] = positions[indexPair.y];
-        positions[indexPair.y] = temp;
+        lightCoords[indexPair.x] = lightCoords[indexPair.y];
+        lightCoords[indexPair.y] = temp;
         weights[indexPair.x] = weights[indexPair.y];
         weights[indexPair.y] = temp2;
     }
@@ -121,12 +122,72 @@ void dispersePair(int index, int stage) {
         indexPair.y < lightCount &&
         weights[indexPair.x] < weights[indexPair.y]
     ) {
-        ivec4 temp = positions[indexPair.x];
+        ivec4 temp = lightCoords[indexPair.x];
         float temp2 = weights[indexPair.x];
-        positions[indexPair.x] = positions[indexPair.y];
-        positions[indexPair.y] = temp;
+        lightCoords[indexPair.x] = lightCoords[indexPair.y];
+        lightCoords[indexPair.y] = temp;
         weights[indexPair.x] = weights[indexPair.y];
         weights[indexPair.y] = temp2;
+    }
+}
+
+float distanceFalloff(float maxDistRelDist) {
+    return (sqrt(1 - maxDistRelDist)) / (maxDistRelDist
+        #if R2_FALLOFF == 1
+            * maxDistRelDist
+        #endif
+        + 0.01
+    ) / (
+        LIGHT_TRACE_LENGTH
+        #if R2_FALLOFF == 1
+            * sqrt(sqrt(LIGHT_TRACE_LENGTH))
+        #endif
+    );
+}
+
+void registerLight(ivec3 lightCoord, vec3 referencePos, float weight) {
+    bool isStillLight = (imageLoad(occupancyVolume, lightCoord + voxelVolumeSize/2).r >> 16 & 1) != 0;
+    if (!isStillLight) {
+        for (int k = 0; k < 6; k++) {
+            ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
+            if ((imageLoad(occupancyVolume, lightCoord + offset + voxelVolumeSize/2).r >> 16 & 1) != 0) {
+                isStillLight = true;
+                lightCoord += offset;
+                break;
+            }
+        }
+    }
+    uint hash = posToHash(lightCoord) % uint(128*32);
+    bool known = !isStillLight;
+    if (isStillLight) {
+        known = (atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) != 0;
+    }
+
+    if (!known) {
+        int lightIndex = atomicAdd(lightCount, 1);
+        if (lightIndex < MAX_LIGHT_COUNT) {
+            uint hash = posToHash(lightCoord) % uint(1<<18);
+            uvec2 packedLightSubPos = uvec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
+            uvec2 packedLightCol = uvec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
+            int thisLightExtraData = imageLoad(occupancyVolume, lightCoord + voxelVolumeSize/2).r;
+            vec3 subLightPos = (packedLightSubPos.y >> 16) == 0 ? vec3(0.5) : 1.0/32.0 * vec3(packedLightSubPos.x & 0xffff, packedLightSubPos.x>>16, packedLightSubPos.y & 0xffff) / (packedLightSubPos.y >> 16) - 1;
+            vec3 lightCol = 1.0/32.0 * vec3(packedLightCol.x & 0xffff, packedLightCol.x>>16, packedLightCol.y & 0xffff) / (packedLightSubPos.y >> 16);
+            vec3 dir = lightCoord + subLightPos - referencePos;
+            float dirLen = length(dir);
+            float thisTraceLen = (thisLightExtraData>>17 & 31)/32.0;
+            lightCoords[lightIndex] = ivec4(lightCoord, lightIndex);
+
+            weights[lightIndex] = max(weight,
+                length(lightCol) *
+                distanceFalloff(dirLen / (thisTraceLen * LIGHT_TRACE_LENGTH)) *
+                1.5*1.5*thisTraceLen*thisTraceLen);
+            lightPositions[lightIndex] = lightCoord + subLightPos;
+            lightCols[lightIndex] = lightCol;
+            extraData[lightIndex] = thisLightExtraData;
+
+        } else {
+            atomicMin(lightCount, MAX_LIGHT_COUNT);
+        }
     }
 }
 
@@ -180,43 +241,15 @@ void main() {
             normal = normalize(normal);
             vxPos -= 0.3 * normal;
         }
-
-        if ((imageLoad(occupancyVolume, coords).r & 1<<16) > 0) {
-            uint hash = posToHash(coords - voxelVolumeSize/2) % uint(128*32);
-            if ((atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) == 0) {
-                int lightIndex = atomicAdd(lightCount, 1);
-                if (lightIndex < MAX_LIGHT_COUNT) {
-                    positions[lightIndex] = ivec4(coords - voxelVolumeSize / 2, 0);
-                    weights[lightIndex] = length(getColor(positions[lightIndex].xyz + 0.5));
-                } else {
-                    atomicMin(lightCount, MAX_LIGHT_COUNT);
-                }
-            }
-        }
+        registerLight(ivec3(vxPos + 1000) - 1000, meanPos, 0.0);
     }
 
     barrier();
     memoryBarrierShared();
     if (index < MAX_LIGHT_COUNT && anyInFrustrum) {
         ivec4 prevFrameLight = imageLoad(lightStorage, coords);
-
-        uint hash = posToHash(prevFrameLight.xyz) % uint(128*32);
-        bool known = (
-            prevFrameLight.w <= 0 ||
-            (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0
-        );
-        if (!known) {
-            known = (atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) != 0;
-        }
-
-        if (!known) {
-            int thisLightIndex = atomicAdd(lightCount, 1);
-            if (thisLightIndex < MAX_LIGHT_COUNT) {
-                positions[thisLightIndex] = ivec4(prevFrameLight.xyz, 0);
-                weights[thisLightIndex] = 0.0001 * prevFrameLight.w;
-            } else {
-                atomicMin(lightCount, MAX_LIGHT_COUNT);
-            }
+        if (prevFrameLight.w > 0) {
+            registerLight(prevFrameLight.xyz, meanPos, prevFrameLight.w * 0.0001);
         }
     }
     barrier();
@@ -231,22 +264,8 @@ void main() {
                     index % gl_WorkGroupSize.x,
                     index / gl_WorkGroupSize.x % gl_WorkGroupSize.y,
                     index / (gl_WorkGroupSize.x * gl_WorkGroupSize.y)));
-            uint hash = posToHash(prevFrameLight.xyz) % uint(128*32);
-            bool known = (
-                prevFrameLight.w <= 0 ||
-                (imageLoad(occupancyVolume, prevFrameLight.xyz + voxelVolumeSize/2).r >> 16 & 1) == 0
-            );
-            if (!known) {
-                known = (atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) != 0;
-            }
-            if (!known) {
-                int thisLightIndex = atomicAdd(lightCount, 1);
-                if (thisLightIndex < MAX_LIGHT_COUNT) {
-                    positions[thisLightIndex] = ivec4(prevFrameLight.xyz, 0);
-                    weights[thisLightIndex] = 0.0001 * prevFrameLight.w;
-                } else {
-                    atomicMin(lightCount, MAX_LIGHT_COUNT);
-                }
+            if (prevFrameLight.w > 0) {
+                registerLight(prevFrameLight.xyz, meanPos, prevFrameLight.w * 0.0001);
             }
         }
     }
@@ -254,32 +273,7 @@ void main() {
     #if HELD_LIGHTING_MODE > 0
         if (index < 125 && anyInFrustrum) {
             ivec3 lightPos0 = ivec3(index%5, index/5%5, index/25%5) - 2;
-            if ((imageLoad(occupancyVolume, lightPos0 + voxelVolumeSize/2).r >> 16 & 1) != 0) {
-                ivec2 packedLightSubPos = ivec2(
-                    imageLoad(
-                        voxelCols,
-                        (lightPos0 + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0)).r,
-                    imageLoad(
-                        voxelCols,
-                        (lightPos0 + voxelVolumeSize/2) * ivec3(1, 2, 1) + ivec3(0, 2 * voxelVolumeSize.y, 0) + ivec3(0, 1, 0)).r
-                );
-                vec3 subLightPos = 0.1 * vec3(packedLightSubPos.x & 0x7fff, packedLightSubPos.x>>15 & 0x7fff, packedLightSubPos.y & 0x7fff) / (packedLightSubPos.y >>25) - 1;
-                uint hash = posToHash(lightPos0) % uint(128*32);
-                if ((atomicOr(lightHashMap[hash/32], uint(1)<<hash%32) & uint(1)<<hash%32) == 0) {
-                    int lightIndex = atomicAdd(lightCount, 1);
-                    if (lightIndex < MAX_LIGHT_COUNT) {
-                        vec3 lightPos = lightPos0 + 0.5;
-                        float dirLen = length(lightPos - meanPos);
-                        positions[lightIndex] = ivec4(lightPos + 10, 0) - ivec2(10, 0).xxxy;
-                        weights[lightIndex] =
-                            length(getColor(lightPos).xyz) *
-                            (sqrt(1 - min(1.0, dirLen / LIGHT_TRACE_LENGTH))) /
-                            (dirLen + 0.1);
-                    } else {
-                        atomicMin(lightCount, MAX_LIGHT_COUNT);
-                    }
-                }
-            }
+            registerLight(lightPos0, meanPos, 0.0);
         }
     #endif
     barrier();
@@ -287,9 +281,25 @@ void main() {
     bool participateInSorting = index < MAX_LIGHT_COUNT/2;
     #include "/lib/misc/prepare4_BM_sort.glsl"
     
+    vec3 origLightPos = vec3(0);
+    vec3 origLightCol = vec3(0);
+    int origExtraData = 0;
+    
     if (index < lightCount) {
-        extraData[index] = imageLoad(occupancyVolume, positions[index].xyz + voxelVolumeSize/2).r;
+        int origIndex = lightCoords[index].w;
+        origLightPos = lightPositions[origIndex];
+        origLightCol = lightCols[origIndex];
+        origExtraData = extraData[origIndex];
     }
+    barrier();
+
+    if (index < lightCount) {
+        lightPositions[index] = origLightPos;
+        lightCols[index] = origLightCol;
+        extraData[index] = origExtraData;
+        lightCoords[index].w = 0;
+    }
+
     barrier();
     memoryBarrierShared();
 
@@ -297,17 +307,9 @@ void main() {
     if (insideFrustrum && activeFrame) {
         for (uint thisLightIndex = 0; thisLightIndex < MAX_LIGHT_COUNT; thisLightIndex++) {
             if (thisLightIndex >= lightCount) break;
-            uint hash = posToHash(positions[thisLightIndex].xyz) % uint(1<<18);
-            uvec2 packedLightSubPos = uvec2(globalLightHashMap[4*hash], globalLightHashMap[4*hash+1]);
-            uvec2 packedLightCol = uvec2(globalLightHashMap[4*hash+2], globalLightHashMap[4*hash+3]);
-            vec3 subLightPos
-                = length(positions[thisLightIndex].xyz) < 4
-                ? 1.0/32.0 * vec3(packedLightSubPos.x & 0xffff, packedLightSubPos.x>>16, packedLightSubPos.y & 0xffff) / (packedLightSubPos.y >> 16) - 1
-                : vec3(0.5);
-            vec3 lightPos = positions[thisLightIndex].xyz + subLightPos;
+            vec3 lightPos = lightPositions[thisLightIndex];
             float ndotl0 = infnorm(vxPos - 0.5 * normal - lightPos) < 0.5 || !hasNeighbor ? 1.0 :
                 max(0, (dot(normalize(lightPos - vxPos + 0.5 * normal), normal)));
-            ivec3 lightCoords = positions[thisLightIndex].xyz + voxelVolumeSize / 2;
             vec3 dir = lightPos - vxPos;
             float dirLen = length(dir);
             float thisTraceLen = (extraData[thisLightIndex]>>17 & 31)/32.0;
@@ -317,11 +319,16 @@ void main() {
                 float ndotl = ndotl0 * lightBrightness;
                 vec4 rayHit1 = coneTrace(vxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.4 / dirLen, dither);
                 if (rayHit1.w > 0.01) {
-                    vec3 lightColor = 1.0/32.0 * vec3(packedLightCol.x & 0xffff, packedLightCol.x>>16, packedLightCol.y & 0xffff) / (packedLightSubPos.y >> 16);
-                    float totalBrightness = ndotl * (sqrt(1 - dirLen / (LIGHT_TRACE_LENGTH * thisTraceLen))) / (dirLen + 0.1);
-                    writeColor += lightColor * rayHit1.rgb * rayHit1.w * totalBrightness;
+                    vec3 lightColor = lightCols[thisLightIndex];
+                    float totalBrightness = ndotl
+                        * distanceFalloff(dirLen / (thisTraceLen * LIGHT_TRACE_LENGTH))
+                        * lightBrightness;
+                    writeColor += lightColor
+                        * rayHit1.rgb
+                        * rayHit1.w
+                        * totalBrightness;
                     int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);
-                    atomicMax(positions[thisLightIndex].w, thisWeight);
+                    atomicMax(lightCoords[thisLightIndex].w, thisWeight);
                 }
             }
         }
@@ -329,7 +336,7 @@ void main() {
 
     if (anyInFrustrum) {
         imageStore(irradianceCacheI, coords + ivec3(0, voxelVolumeSize.y, 0), vec4(writeColor, 1));
-        ivec4 lightPosToStore = (index < lightCount && positions[index].w > 0) ? positions[index] : ivec4(0);
+        ivec4 lightPosToStore = (index < lightCount && lightCoords[index].w > 0) ? lightCoords[index] : ivec4(0);
         imageStore(lightStorage, coords, lightPosToStore);
     }
 }
@@ -424,12 +431,21 @@ void main() {
 
         if (insideFrustrum) {
             float thisDFval = getDistanceField(vxPos);
-            if (thisDFval < 0.7 || (nextUint() % 37 == 0 && thisDFval < 1.7)) {
+            if (thisDFval < 0.7) {
                 activeLocs[atomicAdd(activeCount, 1)] = coords;
+            } else {
+                vec4 GILight = vec4(0.0);
+                for (int k = 0; k < 6; k++) {
+                    ivec3 offset = (k/3*2-1)*ivec3(k%3==0, k%3==1, k%3==2);
+                    vec4 otherLight = imageLoad(irradianceCacheI, coords + offset);
+                    GILight += 0.16667 * otherLight;
+                }
+                imageStore(irradianceCacheI, coords, GILight);
             }
         }
         barrier();
         memoryBarrierShared();
+        memoryBarrierImage();
         if (index < activeCount) {
             coords = activeLocs[index];
             vxPos = coords - 0.5 * voxelVolumeSize + vec3(0.51, 0.49, 0.502);
@@ -484,18 +500,18 @@ void main() {
                     #endif
                     vec3 hitCol = vec3(0);
                     if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5) {
-                        vec3 hitBlocklight = imageLoad(irradianceCacheI, ivec3(hitPos + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
-                        vec4 hitGIColor = imageLoad(irradianceCacheI, ivec3(hitPos + 0.5 * voxelVolumeSize - vec3(0.5)));
-                        vec3 hitGIlight = min(hitGIColor.rgb / max(hitGIColor.a, 0.0001), vec3(1));
                         vec3 hitNormal = vec3(0);
                         for (int k = 0; k < 3; k++) {
                             hitNormal[k] = getDistanceField(hitPos + mat3(0.5)[k]) - getDistanceField(hitPos - mat3(0.5)[k]);
                         }
                         hitNormal = normalize(hitNormal);
+                        vec3 hitBlocklight = imageLoad(irradianceCacheI, ivec3(hitPos + 0.5 * hitNormal + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
+                        vec4 hitGIColor = imageLoad(irradianceCacheI, ivec3(hitPos + 0.5 * voxelVolumeSize - vec3(0.5)));
+                        vec3 hitGIlight = min(hitGIColor.rgb / max(hitGIColor.a, 0.0001), vec3(1));
                         if (!(length(hitNormal) > 0.5)) hitNormal = vec3(0);
                         #if defined REALTIME_SHADOWS && defined OVERWORLD
                             vec3 sunShadowPos = GetShadowPos(hitPos - fractCamPos);
-                            vec3 hitSunlight = SampleShadow(sunShadowPos, 5.0, 1.0) * lightColor * max(dot(hitNormal, sunVec), 0) * float(skyLight > 0.1 || dot(hitNormal, hitPos) < 0.0);
+                            vec3 hitSunlight = SampleShadow(sunShadowPos, 1.2 + 3.8 * skyLight, 1.0) * lightColor * max(dot(hitNormal, sunVec), 0) * float(skyLight > 0.1 || dot(hitNormal, hitPos) < 0.0);
                         #elif defined OVERWORLD
                             vec3 hitSunlight = lightColor * float(skyLight > 0.8);
                         #else
@@ -511,6 +527,8 @@ void main() {
                 }
                 GILight += min(ambientContribution, vec4(ambientColor * 2.0, 1.0) * ambientContribution.a);
                 imageStore(irradianceCacheI, coords, GILight);
+            } else {
+                imageStore(irradianceCacheI, coords, vec4(0.0));
             }
         }
     #endif

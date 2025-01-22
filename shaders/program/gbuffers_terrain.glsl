@@ -217,6 +217,9 @@ void main() {
             GenerateEdgeSlopes(normalM, playerPos);
         #endif
 
+        //int blockEntityId = mat;
+        //#include "/lib/materials/materialHandling/blockEntityMaterials.glsl"
+
         #ifdef GENERATED_NORMALS
             if (!noGeneratedNormals) GenerateNormals(normalM, colorP);
         #endif

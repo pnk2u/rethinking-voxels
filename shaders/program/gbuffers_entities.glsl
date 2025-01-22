@@ -102,8 +102,6 @@ void main() {
     #endif
     color *= glColor;
 
-    color.rgb = mix(color.rgb, entityColor.rgb, entityColor.a);
-
     float smoothnessD = 0.0, skyLightFactor = 0.0, materialMask = OSIEBCA * 254.0; // No SSAO, No TAA
     vec3 normalM = normal;
 
@@ -131,7 +129,6 @@ void main() {
             #endif
 
             if (materialMask != OSIEBCA * 254.0) materialMask += OSIEBCA * 100.0; // Entity Reflection Handling
-            else if (smoothnessD > 0.2) materialMask = 100.0;
 
             #ifdef GENERATED_NORMALS
                 if (!noGeneratedNormals) GenerateNormals(normalM, colorP);
@@ -153,8 +150,12 @@ void main() {
                 #include "/lib/materials/specificMaterials/entities/lightningBolt.glsl"
             } else if (entityId == 50008) { // Item Frame, Glow Item Frame
                 noSmoothLighting = true;
+            } else if (entityId == 50076) { // Boats
+                playerPos.y += 0.38; // to avoid water shadow and the black inner shadow bug
             }
         #endif
+    
+        color.rgb = mix(color.rgb, entityColor.rgb, entityColor.a);
 
         normalM = gl_FrontFacing ? normalM : -normalM; // Inverted Normal Workaround
         vec3 geoNormal = normalM;
@@ -230,6 +231,9 @@ out vec4 glColor;
 //Common Functions//
 
 //Includes//
+#ifdef INTERACTIVE_WATER
+#include "/lib/materials/materialMethods/wavingBlocks.glsl"
+#endif
 
 //Program//
 void main() {
@@ -249,6 +253,18 @@ void main() {
     eastVec = normalize(gbufferModelView[0].xyz);
     northVec = normalize(gbufferModelView[2].xyz);
     sunVec = GetSunVector();
+
+    #ifdef INTERACTIVE_WATER
+        if (entityId == 50076 || gl_Color.a < 0.1) {
+            vec4 playerPos = gbufferModelViewInverse * gbufferProjectionInverse * gl_Position;
+            playerPos /= playerPos.w;
+            vec3 worldPos = playerPos.xyz + cameraPosition;
+            vec3 playerPos0 = playerPos.xyz;
+            DoWave_Water(playerPos.xyz, worldPos);
+            playerPos.xyz = mix(playerPos.xyz, playerPos0, 0.5);
+            gl_Position = gbufferProjection * gbufferModelView * playerPos;
+        }
+    #endif
 
     #if defined GENERATED_NORMALS || defined COATED_TEXTURES || defined POM || defined SLANTED_BLOCK_EDGES || defined IPBR && defined IS_IRIS
         midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;

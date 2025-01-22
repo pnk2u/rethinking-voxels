@@ -59,22 +59,49 @@ void DoWave_Leaves(inout vec3 playerPos, vec3 worldPos, float waveMult) {
 }
 
 void DoWave_Water(inout vec3 playerPos, vec3 worldPos) {
-    float waterWaveTime = frameTimeCounter * 6.0 * WAVING_SPEED;
-    worldPos.xz *= 14.0;
+    #ifdef INTERACTIVE_WATER
+        #include "/lib/materials/specificMaterials/translucents/interactiveWaterConsts.glsl"
 
-    float wave  = sin(waterWaveTime * 0.7 + worldPos.x * 0.14 + worldPos.z * 0.07);
-          wave += sin(waterWaveTime * 0.5 + worldPos.x * 0.10 + worldPos.z * 0.05);
+        vec2 interactiveWaterPos = (playerPos.xz + cameraPositionFract.xz)/shadowMapResolution + 0.25;
+        vec3[2] waveStrengths = vec3[2](
+            texture(shadowcolor2, interactiveWaterPos + vec2(0.0, 0.0)).xyz * waveStrengthCoeffs[0],
+            texture(shadowcolor2, interactiveWaterPos + vec2(0.5, 0.0)).xyz * waveStrengthCoeffs[1]
+        );
 
-    #ifdef NO_WAVING_INDOORS
-        wave *= clamp(lmCoord.y - 0.87, 0.0, 0.1);
+        int maxDetail = max(1, 4 - int(0.02 * length(playerPos)));
+        vec3 distortion = texture(shadowcolor3, worldPos.xz / (1024.0 * 5)).rgb;
+
+        float offset = 0.0;
+        for (int i = 0; i < 3; i++) {
+            vec2 thisPos = worldPos.xz;
+            thisPos += 2 * (dot(thisPos, waveDirs[i]) + distortion[i]) * waveDirs[i];
+            thisPos *= 0.3;
+            for (int k = 0; k < min(2, maxDetail); k++) {
+                float thisOffset = texture(colortex9, fract(
+                    (thisPos / waveLengths[k] - waveSpeed * frameTimeCounter / sqrt(waveLengths[k]) * waveDirs[i] - 0.5) / 1024.0
+                )).b - 0.5;
+                offset += waveStrengths[k][i] * thisOffset;
+            }
+        }
+        playerPos.y -= offset;
     #else
-        wave *= 0.1;
-    #endif
+        float waterWaveTime = frameTimeCounter * 6.0 * WAVING_SPEED;
+        worldPos.xz *= 14.0;
 
-    playerPos.y += wave * 0.125 - 0.05;
+        float wave  = sin(waterWaveTime * 0.7 + worldPos.x * 0.14 + worldPos.z * 0.07);
+              wave += sin(waterWaveTime * 0.5 + worldPos.x * 0.10 + worldPos.z * 0.05);
 
-    #if defined GBUFFERS_WATER && WATER_STYLE == 1
-        normal = mix(normal, tangent, wave * 0.01);
+        #ifdef NO_WAVING_INDOORS
+            wave *= clamp(lmCoord.y - 0.87, 0.0, 0.1);
+        #else
+            wave *= 0.1;
+        #endif
+
+        playerPos.y += wave * 0.125 - 0.05;
+
+        #if defined GBUFFERS_WATER && WATER_STYLE == 1
+            normal = mix(normal, tangent, wave * 0.01);
+        #endif
     #endif
 }
 

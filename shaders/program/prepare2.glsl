@@ -51,8 +51,8 @@ void main() {
             
         }
     }
-    /*DRAWBUFFERS:0*/
-    gl_FragData[0] = vec4(fogColor, 1.0);
+    /*DRAWBUFFERS:3*/
+    discard;
 }
 #endif
 

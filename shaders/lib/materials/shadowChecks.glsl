@@ -99,6 +99,8 @@ bool isEmissive(int mat) {
         mat == 10708 || // spawner
         mat == 10852 || // copper bulb
         mat == 10856 || // weathered copper bulb
+        mat == 10924 || // open eyeblossom
+        mat == 10948 || // creaking heart
         mat == 10996 || // light block
       //mat == 12740 || // lit candle cake
         mat == 30020 || // nether portal
@@ -436,6 +438,16 @@ vec3 getLightCol(int mat) {
             lightcol = vec3(CANDLE_COL_R, CANDLE_COL_G, CANDLE_COL_B);
             #endif
             break;
+        case 10924: // open eyeblossom
+            #ifdef BLOSSOM_HARDCODED_RESIN_COL
+            lightcol = vec3(RESIN_COL_R, RESIN_COL_G, RESIN_COL_B);
+            #endif
+            break;
+        case 10948: // creaking heart
+            #ifdef HEART_HARDCODED_RESIN_COL
+            lightcol = vec3(RESIN_COL_R, RESIN_COL_G, RESIN_COL_B);
+            #endif
+            break;
         case 30020: // nether portal
             #ifdef HARDCODED_PORTAL_COL
             lightcol = vec3(PORTAL_COL_R, PORTAL_COL_G, PORTAL_COL_B);
@@ -730,6 +742,12 @@ int getLightLevel(int mat) {
             break;
         case 10836: // brewing stand
             lightlevel = BRIGHTNESS_BREWINGSTAND;
+            break;
+        case 10924: // open eyeblossom
+            lightlevel = BLOSSOM_BRIGHTNESS_RESIN;
+            break;
+        case 10948: // creaking heart
+            lightlevel = HEART_BRIGHTNESS_RESIN;
             break;
         case 30020: // nether portal
             lightlevel = BRIGHTNESS_PORTAL;

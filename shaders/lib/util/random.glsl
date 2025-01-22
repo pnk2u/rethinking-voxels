@@ -1,10 +1,10 @@
 #ifndef INCLUDE_RANDOM
 #define INCLUDE_RANDOM
-#if defined FRAGMENT_SHADER || defined FRAGMENT_SHADER
+#ifdef FRAGMENT_SHADER
     #define gl_GlobalInvocationID uvec3(gl_FragCoord.xy, 0)
 #endif
 
-uint globalSeed = uint(frameCounter * 382 + gl_GlobalInvocationID.x * 419 + gl_GlobalInvocationID.y * 353 + gl_GlobalInvocationID.z * 383);
+uint globalSeed = uint(uint(frameCounter * 382) + gl_GlobalInvocationID.x * uint(419) + gl_GlobalInvocationID.y * uint(353) + gl_GlobalInvocationID.z * uint(383));
 
 uint murmur(uint seed) {
     seed = (seed ^ (seed >> 16)) * 0x85ebca6bu;
@@ -45,6 +45,14 @@ vec2 randomGaussian() {
     } while (len2 >= 1);
     float normfactor = sqrt(-2*log(len2)/len2);
     return vec2(x1, x2) * normfactor;
+}
+
+vec3 normalWeightedHemishpereSample(vec3 normal) {
+    vec3 s = randomSphereSample();
+    float cosTheta = dot(normal, s);
+    s -= cosTheta * normal;
+    cosTheta *= cosTheta;
+    return sqrt(1.0 - cosTheta*cosTheta) * normalize(s) + cosTheta * normal;
 }
 
 #endif

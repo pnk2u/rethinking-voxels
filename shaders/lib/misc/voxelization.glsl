@@ -7,7 +7,7 @@
     }
 
     vec3 SceneToVoxel(vec3 scenePos) {
-        return scenePos + fract(cameraPosition) + (0.5 * vec3(voxelVolumeSize));
+        return scenePos + cameraPositionBestFract + (0.5 * vec3(voxelVolumeSize));
     }
 
     bool CheckInsideVoxelVolume(vec3 voxelPos) {
@@ -215,6 +215,8 @@
                         if (mat == 10920) return  79; // Magenta Candles:Lit
                         if (mat == 10922) return  80; // Pink Candles:Lit
                         #endif
+                        if (mat == 10924) return  81; // Open Eyeblossom
+                        if (mat == 10948) return  82; // Creaking Heart: Active
                         if (mat == 30008) return 254; // Tinted Glass
                         if (mat == 30012) return 213; // Slime Block
                         if (mat == 30016) return 201; // Honey Block

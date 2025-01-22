@@ -26,8 +26,6 @@ in vec3 vxPosF;
     flat in vec2 absMidCoordPos;
 #endif
 //Uniforms//
-uniform int renderStage;
-
 
 layout(r32i) restrict uniform iimage3D occupancyVolume;
 
@@ -71,9 +69,17 @@ void main() {
                 #ifdef CONNECTED_GLASS_EFFECT
                     if (mat == 30008) { // Tinted Glass
                         DoSimpleConnectedGlass(color1);
+                        
+                        #if defined LIGHTSHAFTS_ACTIVE && LIGHTSHAFT_BEHAVIOUR == 1 && defined OVERWORLD
+                            positionYM = 0.0; // 86AHGA: For scene-aware light shafts to be less prone to get extreme under large glass planes
+                        #endif
                     }
                     if (mat >= 31000) { // Stained Glass, Stained Glass Pane
                         DoSimpleConnectedGlass(color1);
+
+                        #if defined LIGHTSHAFTS_ACTIVE && LIGHTSHAFT_BEHAVIOUR == 1 && defined OVERWORLD
+                            positionYM = 0.0; // 86AHGA
+                        #endif
                     }
                 #endif
                 DoNaturalShadowCalculation(color1, color2);
@@ -176,6 +182,10 @@ void main() {
                 if (color1.a > 0.5) color1 = vec4(0.0, 0.0, 0.0, 1.0);
                 else color1 = vec4(vec3(0.2 * (1.0 - GLASS_OPACITY)), 1.0);
                 color2.rgb = vec3(0.3);
+
+                #if defined LIGHTSHAFTS_ACTIVE && LIGHTSHAFT_BEHAVIOUR == 1 && defined OVERWORLD
+                    positionYM = 0.0; // 86AHGA
+                #endif
             } else {
                 DoNaturalShadowCalculation(color1, color2);
             }
@@ -201,7 +211,8 @@ void main() {
             if (col2.a > col.a) col = col2;
         }
         col.rgb *= glColor.rgb;
-        if (col.a > 0.1) {
+        bool doTransparency = renderStage != MC_RENDER_STAGE_ENTITIES;
+        if (col.a > (doTransparency ? 0.1 : 0.5)) {
             for (int k = 0; k < passType >> 1; k++) {
                 vec3 position2 = vxPosF * (1<<k) + voxelVolumeSize * 0.5;
                 if (floor((position2 - 0.003 * upVec) / (1<<k)) == floor((position2 - 0.1561271 * upVec) / (1<<k))) {
@@ -211,7 +222,7 @@ void main() {
                     break;
                 }
                 ivec3 coords2 = ivec3(position2);
-                imageAtomicOr(occupancyVolume, coords2, 1<<(k + 8 * int(col.a < 0.9)));
+                imageAtomicOr(occupancyVolume, coords2, 1<<(k + 8 * int(col.a < 0.9 && doTransparency)));
             }
         }
         discard;
@@ -255,8 +266,6 @@ out vec3 vxPosF;
 flat out int passType;
 flat out ivec3 correspondingBlock;
 //Uniforms//
-
-uniform int renderStage;
 
 layout(r32i) restrict uniform iimage3D voxelCols;
 layout(r32i) restrict uniform iimage3D occupancyVolume;
@@ -303,9 +312,9 @@ void main() {
             max(max(vxPos[0], vxPos[1]), vxPos[2])
         );
         bool isHeldLight = false;
-        if (entityId == 50016 && emissive && length(center) < 8) { // handheld item
+        vec3 floorCamPosRelEyePos = fractCamPos - relativeEyePosition;
+        if (entityId == 50016 && emissive && length(center - floorCamPosRelEyePos) < 3) { // handheld item
             isHeldLight = true;
-            vec3 floorCamPosRelEyePos = fractCamPos - relativeEyePosition;
             #ifdef PLAYER_VOXELIZATION
                 vec3 offset = vec3(0.5 * (center.xz - floorCamPosRelEyePos.xz), 0).xzy;
             #else
@@ -370,7 +379,7 @@ void main() {
                 coords * ivec3(1, 2, 1) + ivec3(0, 1, 0),
                 packedCol.y);
         }
-        if (matV[0] == 32000) {
+        if (matV[0] == 32000) { // water
             imageAtomicOr(voxelCols, coords * ivec3(1, 2, 1), 1 << 26);
         }
         if (renderStage == MC_RENDER_STAGE_ENTITIES) {
@@ -403,6 +412,9 @@ void main() {
                 localMat == 10988 || // smallest cocoa stage
                 localMat == 10992 || // nether wart
             #endif
+            (localMat == 10941 && (
+                renderStage != MC_RENDER_STAGE_TERRAIN_SOLID
+            )) ||
             (area > 0.8 && length(center + 0.5 * cnormal - coords + voxelVolumeSize/2 - 0.5) < 0.1) ||
             all(lessThan(
                 vec3(
@@ -424,6 +436,12 @@ void main() {
                 }
             } else {
                 // logs are not emissive
+                emissive = false;
+            }
+        }
+        // brewing stand
+        if (localMat == 10836) {
+            if (abs(cnormal.y) > 0.1) {
                 emissive = false;
             }
         }
@@ -558,7 +576,6 @@ flat out ivec3 correspondingBlockV;
 #endif
 
 //Uniforms//
-uniform int renderStage;
 
 //Attributes//
 in vec4 mc_Entity;
@@ -569,7 +586,7 @@ in vec4 at_midBlock;
 
 //Common Variables//
 #if COLORED_LIGHTING_INTERNAL > 0
-    layout(r8ui) writeonly uniform uimage3D voxel_img;
+    writeonly uniform uimage3D voxel_img;
     vec2 lmCoord;
 #endif
 #ifdef PUDDLE_VOXELIZATION

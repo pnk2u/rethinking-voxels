@@ -2,6 +2,8 @@ uniform sampler3D distanceField;
 layout(r32i) uniform restrict iimage3D occupancyVolume;
 layout(r32i) uniform restrict iimage3D voxelCols;
 
+#include "/lib/util/random.glsl"
+
 int getVoxelResolution(vec3 pos) {
     return max(min(int(-log2(infnorm(pos/(voxelVolumeSize-2.01))))-1, VOXEL_DETAIL_AMOUNT-1), 0);
 }
@@ -60,7 +62,6 @@ vec3 rayTrace(vec3 start, vec3 dir, float dither) {
     }
     return start + min(w, dirLen) * dir;
 }
-
 vec4 coneTrace(vec3 start, vec3 dir, float angle, float dither) {
     float angle0 = angle;
     float dirLen = infnorm(dir);
@@ -71,6 +72,22 @@ vec4 coneTrace(vec3 start, vec3 dir, float angle, float dither) {
     for (k = 0; k < RT_STEPS; k++) {
         vec3 thisPos = start + w * dir;
         float thisdist = getDistanceField(thisPos);
+
+        #ifdef DIRECTION_UPDATING_CONETRACE
+            if (thisdist < angle * w) {
+                vec3 dfGrad = distanceFieldGradient(thisPos);
+                dfGrad = normalize(dfGrad - dot(dir, dfGrad) * dir);
+                if (!any(isnan(dfGrad))) {
+                    float offsetLen = 0.5 * max(0.0, angle * w - thisdist);
+                    dir = normalize(dir + offsetLen/w * dfGrad);
+                    thisPos = start + w * dir;
+                    thisdist += offsetLen;
+                }
+                angle = min(angle, thisdist / w);
+            }
+        #else
+            angle = min(angle, thisdist / w);
+        #endif
         #ifdef TRANSLUCENT_LIGHT_TINT
         if (thisdist < 0.75) {
             ivec3 coords = ivec3(thisPos + 1000) - 1000 + voxelVolumeSize/2;
@@ -80,7 +97,6 @@ vec4 coneTrace(vec3 start, vec3 dir, float angle, float dither) {
             }
         }
         #endif
-        angle = min(angle, thisdist / w);
         w += thisdist;
         if (angle < 0.01 * angle0 || w > dirLen) break;
     }

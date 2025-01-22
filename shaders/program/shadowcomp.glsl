@@ -102,6 +102,7 @@ void main() {
         imageLoad(voxelCols, texCoord * ivec3(1, 2, 1)).r,
         imageLoad(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 1, 0)).r
     );
+    int dataBits = rawCol.x >> 26 << 26;
     if ((rawCol.g >> 23) == 0) {
         for (int k = 0; k < 6; k++) {
             ivec3 offset = (k/3*2-1) * ivec3(equal(ivec3(k%3), ivec3(0, 1, 2)));
@@ -115,6 +116,8 @@ void main() {
             }
         }
         if ((rawCol.g >> 23) > 0) {
+            rawCol.r &= (1<<26) - 1;
+            rawCol.r |= dataBits;
             imageStore(voxelCols, texCoord * ivec3(1, 2, 1), ivec4(rawCol.r));
             imageStore(voxelCols, texCoord * ivec3(1, 2, 1) + ivec3(0, 1, 0), ivec4(rawCol.g));
         }

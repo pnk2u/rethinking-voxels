@@ -355,11 +355,12 @@ void main() {
     #endif
 
     vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
-    playerPos = position.xyz;
 
     #ifdef WAVING_WATER_VERTEX
         DoWave(position.xyz, mat);
     #endif
+
+    playerPos = position.xyz;
 
     gl_Position = gl_ProjectionMatrix * gbufferModelView * position;
 

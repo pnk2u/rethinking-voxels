@@ -30,9 +30,15 @@
 
     #define SDF_UPDATE_INTERVAL 2 //[0 1 2 3 4 5 6 8 10 13 16 20]
     #define PER_PIXEL_LIGHT
+    #define LONGER_LIGHT_LISTS
     #ifndef PER_PIXEL_LIGHT
         #define PER_BLOCK_LIGHT
     #endif
+
+    //#define DIRECTION_UPDATING_CONETRACE
+
+    #define R2_FALLOFF 1 //[0 1]
+
     #define GI_STRENGTH 1 //[0 1 2]
 
     #if GI_STRENGTH > 0
@@ -52,7 +58,7 @@
     //#define LIGHT_CLUMPING
     #define COLORED_LIGHT_FOG
     #define COLORED_LIGHT_FOG
-    #define COLORED_LIGHT_FOG_I 0.60 //[0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00 1.05 1.10 1.15 1.20 1.25 1.30 1.35 1.40 1.45 1.50]
+    #define COLORED_LIGHT_FOG_I 0.65 //[0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00 1.05 1.10 1.15 1.20 1.25 1.30 1.35 1.40 1.45 1.50]
     #define VBL_NETHER_MULT 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
     #define VBL_END_MULT 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.8 1.0 1.2 1.5 1.8 2.2 2.6 3.0 3.5 4.0 4.7 5.5 6.4 8.2 9.0 10.0]
 
@@ -92,12 +98,14 @@
     #endif
 
     #define PORTAL_EDGE_EFFECT
-    #ifndef IRIS_HAS_CONNECTED_TEXTURES
-        #define CONNECTED_GLASS_EFFECT
+        #ifndef IRIS_HAS_CONNECTED_TEXTURES
+            #define CONNECTED_GLASS_EFFECT
+        #endif
     #endif
 
     #if defined CONNECTED_GLASS_EFFECT || defined PORTAL_EDGE_EFFECT
         #define COLORED_LIGHTING_INTERNAL 1
+        #define ACL_VOXELIZATION
     #endif
 
     #define WATER_STYLE_DEFINE -1 //[-1 1 2 3]
@@ -122,7 +130,6 @@
     #define WATER_SIZE_MULT 100 //[25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 110 120 130 140 150 160 170 180 190 200 220 240 260 280 300]
 
     #define SHADOW_SMOOTHING 4 //[1 2 3 4]
-    #define PIXEL_SHADOW 0 //[0 8 16 32 64 128]
     #define RAIN_PUDDLES 0 //[0 1 2 3 4]
     #define SSAO_I 100 //[0 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 110 120 130 140 150 160 170 180 190 200 220 240 260 280 300]
     #define VANILLAAO_I 100 //[0 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 110 120 130 140 150 160 170 180 190 200 220 240 260 280 300]
@@ -172,6 +179,7 @@
     #define LIGHTSHAFT_NIGHT_I 100 //[1 3 5 7 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 110 120 130 140 150 160 170 180 190 200]
     #define LIGHTSHAFT_RAIN_I 100 //[1 3 5 7 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 110 120 130 140 150 160 170 180 190 200]
     //#define LIGHTSHAFT_SMOKE
+    #define SPECIAL_PALE_GARDEN_LIGHTSHAFTS
 
     #define BLOOM
     #define BLOOM_STRENGTH 0.12 //[0.027 0.036 0.045 0.054 0.063 0.072 0.081 0.09 0.10 0.11 0.12 0.13 0.14 0.15 0.16 0.17 0.18 0.19 0.21 0.23 0.25 0.28 0.32 10.00]
@@ -184,7 +192,7 @@
     #define LENSFLARE_MODE 0 //[0 1 2]
     #define LENSFLARE_I 1.00 //[0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00 1.10 1.20 1.30 1.40 1.50 1.60 1.70 1.80 1.90 2.00 2.20 2.40 2.60 2.80 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00]
     #define TAA_MODE 1 //[1 2 0]
-    //#define DISTANT_LIGHT_BOKEH
+    #define DISTANT_LIGHT_BOKEH
 
     #define WORLD_BLUR 0 //[0 1 2]
     //#define WB_FOV_SCALED
@@ -269,6 +277,7 @@
     //#define WORLD_OUTLINE
     #define WORLD_OUTLINE_THICKNESS 1 //[1 2 3 4]
     #define WORLD_OUTLINE_I 1.50 //[0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00 1.10 1.20 1.30 1.40 1.50 1.60 1.70 1.80 1.90 2.00 2.20 2.40 2.60 2.80 3.00 3.25 3.50 3.75 4.00]
+    #define WORLD_OUTLINE_ON_ENTITIES
     //#define DARK_OUTLINE
     #define DARK_OUTLINE_THICKNESS 1 //[1 2]
 
@@ -286,6 +295,11 @@
     #define MOON_PHASE_FULL 1.00 //[0.01 0.03 0.05 0.07 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00 1.10 1.20 1.30 1.40 1.50 1.60 1.70 1.80 1.90 2.00]
     #define MOON_PHASE_PARTIAL 0.85 //[0.01 0.03 0.05 0.07 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00 1.10 1.20 1.30 1.40 1.50 1.60 1.70 1.80 1.90 2.00]
     #define MOON_PHASE_DARK 0.60 //[0.01 0.03 0.05 0.07 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00 1.10 1.20 1.30 1.40 1.50 1.60 1.70 1.80 1.90 2.00]
+
+    //#define PIXELATED_SHADOWS
+    //#define PIXELATED_BLOCKLIGHT
+    //#define PIXELATED_AO
+    #define PIXEL_SCALE 1 //[-2 -1 1 2 3 4 5]
 
     #define T_EXPOSURE 1.40 //[0.70 0.75 0.80 0.85 0.90 0.95 1.00 1.05 1.10 1.15 1.20 1.25 1.30 1.35 1.40 1.45 1.50 1.55 1.60 1.65 1.70 1.75 1.80 1.85 1.90 1.95 2.00 2.10 2.20 2.30 2.40 2.50 2.60 2.70 2.80]
     #define TM_WHITE_CURVE 2.0 //[1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0]
@@ -404,7 +418,7 @@
         #define IPBR_PARTICLE_FEATURES
         //#define GENERATED_NORMALS
         //#define COATED_TEXTURES
-        #define FANCY_GLASS
+        //#define FANCY_GLASS
         //#define GREEN_SCREEN_LIME
     #endif
     #if RP_MODE >= 2
@@ -550,6 +564,9 @@
         #if RAIN_PUDDLES > 0
             #define PUDDLE_VOXELIZATION
         #endif
+        #if CLOUD_QUALITY >= 3 && CLOUD_STYLE > 0 && CLOUD_STYLE != 50
+            #define ENTITY_TAA_NOISY_CLOUD_FIX
+        #endif
     #endif
 
 //Define Handling//
@@ -582,6 +599,12 @@
 
     #ifndef BLOOM
         #undef BLOOM_FOG
+    #endif
+
+    #if defined PIXELATED_SHADOWS || defined PIXELATED_BLOCKLIGHT || defined PIXELATED_AO
+        #if !defined GBUFFERS_BASIC && !defined DH_TERRAIN && !defined DH_WATER
+            #define DO_PIXELATION_EFFECTS
+        #endif
     #endif
 
     #ifdef BLOOM_FOG
@@ -641,6 +664,13 @@
         #undef DISTANT_LIGHT_BOKEH
     #endif
 
+    #if defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI
+        #ifndef DEFERRED1
+            #define FIX_AMD_REFLECTION_CRASH //BFARC: Fixes a driver crashing problem on AMD GPUs
+        #endif
+    #endif
+
+
 //Activate Settings//
     #ifdef POM_ALLOW_CUTOUT
     #endif
@@ -649,6 +679,8 @@
     #ifdef IPBR_PARTICLE_FEATURES
     #endif
     #ifdef COLORED_CANDLE_LIGHT
+    #endif
+    #ifdef PIXELATED_AO
     #endif
 
 //Very Common Stuff//
@@ -667,6 +699,10 @@
     #endif
 
     #include "/lib/util/commonFunctions.glsl"
+
+    #ifdef DO_PIXELATION_EFFECTS
+        #include "/lib/misc/pixelation.glsl"
+    #endif
 
     #ifndef DISTANT_HORIZONS
         float renderDistance = far;
@@ -697,6 +733,12 @@
     const float goldenRatio = 1.61803398875;
 
     const float oceanAltitude = 61.9;
+
+    #if IRIS_VERSION >= 10800
+        vec3 cameraPositionBestFract = cameraPositionFract;
+    #else
+        vec3 cameraPositionBestFract = fract(cameraPosition);
+    #endif
 
     #include "/lib/colors/blocklightColors.glsl"
 
@@ -768,7 +810,7 @@
                 OSIEBCA * 3.0 = Gold Fresnel
                 OSIEBCA * 4.0 =
                 OSIEBCA * 5.0 = Redstone Fresnel
-            100 to 199: Exact copy of deferredMaterials but toned down reflection handling
+            100 to 199: Exact copy of deferredMaterials but toned down reflection handling for entities
                 materialMask += OSIEBCA * 100.0; // Entity Reflection Handling
             200 to 240: Random checks
                 OSIEBCA * 240.0 = Green Screen Lime Blocks

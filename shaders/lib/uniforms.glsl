@@ -27,6 +27,7 @@ uniform int isEyeInWater;
 uniform int moonPhase;
 uniform int worldTime;
 uniform int worldDay;
+uniform int renderStage;
 
 uniform float aspectRatio;
 uniform float blindness;
@@ -99,6 +100,7 @@ uniform sampler2D shadowcolor0;
 uniform sampler2D shadowcolor1;
 #ifdef IRIS_FEATURE_HIGHER_SHADOWCOLOR
     uniform sampler2D shadowcolor2;
+    uniform sampler2D shadowcolor3;
 #endif
 
 uniform sampler2DShadow shadowtex1;
@@ -156,5 +158,4 @@ uniform float inCrimsonForest;
 uniform float inNetherWastes;
 uniform float inSoulValley;
 uniform float inWarpedForest;
-
-uniform vec3 skyColorSmooth;
+uniform float inPaleGarden;
